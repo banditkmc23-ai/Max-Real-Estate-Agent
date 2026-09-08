@@ -41,7 +41,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.3</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.4</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -109,7 +109,8 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
       <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
         <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
-        <label>เบอร์ / LINE เจ้าของ<input id="f_ownerPhone" class="inp" placeholder="081-xxx-xxxx"></label>
+        <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
+        <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88 หรือวางลิงก์ line.me/ti/p/... จากโปรไฟล์เจ้าของ"></label>
       </div>
       <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
         <label class="col-span-2">ผู้เช่าปัจจุบัน<input id="f_tenant" class="inp" placeholder="เว้นว่างถ้าห้องว่าง"></label>
@@ -206,7 +207,7 @@ const seed = [
   { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', tenant:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' }
 ];
 
-let units = load().map(u => ({ bath: '1', ...u }));
+let units = load().map(u => ({ bath: '1', ownerLine: '', ...u }));
 let selectedId = units[0]?.id || null;
 let filter = 'all';
 
@@ -313,7 +314,11 @@ function cardHTML(u) {
         <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs">OW</div>
         <div><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-sm font-semibold text-slate-200">${esc(u.owner || '-')}</p></div>
       </div>
-      <a href="tel:${esc((u.ownerPhone||'').replace(/[^0-9+]/g,''))}" class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">${esc(u.ownerPhone || '-')}</a>
+      <div class="flex items-center gap-1.5">
+        ${u.ownerPhone ? `<a href="tel:${esc(u.ownerPhone.replace(/[^0-9+]/g,''))}" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-brick-600" aria-label="โทรเจ้าของ"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
+        ${u.ownerLine ? `<button onclick="openOwnerLine('${u.id}')" class="w-9 h-9 rounded-full bg-[#06C755]/15 flex items-center justify-center text-[#06C755]" aria-label="LINE เจ้าของ"><i data-lucide="message-circle" class="w-4 h-4"></i></button>` : ''}
+        ${!u.ownerPhone && !u.ownerLine ? `<span class="text-xs text-slate-500">ยังไม่มีช่องทางติดต่อ</span>` : ''}
+      </div>
     </div>
     <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4">
       <div class="flex justify-between items-center mb-2">
@@ -369,15 +374,28 @@ function copy(text, silent) {
   if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => { if (!silent) toast('คัดลอกข้อความแล้ว พร้อมวางใน LINE'); }).catch(() => {});
   else if (!silent) alert(text);
 }
+function lineUrlOf(v) {
+  v = (v || '').trim(); if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/line\.me\//i.test(v)) return 'https://' + v.replace(/^\/+/, '');
+  return 'https://line.me/ti/p/~' + encodeURIComponent(v.replace(/^@/, ''));
+}
+function openOwnerLine(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const url = lineUrlOf(u.ownerLine);
+  if (!url) return toast('ยังไม่ได้ใส่ LINE ID ของเจ้าของ');
+  const w = window.open(url, '_blank'); if (!w) location.href = url;
+}
 function contactOwner(id) {
   const u = units.find(x => x.id === id); if (!u) return;
   const tel = (u.ownerPhone || '').replace(/[^0-9+]/g, '');
+  if (u.ownerLine) return openOwnerLine(id);
   if (tel && /^\+?\d{6,}$/.test(tel)) location.href = 'tel:' + tel;
-  else toast(`ยังไม่มีเบอร์จริงของ ${u.owner || 'เจ้าของ'} — แก้ไขข้อมูลเพื่อเพิ่มเบอร์`);
+  else toast(`ยังไม่มีเบอร์หรือ LINE ของ ${u.owner || 'เจ้าของ'} — แก้ไขข้อมูลเพื่อเพิ่ม`);
 }
 
 // sheet
-const F = ['project','room','floor','rent','size','type','bath','view','status','owner','ownerPhone','tenant','start','end','notes'];
+const F = ['project','room','floor','rent','size','type','bath','view','status','owner','ownerPhone','ownerLine','tenant','start','end','notes'];
 function openSheet(mode, id) {
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
@@ -696,7 +714,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
