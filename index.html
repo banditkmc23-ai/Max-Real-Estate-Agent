@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#090d16">
+<meta name="theme-color" content="#0b2a4a">
+<meta name="apple-mobile-web-app-title" content="MAX Agent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>Staylow Property Manager</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -104,7 +107,7 @@
         <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
         <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp"></label>
       </div>
-      <label>โน้ต<textarea id="f_notes" rows="2" class="inp" placeholder="เช่น เฟอร์ครบ, เลี้ยงสัตว์ไม่ได้, ..."></textarea></label>
+      <label>โน้ต / ข้อความส่งลูกค้า<textarea id="f_notes" rows="6" class="inp" placeholder="ข้อความนี้จะถูกส่งให้ลูกค้าตรงๆ เวลากดแชร์หรือส่ง LINE"></textarea></label>
     </div>
     <div class="flex gap-2 mt-5">
       <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-400 border border-rose-500/20 px-4 py-2.5 rounded-xl text-sm font-semibold">ลบ</button>
@@ -223,10 +226,12 @@ function render() {
   // list
   document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
     const m = statusMeta[x.status];
-    return `<button onclick="select('${x.id}')" class="unit-row w-full text-left bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex justify-between items-center ${x.id === selectedId ? 'active' : ''}">
-      <div><p class="text-xs font-semibold text-slate-200">${esc(x.project)} · ${esc(x.room)}</p>
-      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></div>
-      <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium">${m.label}</span></button>`;
+    return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
+      <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
+      <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
+      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
+      <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0">${m.label}</span>
+      <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
 
   lucide.createIcons();
@@ -254,9 +259,10 @@ function cardHTML(u) {
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. (ชั้น ${esc(u.floor || '-')})</p></div>
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">รูปแบบ / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
     </div>
-    ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1">📝 ${esc(u.notes)}</p>` : ''}
+    ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
     <div class="grid grid-cols-2 gap-2.5">
-      <button onclick="shareListing('${u.id}')" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ข้อมูลห้อง</button>
+      <button onclick="lineShare('${u.id}')" class="col-span-2 bg-[#06C755] hover:bg-[#05b34c] active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#06C755]/20"><i data-lucide="message-circle" class="w-4 h-4"></i>ส่งข้อมูลห้องให้ลูกค้าทาง LINE</button>
+      <button onclick="shareListing('${u.id}')" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
       <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-emerald-400"></i>ติดต่อเจ้าของ</button>
       <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไขข้อมูล</button>
       <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
@@ -297,15 +303,32 @@ function cycleStatus(id) {
   persist(); render(); toast(`เปลี่ยนสถานะเป็น ${statusMeta[u.status].th}`);
 }
 
+function customerText(u) {
+  if (u.notes && u.notes.trim()) return u.notes.trim();
+  toast('ห้องนี้ยังไม่มีข้อความในช่องโน้ต ส่งข้อมูลพื้นฐานแทน');
+  return [
+    `🏢 ให้เช่า ${u.project}`,
+    `• ห้อง ${u.room}${u.floor ? ' ชั้น ' + u.floor : ''}`,
+    `• ${u.type}${u.size ? ' ขนาด ' + u.size + ' ตร.ม.' : ''}${u.view ? ' วิว' + u.view : ''}`,
+    `💰 ค่าเช่า ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน`
+  ].join('\n');
+}
+function lineShare(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const text = customerText(u);
+  copy(text, true);
+  const w = window.open('https://line.me/R/share?text=' + encodeURIComponent(text), '_blank');
+  if (!w) location.href = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+}
 function shareListing(id) {
   const u = units.find(x => x.id === id); if (!u) return;
-  const text = `🏢 ให้เช่า ${u.project}\n• ห้อง ${u.room}${u.floor ? ' (ชั้น ' + u.floor + ')' : ''}\n• ขนาด ${u.size} ตร.ม. (${u.type}${u.view ? ', วิว ' + u.view : ''})\n💰 ค่าเช่า ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน${u.notes ? '\n📝 ' + u.notes : ''}\n\nสนใจนัดดูห้องติดต่อ Staylow Agent`;
+  const text = customerText(u);
   if (navigator.share) { navigator.share({ text }).catch(() => copy(text)); }
   else copy(text);
 }
-function copy(text) {
-  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('คัดลอกข้อความแล้ว พร้อมวางใน LINE'));
-  else alert(text);
+function copy(text, silent) {
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => { if (!silent) toast('คัดลอกข้อความแล้ว พร้อมวางใน LINE'); }).catch(() => {});
+  else if (!silent) alert(text);
 }
 function contactOwner(id) {
   const u = units.find(x => x.id === id); if (!u) return;
