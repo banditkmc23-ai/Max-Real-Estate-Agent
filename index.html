@@ -4,45 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b2a4a">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f4f2ef">
 <meta name="apple-mobile-web-app-title" content="MAX Agent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>Staylow Property Manager</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: {
+  brick: { 300:'#e6a88c', 400:'#cf7a56', 500:'#b85c38', 600:'#a04d2c', 700:'#83401f' },
+  ink: '#1c1917',
+  slate: { 200:'#1c1917', 300:'#3f3733', 400:'#6b625a', 500:'#8a8078', 700:'#e4dfd9', 800:'#f1eeea', 900:'#ffffff', 950:'#f4f2ef' }
+} }, borderRadius: { xl: '14px', '2xl': '22px', '3xl': '28px' } } }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
-  body { font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:#f8fafc; -webkit-tap-highlight-color:transparent; }
-  .app { max-width:430px; margin:0 auto; min-height:100vh; min-height:100dvh; background:#090d16; display:flex; flex-direction:column; position:relative; }
+  body { font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#e9e6e1; color:#1c1917; -webkit-tap-highlight-color:transparent; }
+  .app { max-width:430px; margin:0 auto; min-height:100vh; min-height:100dvh; background:#f4f2ef; display:flex; flex-direction:column; position:relative; }
   .hide-scrollbar::-webkit-scrollbar { display:none; } .hide-scrollbar { scrollbar-width:none; }
-  .toast { position:fixed; left:50%; bottom:96px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; }
+  .toast { position:fixed; box-shadow:0 10px 30px rgba(0,0,0,.15); left:50%; bottom:96px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .sheet { transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
   .sheet.open { transform:translateY(0); }
   input, select, textarea { font-family:inherit; }
   .unit-row { transition: border-color .15s, background .15s; }
-  .unit-row.active { border-color:#10b981; background:rgba(16,185,129,.06); }
+  .unit-row.active { border-color:#b85c38; background:#fbf3ee; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-row { transition:none; } }
 </style>
 </head>
-<body class="bg-slate-950 flex justify-center min-h-screen">
+<body class="flex justify-center min-h-screen">
 
-<div class="app border-x border-slate-800">
+<div class="app">
 
   <!-- Header -->
-  <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-800/80">
+  <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.0</span></span></span>
-      <h1 class="text-lg font-bold text-white tracking-tight">Property Manager</h1>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.3</span></span></span>
+      <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
-    <button onclick="openSheet('add')" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 p-2.5 rounded-full transition-all shadow-lg shadow-emerald-500/20" aria-label="เพิ่มห้อง">
+    <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
       <i data-lucide="plus" class="w-5 h-5"></i>
     </button>
   </header>
 
-  <div id="updateBar" onclick="applyUpdate()" class="hidden bg-emerald-500 text-slate-950 text-xs font-semibold text-center py-2 cursor-pointer active:bg-emerald-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
+  <div id="updateBar" onclick="applyUpdate()" class="hidden bg-brick-500 text-white text-xs font-semibold text-center py-2 cursor-pointer active:bg-brick-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
   <!-- Main -->
   <main class="flex-1 overflow-y-auto p-4 pb-28 hide-scrollbar">
 
@@ -50,7 +57,7 @@
     <div class="relative mb-5">
       <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
       <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
-        class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all">
+        class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
     </div>
 
     <!-- Summary strip -->
@@ -74,8 +81,8 @@
   </main>
 
   <!-- Bottom nav -->
-  <nav class="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 p-2 px-4 pb-[max(8px,env(safe-area-inset-bottom))] flex justify-between items-center z-40">
-    <button onclick="setFilter('all')" class="flex flex-col items-center gap-1 text-emerald-400 p-1.5"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">Home</span></button>
+  <nav class="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/90 backdrop-blur-lg border-t border-slate-700 p-2 px-4 pb-[max(8px,env(safe-area-inset-bottom))] flex justify-between items-center z-40">
+    <button onclick="setFilter('all')" class="flex flex-col items-center gap-1 text-brick-600 p-1.5"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">Home</span></button>
     <button onclick="setFilter('AVAILABLE')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="building-2" class="w-5 h-5"></i><span class="text-[10px] font-medium">Available</span></button>
     <button onclick="showExpiring()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium">Expiring</span></button>
     <button onclick="openSheet('add')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="plus-square" class="w-5 h-5"></i><span class="text-[10px] font-medium">Add</span></button>
@@ -83,10 +90,10 @@
   </nav>
 
   <!-- Bottom sheet: add / edit -->
-  <div id="overlay" class="fixed inset-0 bg-black/60 z-50 hidden" onclick="closeSheet()"></div>
+  <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()"></div>
   <div id="sheet" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar">
     <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
-    <h2 id="sheetTitle" class="text-base font-bold text-white mb-4">เพิ่มห้อง</h2>
+    <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
     <input type="hidden" id="f_id">
     <div class="space-y-3 text-sm">
       <div class="grid grid-cols-2 gap-3">
@@ -112,52 +119,52 @@
       <label>รายละเอียดห้อง<textarea id="f_notes" rows="6" class="inp" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์"></textarea></label>
     </div>
     <div class="flex gap-2 mt-5">
-      <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-400 border border-rose-500/20 px-4 py-2.5 rounded-xl text-sm font-semibold">ลบ</button>
-      <button onclick="closeSheet()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-sm font-semibold">ยกเลิก</button>
-      <button onclick="saveUnit()" class="flex-1 bg-emerald-500 text-slate-950 py-2.5 rounded-xl text-sm font-semibold">บันทึก</button>
+      <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
+      <button onclick="closeSheet()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
+      <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
     </div>
   </div>
 
   <!-- Gallery sheet -->
-  <div id="galOverlay" class="fixed inset-0 bg-black/60 z-50 hidden" onclick="closeGallery()"></div>
+  <div id="galOverlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeGallery()"></div>
   <div id="gallery" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar">
     <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
     <div class="flex justify-between items-center mb-4">
-      <h2 id="galTitle" class="text-base font-bold text-white">รูปห้อง</h2>
+      <h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2>
       <button onclick="closeGallery()" class="text-slate-400 p-1" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="grid grid-cols-2 gap-2 mb-4">
-      <button onclick="pickPhotos('album')" class="bg-emerald-500 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
-      <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i>ถ่ายรูป</button>
+      <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
+      <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
     </div>
     <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1">
-      <span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-emerald-400"></i>ใส่ลายน้ำโลโก้ MAX ตอนนำเข้ารูป</span>
-      <input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-emerald-500">
+      <span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX ตอนนำเข้ารูป</span>
+      <input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]">
     </label>
     <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
     <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
-    <p id="galProgress" class="text-xs text-emerald-400 mb-2 hidden"></p>
+    <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
     <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
     <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้<br><span class="text-xs text-slate-500">เลือกรูปจากอัลบั้มในเครื่องเพื่อเริ่มต้น</span></div>
     <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
-      <button onclick="sharePhotos()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-emerald-400"></i>ส่งรูปทั้งหมด</button>
-      <button onclick="makeCollage()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-emerald-400"></i>สร้างภาพรวม</button>
+      <button onclick="sharePhotos()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปทั้งหมด</button>
+      <button onclick="makeCollage()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
       <p class="col-span-2 text-[11px] text-slate-500 text-center">ต้องการส่ง LINE แบบกริด: กด "ส่งรูปทั้งหมด" → Save Images → เลือกรูปใน LINE</p>
     </div>
   </div>
 
   <!-- Backup sheet -->
-  <div id="bkOverlay" class="fixed inset-0 bg-black/60 z-50 hidden" onclick="closeBackup()"></div>
+  <div id="bkOverlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeBackup()"></div>
   <div id="backup" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))]">
     <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
-    <h2 class="text-base font-bold text-white mb-1">สำรอง / กู้คืนข้อมูล</h2>
+    <h2 class="text-base font-bold text-ink mb-1">สำรอง / กู้คืนข้อมูล</h2>
     <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้องและรูปทั้งหมด ใช้ย้ายข้อมูลระหว่าง Safari กับแอปบนหน้าจอโฮม หรือย้ายไปเครื่องใหม่</p>
     <div class="space-y-2">
-      <button onclick="exportData()" class="w-full bg-emerald-500 active:scale-95 text-slate-950 font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
-      <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-xl flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i>กู้คืนจากไฟล์สำรอง</button>
+      <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
+      <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์สำรอง</button>
       <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
     </div>
-    <p id="bkProgress" class="text-xs text-emerald-400 mt-3 hidden"></p>
+    <p id="bkProgress" class="text-xs text-brick-600 mt-3 hidden"></p>
     <button onclick="closeBackup()" class="w-full mt-4 text-sm text-slate-400 py-2">ปิด</button>
   </div>
 
@@ -166,7 +173,7 @@
     <div class="flex justify-between items-center p-4 pt-[max(16px,env(safe-area-inset-top))] text-slate-300">
       <span id="lbCount" class="text-xs"></span>
       <div class="flex gap-4">
-        <button onclick="deleteCurrentPhoto()" class="text-rose-400" aria-label="ลบรูป"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+        <button onclick="deleteCurrentPhoto()" class="text-rose-600" aria-label="ลบรูป"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
         <button onclick="closeLightbox()" aria-label="ปิด"><i data-lucide="x" class="w-6 h-6"></i></button>
       </div>
     </div>
@@ -175,20 +182,20 @@
     </div>
     <div class="flex justify-between p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
       <button onclick="stepPhoto(-1)" class="text-slate-300 p-2"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-      <button onclick="setCover()" class="text-xs text-emerald-400 px-3 py-2 border border-emerald-500/30 rounded-lg">ตั้งเป็นรูปหน้าปก</button>
+      <button onclick="setCover()" class="text-xs text-brick-600 px-3 py-2 border border-brick-500/30 rounded-lg">ตั้งเป็นรูปหน้าปก</button>
       <button onclick="stepPhoto(1)" class="text-slate-300 p-2"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
     </div>
   </div>
 
-  <div id="toast" class="toast bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-xl z-[60] max-w-[360px] text-center"></div>
+  <div id="toast" class="toast bg-ink border border-ink text-white text-xs px-4 py-2.5 rounded-xl shadow-xl z-[60] max-w-[360px] text-center"></div>
 </div>
 
 <style>
-  .inp { display:block; width:100%; margin-top:4px; background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:9px 12px; font-size:14px; color:#e2e8f0; }
-  .inp:focus { outline:none; border-color:#10b981; }
-  label { color:#94a3b8; font-size:12px; }
-  .filter-btn { color:#94a3b8; border:1px solid transparent; }
-  .filter-btn.on { color:#34d399; background:rgba(16,185,129,.1); border-color:rgba(16,185,129,.25); }
+  .inp { display:block; width:100%; margin-top:4px; background:#fff; border:1px solid #e4dfd9; border-radius:12px; padding:10px 12px; font-size:14px; color:#1c1917; }
+  .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 3px rgba(184,92,56,.15); }
+  label { color:#6b625a; font-size:12px; }
+  .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; }
+  .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; }
 </style>
 
 <script>
@@ -210,17 +217,17 @@ function load() {
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 
 const statusMeta = {
-  AVAILABLE: { label:'AVAILABLE', th:'ว่าง', cls:'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', dot:'bg-emerald-400' },
-  OCCUPIED:  { label:'OCCUPIED',  th:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-400 border-rose-500/20', dot:'bg-rose-400' },
-  RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-amber-500/10 text-amber-400 border-amber-500/20', dot:'bg-amber-400' }
+  AVAILABLE: { label:'AVAILABLE', th:'ว่าง', cls:'bg-brick-500/10 text-brick-600 border-brick-500/20', dot:'bg-brick-500' },
+  OCCUPIED:  { label:'OCCUPIED',  th:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-600 border-rose-500/20', dot:'bg-rose-500' },
+  RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-sky-500/10 text-sky-600 border-sky-500/20', dot:'bg-sky-500' }
 };
-const EXPIRY_DAYS = 25;
+const EXPIRY_DAYS = 30;
 function statusOf(u) {
   const d = daysLeft(u.end);
   if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
     return d < 0
-      ? { label: 'EXPIRED', th: 'หมดสัญญาแล้ว', cls: 'bg-rose-500/10 text-rose-400 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
-      : { label: `EXPIRING · ${d} วัน`, th: 'ใกล้หมดสัญญา', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dot: 'bg-amber-400', short: `เหลือ ${d} วัน` };
+      ? { label: 'EXPIRED', th: 'หมดสัญญาแล้ว', cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
+      : { label: `EXPIRING · ${d} วัน`, th: 'ใกล้หมดสัญญา', cls: 'bg-amber-500/10 text-amber-700 border-amber-500/30', dot: 'bg-amber-400', short: `เหลือ ${d} วัน` };
   }
   return statusMeta[u.status];
 }
@@ -242,9 +249,9 @@ function render() {
   const cnt = s => units.filter(u => u.status === s).length;
   const expiring = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS && d >= 0; }).length;
   document.getElementById('summary').innerHTML = [
-    ['ว่าง', cnt('AVAILABLE'), 'text-emerald-400'],
-    ['มีผู้เช่า', cnt('OCCUPIED'), 'text-rose-400'],
-    ['สัญญาใกล้หมด', expiring, 'text-amber-400']
+    ['ว่าง', cnt('AVAILABLE'), 'text-brick-600'],
+    ['มีผู้เช่า', cnt('OCCUPIED'), 'text-rose-600'],
+    ['สัญญาใกล้หมด', expiring, 'text-amber-600']
   ].map(([l, v, c]) => `<div class="bg-slate-900 border border-slate-800/80 rounded-xl p-3 text-center"><p class="text-lg font-bold ${c}">${v}</p><p class="text-[10px] text-slate-500">${l}</p></div>`).join('');
 
   // filters
@@ -254,7 +261,7 @@ function render() {
   // selected card
   const u = units.find(x => x.id === selectedId) || list[0];
   if (u) selectedId = u.id;
-  document.getElementById('unitCard').innerHTML = u ? cardHTML(u) : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-emerald-400 font-semibold">+ เพิ่มห้องแรก</button></div>`;
+  document.getElementById('unitCard').innerHTML = u ? cardHTML(u) : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-brick-600 font-semibold">+ เพิ่มห้องแรก</button></div>`;
 
   // list
   document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
@@ -274,30 +281,30 @@ function cardHTML(u) {
   const m = statusOf(u);
   const d = daysLeft(u.end);
   const contractBadge = d === null ? '' : d < 0
-    ? `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
-    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
+    ? `<span class="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
+    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
   return `
-  <div class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-3 shadow-lg relative overflow-hidden">
-    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+  <div class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-3 shadow-[0_8px_30px_-12px_rgba(0,0,0,.15)] relative overflow-hidden">
+    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-brick-500/10 rounded-full blur-xl pointer-events-none"></div>
     <div id="coverStrip" onclick="openGallery('${u.id}')" class="-mx-5 -mt-5 mb-4 h-40 bg-slate-800 overflow-hidden ${photoCount[u.id] ? '' : 'hidden'}">
       <img id="coverImg" class="w-full h-full object-cover" alt="">
     </div>
     <div class="flex justify-between items-start mb-3">
-      <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-white">ห้อง ${esc(u.room)}</h2></div>
+      <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
       <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
         <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
     </div>
     <div class="grid grid-cols-3 gap-2 my-4 py-3 border-y border-slate-800/80 text-center">
-      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-emerald-400 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-brick-600 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ห้องนอน / ห้องน้ำ</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}</p></div>
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. · ชั้น ${esc(u.floor || '-')}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
     </div>
     ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
     <div class="grid grid-cols-2 gap-2.5">
-            <button onclick="shareListing('${u.id}')" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
-      <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-emerald-400"></i>ติดต่อเจ้าของ</button>
-      <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไขข้อมูล</button>
-      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
+            <button onclick="shareListing('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
+      <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>ติดต่อเจ้าของ</button>
+      <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไขข้อมูล</button>
+      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
     </div>
   </div>
   <div class="space-y-3 mb-5">
@@ -310,13 +317,12 @@ function cardHTML(u) {
     </div>
     <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4">
       <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i><p class="text-xs font-semibold text-slate-300">สัญญาเช่าปัจจุบัน</p></div>${contractBadge}
+        <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-xs font-semibold text-slate-300">สัญญาเช่าปัจจุบัน</p></div>${contractBadge}
       </div>
       <div class="text-xs text-slate-400 space-y-1 pl-6">
         <p>ผู้เช่า: <span class="text-slate-200 font-medium">${esc(u.tenant || 'ยังไม่มีผู้เช่า')}</span></p>
         <p>ระยะเวลา: ${fmtDate(u.start)} – ${fmtDate(u.end)}</p>
       </div>
-      ${u.end ? `<button onclick="addToCalendar('${u.id}')" class="mt-3 w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2 rounded-xl flex items-center justify-center gap-2"><i data-lucide="calendar-plus" class="w-4 h-4 text-emerald-400"></i>เพิ่มแจ้งเตือนหมดสัญญาลงปฏิทิน</button>` : ''}
     </div>
   </div>`;
 }
@@ -328,33 +334,6 @@ function showExpiring() {
   if (!soon.length) return toast('ไม่มีสัญญาที่ใกล้หมดใน ' + EXPIRY_DAYS + ' วัน');
   selectedId = soon[0].id; filter = 'all'; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
   toast(`มี ${soon.length} ห้องที่สัญญาใกล้หมด/หมดแล้ว`);
-}
-function addToCalendar(id) {
-  const u = units.find(x => x.id === id); if (!u || !u.end) return toast('ห้องนี้ยังไม่ได้ใส่วันหมดสัญญา');
-  const ymd = u.end.replace(/-/g, '');
-  const next = new Date(u.end + 'T00:00:00'); next.setDate(next.getDate() + 1);
-  const ymdNext = next.toISOString().slice(0, 10).replace(/-/g, '');
-  const title = `หมดสัญญาเช่า ${u.project} ห้อง ${u.room}${u.tenant ? ' (' + u.tenant + ')' : ''}`;
-  const desc = `ผู้เช่า: ${u.tenant || '-'}\nเจ้าของ: ${u.owner || '-'} ${u.ownerPhone || ''}\nค่าเช่า: ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน\nสัญญา: ${fmtDate(u.start)} – ${fmtDate(u.end)}`;
-  const alarm = (days, text) => `BEGIN:VALARM\nTRIGGER:-P${days}DT0H\nACTION:DISPLAY\nDESCRIPTION:${text}\nEND:VALARM`;
-  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MAX Agent//TH','BEGIN:VEVENT',
-    `UID:${u.id}-${ymd}@maxagent`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,
-    `DTSTART;VALUE=DATE:${ymd}`, `DTEND;VALUE=DATE:${ymdNext}`,
-    `SUMMARY:${title}`, `DESCRIPTION:${desc}`,
-    alarm(EXPIRY_DAYS, `เหลือ ${EXPIRY_DAYS} วัน: ${title}`), alarm(7, `เหลือ 7 วัน: ${title}`), alarm(0, title),
-    'END:VEVENT','END:VCALENDAR'].join('\n');
-  document._lastIcs = ics;
-  // Open the .ics directly so iOS shows the "Add to Calendar" preview (no share sheet)
-  const url = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-  const w = window.open(url, '_blank');
-  if (!w) location.href = url;
-  toast('กด "Add All" ในหน้าปฏิทินที่เปิดขึ้นมา');
-}
-function calendarFallback(id) {
-  const u = units.find(x => x.id === id); if (!u) return;
-  const blob = new Blob([document._lastIcs || ''], { type: 'text/calendar;charset=utf-8' });
-  const file = new File([blob], `contract-${u.room}.ics`, { type: 'text/calendar' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file] }).catch(() => {});
 }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
@@ -588,14 +567,14 @@ async function makeCollage() {
     if (logoImg) { const lh = 150, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, W - pad - lw, 40, lw, lh); textMax = W - pad * 2 - lw - 30; }
     const fit = (text, font) => { ctx.font = font; while (ctx.measureText(text).width > textMax && text.length > 3) text = text.slice(0, -2).trimEnd() + '…'; return text; };
     // 1) condo name
-    ctx.fillStyle = '#0b2a4a'; ctx.font = `bold 52px ${F}`;
+    ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${F}`;
     ctx.fillText(fit(u.project, `bold 52px ${F}`), pad, 96);
     // 2) bedrooms · bathrooms · area
     const specs = [bedLabel(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : ''].filter(Boolean).join('  ·  ');
-    ctx.fillStyle = '#334155'; ctx.font = `34px ${F}`;
+    ctx.fillStyle = '#6b6058'; ctx.font = `34px ${F}`;
     ctx.fillText(fit(specs, `34px ${F}`), pad, 152);
     // 3) rent
-    ctx.fillStyle = '#059669'; ctx.font = `bold 46px ${F}`;
+    ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${F}`;
     ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 212);
     // photos (center-crop to square)
     for (let i = 0; i < pics.length; i++) {
@@ -606,10 +585,10 @@ async function makeCollage() {
       ctx.drawImage(img, sx, sy, sz, sz, x, y, cell, cell); ctx.restore();
     }
     // footer
-    ctx.fillStyle = '#0b2a4a'; ctx.fillRect(0, H - footH, W, footH);
+    ctx.fillStyle = '#b85c38'; ctx.fillRect(0, H - footH, W, footH);
     ctx.fillStyle = '#ffffff'; ctx.font = `bold 30px ${F}`;
     ctx.fillText('MAX Real Estate Agent', pad, H - footH / 2 + 11);
-    if (galleryPhotos.length > 6) { ctx.textAlign = 'right'; ctx.fillStyle = '#cbd5e1'; ctx.font = `26px ${F}`; ctx.fillText(`+ อีก ${galleryPhotos.length - 6} รูป`, W - pad, H - footH / 2 + 10); ctx.textAlign = 'left'; }
+    if (galleryPhotos.length > 6) { ctx.textAlign = 'right'; ctx.fillStyle = '#f5d9cc'; ctx.font = `26px ${F}`; ctx.fillText(`+ อีก ${galleryPhotos.length - 6} รูป`, W - pad, H - footH / 2 + 10); ctx.textAlign = 'left'; }
     const blob = await toJpeg(c, 0.88);
     const file = new File([blob], `${u.project.replace(/\s+/g, '_')}_${u.room}_overview.jpg`, { type: 'image/jpeg' });
     prog.classList.add('hidden');
@@ -658,7 +637,7 @@ async function renderGallery() {
   grid.querySelectorAll('img').forEach(i => URL.revokeObjectURL(i.src));
   grid.innerHTML = galleryPhotos.map((p, i) => `<button onclick="openLightbox(${i})" class="relative aspect-square rounded-lg overflow-hidden bg-slate-800 active:scale-95 transition-transform">
     <img src="${URL.createObjectURL(p.thumb)}" class="w-full h-full object-cover" alt="">
-    ${p.cover ? '<span class="absolute top-1 left-1 bg-emerald-500 text-slate-950 text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}</button>`).join('');
+    ${p.cover ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}</button>`).join('');
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
@@ -717,7 +696,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.3';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
