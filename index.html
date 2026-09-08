@@ -41,7 +41,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.4</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.5</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -74,6 +74,7 @@ tailwind.config = { theme: { extend: { colors: {
           <button onclick="setFilter('all')" data-f="all" class="filter-btn px-2 py-1 rounded-lg">ทั้งหมด</button>
           <button onclick="setFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-2 py-1 rounded-lg">ว่าง</button>
           <button onclick="setFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-2 py-1 rounded-lg">มีผู้เช่า</button>
+          <button onclick="setFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-2 py-1 rounded-lg">ขาย</button>
         </div>
       </div>
       <div id="unitList" class="space-y-2"></div>
@@ -101,6 +102,8 @@ tailwind.config = { theme: { extend: { colors: {
         <label>เลขห้อง<input id="f_room" class="inp" placeholder="1203"></label>
         <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
         <label>ค่าเช่า (บาท/เดือน)<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
+        <label class="col-span-2 flex items-center gap-2 text-slate-300"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="w-4 h-4 accent-[#b85c38]"><span>ห้องนี้ปล่อยขายด้วย</span></label>
+        <label id="salePriceWrap" class="col-span-2 hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
         <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
         <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
         <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
@@ -207,7 +210,7 @@ const seed = [
   { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', tenant:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' }
 ];
 
-let units = load().map(u => ({ bath: '1', ownerLine: '', ...u }));
+let units = load().map(u => ({ bath: '1', ownerLine: '', salePrice: '', ...u }));
 let selectedId = units[0]?.id || null;
 let filter = 'all';
 
@@ -243,7 +246,7 @@ function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 
 function render() {
   const q = document.getElementById('search').value.trim().toLowerCase();
-  let list = units.filter(u => filter === 'all' || u.status === filter);
+  let list = units.filter(u => filter === 'all' || (filter === 'FOR_SALE' ? !!u.salePrice : u.status === filter));
   if (q) list = list.filter(u => [u.project, u.room, u.tenant, u.owner, u.notes].join(' ').toLowerCase().includes(q));
 
   // summary
@@ -270,7 +273,7 @@ function render() {
     return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
       <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
       <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
-      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
+      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
       <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
@@ -300,6 +303,7 @@ function cardHTML(u) {
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ห้องนอน / ห้องน้ำ</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}</p></div>
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. · ชั้น ${esc(u.floor || '-')}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
     </div>
+    ${u.salePrice ? `<div class="flex items-center justify-between bg-brick-500/8 border border-brick-500/20 rounded-xl px-3 py-2 mb-3"><span class="text-xs text-slate-400">ราคาขาย</span><span class="text-sm font-bold text-brick-600">${baht(u.salePrice)}</span></div>` : ''}
     ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
     <div class="grid grid-cols-2 gap-2.5">
             <button onclick="shareListing('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
@@ -350,12 +354,14 @@ function cycleStatus(id) {
 function customerText(u) {
   if (u.notes && u.notes.trim()) return u.notes.trim();
   toast('ห้องนี้ยังไม่มีรายละเอียดห้อง ส่งข้อมูลพื้นฐานแทน');
-  return [
-    `🏢 ให้เช่า ${u.project}`,
+  const lines = [
+    `🏢 ${u.salePrice ? 'ให้เช่า/ขาย' : 'ให้เช่า'} ${u.project}`,
     `• ห้อง ${u.room}${u.floor ? ' ชั้น ' + u.floor : ''}`,
     `• ${u.type}${u.bath ? ' ' + u.bath + ' Bath' : ''}${u.size ? ' ขนาด ' + u.size + ' ตร.ม.' : ''}${u.view ? ' วิว' + u.view : ''}`,
     `💰 ค่าเช่า ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน`
-  ].join('\n');
+  ];
+  if (u.salePrice) lines.push(`🏷️ ราคาขาย ${Number(u.salePrice).toLocaleString('th-TH')} บาท`);
+  return lines.join('\n');
 }
 function lineShare(id) {
   const u = units.find(x => x.id === id); if (!u) return;
@@ -395,19 +401,26 @@ function contactOwner(id) {
 }
 
 // sheet
-const F = ['project','room','floor','rent','size','type','bath','view','status','owner','ownerPhone','ownerLine','tenant','start','end','notes'];
+const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','owner','ownerPhone','ownerLine','tenant','start','end','notes'];
 function openSheet(mode, id) {
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
   document.getElementById('f_id').value = u ? u.id : '';
   F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
   document.getElementById('deleteBtn').classList.toggle('hidden', !u);
+  const hasSale = !!(u && u.salePrice);
+  document.getElementById('f_forSale').checked = hasSale;
+  toggleSalePrice(hasSale);
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('sheet').classList.add('open');
 }
 function closeSheet() {
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('sheet').classList.remove('open');
+}
+function toggleSalePrice(on) {
+  document.getElementById('salePriceWrap').classList.toggle('hidden', !on);
+  if (!on) document.getElementById('f_salePrice').value = '';
 }
 function saveUnit() {
   const id = document.getElementById('f_id').value;
@@ -714,7 +727,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.5';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
