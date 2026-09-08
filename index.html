@@ -34,7 +34,7 @@
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-800/80">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Staylow Agent</span>
+      <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v1.8</span></span></span>
       <h1 class="text-lg font-bold text-white tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 p-2.5 rounded-full transition-all shadow-lg shadow-emerald-500/20" aria-label="เพิ่มห้อง">
@@ -42,6 +42,7 @@
     </button>
   </header>
 
+  <div id="updateBar" onclick="applyUpdate()" class="hidden bg-emerald-500 text-slate-950 text-xs font-semibold text-center py-2 cursor-pointer active:bg-emerald-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
   <!-- Main -->
   <main class="flex-1 overflow-y-auto p-4 pb-28 hide-scrollbar">
 
@@ -213,6 +214,7 @@ const statusMeta = {
   OCCUPIED:  { label:'OCCUPIED',  th:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-400 border-rose-500/20', dot:'bg-rose-400' },
   RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-amber-500/10 text-amber-400 border-amber-500/20', dot:'bg-amber-400' }
 };
+const EXPIRY_DAYS = 25;
 const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
 const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
 function daysLeft(end) {
@@ -229,7 +231,7 @@ function render() {
 
   // summary
   const cnt = s => units.filter(u => u.status === s).length;
-  const expiring = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= 30 && d >= 0; }).length;
+  const expiring = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS && d >= 0; }).length;
   document.getElementById('summary').innerHTML = [
     ['ว่าง', cnt('AVAILABLE'), 'text-emerald-400'],
     ['มีผู้เช่า', cnt('OCCUPIED'), 'text-rose-400'],
@@ -264,7 +266,7 @@ function cardHTML(u) {
   const d = daysLeft(u.end);
   const contractBadge = d === null ? '' : d < 0
     ? `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
-    : `<span class="${d <= 30 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
+    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
   return `
   <div class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-3 shadow-lg relative overflow-hidden">
     <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
@@ -305,6 +307,7 @@ function cardHTML(u) {
         <p>ผู้เช่า: <span class="text-slate-200 font-medium">${esc(u.tenant || 'ยังไม่มีผู้เช่า')}</span></p>
         <p>ระยะเวลา: ${fmtDate(u.start)} – ${fmtDate(u.end)}</p>
       </div>
+      ${u.end ? `<button onclick="addToCalendar('${u.id}')" class="mt-3 w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2 rounded-xl flex items-center justify-center gap-2"><i data-lucide="calendar-plus" class="w-4 h-4 text-emerald-400"></i>เพิ่มแจ้งเตือนหมดสัญญาลงปฏิทิน</button>` : ''}
     </div>
   </div>`;
 }
@@ -312,10 +315,32 @@ function cardHTML(u) {
 function select(id) { selectedId = id; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function setFilter(f) { filter = f; render(); }
 function showExpiring() {
-  const soon = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= 30; }).sort((a,b) => daysLeft(a.end) - daysLeft(b.end));
-  if (!soon.length) return toast('ไม่มีสัญญาที่ใกล้หมดใน 30 วัน');
+  const soon = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS; }).sort((a,b) => daysLeft(a.end) - daysLeft(b.end));
+  if (!soon.length) return toast('ไม่มีสัญญาที่ใกล้หมดใน ' + EXPIRY_DAYS + ' วัน');
   selectedId = soon[0].id; filter = 'all'; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
   toast(`มี ${soon.length} ห้องที่สัญญาใกล้หมด/หมดแล้ว`);
+}
+function addToCalendar(id) {
+  const u = units.find(x => x.id === id); if (!u || !u.end) return toast('ห้องนี้ยังไม่ได้ใส่วันหมดสัญญา');
+  const ymd = u.end.replace(/-/g, '');
+  const next = new Date(u.end + 'T00:00:00'); next.setDate(next.getDate() + 1);
+  const ymdNext = next.toISOString().slice(0, 10).replace(/-/g, '');
+  const title = `หมดสัญญาเช่า ${u.project} ห้อง ${u.room}${u.tenant ? ' (' + u.tenant + ')' : ''}`;
+  const desc = `ผู้เช่า: ${u.tenant || '-'}\nเจ้าของ: ${u.owner || '-'} ${u.ownerPhone || ''}\nค่าเช่า: ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน\nสัญญา: ${fmtDate(u.start)} – ${fmtDate(u.end)}`;
+  const alarm = (days, text) => `BEGIN:VALARM\nTRIGGER:-P${days}DT0H\nACTION:DISPLAY\nDESCRIPTION:${text}\nEND:VALARM`;
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MAX Agent//TH','BEGIN:VEVENT',
+    `UID:${u.id}-${ymd}@maxagent`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`,
+    `DTSTART;VALUE=DATE:${ymd}`, `DTEND;VALUE=DATE:${ymdNext}`,
+    `SUMMARY:${title}`, `DESCRIPTION:${desc}`,
+    alarm(EXPIRY_DAYS, `เหลือ ${EXPIRY_DAYS} วัน: ${title}`), alarm(7, `เหลือ 7 วัน: ${title}`), alarm(0, title),
+    'END:VEVENT','END:VCALENDAR'].join('\n');
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const file = new File([blob], `contract-${u.room}.ics`, { type: 'text/calendar' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title }).then(() => toast('เลือก "Calendar" หรือเปิดไฟล์เพื่อเพิ่มลงปฏิทิน')).catch(() => {});
+  } else {
+    location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  }
 }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
@@ -676,6 +701,21 @@ function toast(msg) {
 }
 
 render();
+
+// ===== Update check =====
+const APP_VERSION = '1.8';
+async function checkUpdate() {
+  try {
+    const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) { document.getElementById('newVer').textContent = 'v' + m[1]; document.getElementById('updateBar').classList.remove('hidden'); }
+  } catch (e) {}
+}
+function applyUpdate() { location.replace(location.pathname + '?v=' + Date.now()); }
+if (location.search.startsWith('?v=')) history.replaceState(null, '', location.pathname);
+setTimeout(checkUpdate, 1500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 </script>
 </body>
 </html>
