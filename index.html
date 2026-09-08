@@ -32,7 +32,7 @@
 <div class="app border-x border-slate-800">
 
   <!-- Header -->
-  <header class="p-4 pt-6 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-800/80">
+  <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-800/80">
     <div>
       <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Staylow Agent</span>
       <h1 class="text-lg font-bold text-white tracking-tight">Property Manager</h1>
@@ -48,7 +48,7 @@
     <!-- Search -->
     <div class="relative mb-5">
       <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-      <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="render()"
+      <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
         class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all">
     </div>
 
@@ -78,7 +78,7 @@
     <button onclick="setFilter('AVAILABLE')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="building-2" class="w-5 h-5"></i><span class="text-[10px] font-medium">Available</span></button>
     <button onclick="showExpiring()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium">Expiring</span></button>
     <button onclick="openSheet('add')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="plus-square" class="w-5 h-5"></i><span class="text-[10px] font-medium">Add</span></button>
-    <button onclick="exportData()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="download" class="w-5 h-5"></i><span class="text-[10px] font-medium">Export</span></button>
+    <button onclick="openBackup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="database" class="w-5 h-5"></i><span class="text-[10px] font-medium">Backup</span></button>
   </nav>
 
   <!-- Bottom sheet: add / edit -->
@@ -94,7 +94,8 @@
         <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
         <label>ค่าเช่า (บาท/เดือน)<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
         <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
-        <label>รูปแบบ<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
+        <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
+        <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
         <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
         <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option></select></label>
       </div>
@@ -107,7 +108,7 @@
         <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
         <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp"></label>
       </div>
-      <label>โน้ต / ข้อความส่งลูกค้า<textarea id="f_notes" rows="6" class="inp" placeholder="ข้อความนี้จะถูกส่งให้ลูกค้าตรงๆ เวลากดแชร์หรือส่ง LINE"></textarea></label>
+      <label>รายละเอียดห้อง<textarea id="f_notes" rows="6" class="inp" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์"></textarea></label>
     </div>
     <div class="flex gap-2 mt-5">
       <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-400 border border-rose-500/20 px-4 py-2.5 rounded-xl text-sm font-semibold">ลบ</button>
@@ -128,14 +129,35 @@
       <button onclick="pickPhotos('album')" class="bg-emerald-500 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
       <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-xl flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i>ถ่ายรูป</button>
     </div>
+    <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1">
+      <span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-emerald-400"></i>ใส่ลายน้ำโลโก้ MAX ตอนนำเข้ารูป</span>
+      <input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-emerald-500">
+    </label>
     <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
     <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
     <p id="galProgress" class="text-xs text-emerald-400 mb-2 hidden"></p>
     <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
     <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้<br><span class="text-xs text-slate-500">เลือกรูปจากอัลบั้มในเครื่องเพื่อเริ่มต้น</span></div>
-    <div id="galActions" class="hidden flex gap-2 mt-4">
-      <button onclick="sharePhotos()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-emerald-400"></i>ส่งรูปทั้งหมดให้ลูกค้า</button>
+    <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
+      <button onclick="sharePhotos()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-emerald-400"></i>ส่งรูปทั้งหมด</button>
+      <button onclick="makeCollage()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-emerald-400"></i>สร้างภาพรวม</button>
+      <p class="col-span-2 text-[11px] text-slate-500 text-center">ต้องการส่ง LINE แบบกริด: กด "ส่งรูปทั้งหมด" → Save Images → เลือกรูปใน LINE</p>
     </div>
+  </div>
+
+  <!-- Backup sheet -->
+  <div id="bkOverlay" class="fixed inset-0 bg-black/60 z-50 hidden" onclick="closeBackup()"></div>
+  <div id="backup" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+    <h2 class="text-base font-bold text-white mb-1">สำรอง / กู้คืนข้อมูล</h2>
+    <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้องและรูปทั้งหมด ใช้ย้ายข้อมูลระหว่าง Safari กับแอปบนหน้าจอโฮม หรือย้ายไปเครื่องใหม่</p>
+    <div class="space-y-2">
+      <button onclick="exportData()" class="w-full bg-emerald-500 active:scale-95 text-slate-950 font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
+      <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-xl flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i>กู้คืนจากไฟล์สำรอง</button>
+      <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
+    </div>
+    <p id="bkProgress" class="text-xs text-emerald-400 mt-3 hidden"></p>
+    <button onclick="closeBackup()" class="w-full mt-4 text-sm text-slate-400 py-2">ปิด</button>
   </div>
 
   <!-- Lightbox -->
@@ -171,12 +193,12 @@
 <script>
 const KEY = 'staylow_units_v1';
 const seed = [
-  { id:'u1', project:'The Excel Sukhumvit 50', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', tenant:'', start:'', end:'', notes:'' },
-  { id:'u2', project:'The Base Park West', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', tenant:'คุณอนันต์', start:'2025-10-01', end:'2026-09-30', notes:'' },
-  { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', tenant:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' }
+  { id:'u1', project:'The Excel Sukhumvit 50', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', tenant:'', start:'', end:'', notes:'' },
+  { id:'u2', project:'The Base Park West', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', tenant:'คุณอนันต์', start:'2025-10-01', end:'2026-09-30', notes:'' },
+  { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', tenant:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' }
 ];
 
-let units = load();
+let units = load().map(u => ({ bath: '1', ...u }));
 let selectedId = units[0]?.id || null;
 let filter = 'all';
 
@@ -229,7 +251,7 @@ function render() {
     return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
       <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
       <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
-      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
+      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0">${m.label}</span>
       <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
@@ -257,12 +279,11 @@ function cardHTML(u) {
     <div class="grid grid-cols-3 gap-2 my-4 py-3 border-y border-slate-800/80 text-center">
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-emerald-400 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. (ชั้น ${esc(u.floor || '-')})</p></div>
-      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">รูปแบบ / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">รูปแบบ / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
     </div>
     ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
     <div class="grid grid-cols-2 gap-2.5">
-      <button onclick="lineShare('${u.id}')" class="col-span-2 bg-[#06C755] hover:bg-[#05b34c] active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#06C755]/20"><i data-lucide="message-circle" class="w-4 h-4"></i>ส่งข้อมูลห้องให้ลูกค้าทาง LINE</button>
-      <button onclick="shareListing('${u.id}')" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
+            <button onclick="shareListing('${u.id}')" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/10"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
       <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-emerald-400"></i>ติดต่อเจ้าของ</button>
       <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไขข้อมูล</button>
       <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
@@ -305,11 +326,11 @@ function cycleStatus(id) {
 
 function customerText(u) {
   if (u.notes && u.notes.trim()) return u.notes.trim();
-  toast('ห้องนี้ยังไม่มีข้อความในช่องโน้ต ส่งข้อมูลพื้นฐานแทน');
+  toast('ห้องนี้ยังไม่มีรายละเอียดห้อง ส่งข้อมูลพื้นฐานแทน');
   return [
     `🏢 ให้เช่า ${u.project}`,
     `• ห้อง ${u.room}${u.floor ? ' ชั้น ' + u.floor : ''}`,
-    `• ${u.type}${u.size ? ' ขนาด ' + u.size + ' ตร.ม.' : ''}${u.view ? ' วิว' + u.view : ''}`,
+    `• ${u.type}${u.bath ? ' ' + u.bath + ' Bath' : ''}${u.size ? ' ขนาด ' + u.size + ' ตร.ม.' : ''}${u.view ? ' วิว' + u.view : ''}`,
     `💰 ค่าเช่า ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน`
   ].join('\n');
 }
@@ -338,12 +359,12 @@ function contactOwner(id) {
 }
 
 // sheet
-const F = ['project','room','floor','rent','size','type','view','status','owner','ownerPhone','tenant','start','end','notes'];
+const F = ['project','room','floor','rent','size','type','bath','view','status','owner','ownerPhone','tenant','start','end','notes'];
 function openSheet(mode, id) {
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
   document.getElementById('f_id').value = u ? u.id : '';
-  F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'status' ? 'AVAILABLE' : ''));
+  F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
   document.getElementById('deleteBtn').classList.toggle('hidden', !u);
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('sheet').classList.add('open');
@@ -370,10 +391,54 @@ function deleteUnit() {
   deleteUnitPhotos(id);
   persist(); closeSheet(); render(); toast('ลบห้องแล้ว');
 }
-function exportData() {
-  const blob = new Blob([JSON.stringify(units, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'staylow-units.json'; a.click(); toast('ดาวน์โหลดข้อมูลสำรองแล้ว');
+function openBackup() { document.getElementById('bkOverlay').classList.remove('hidden'); document.getElementById('backup').classList.add('open'); lucide.createIcons(); }
+function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); }
+const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(b); });
+const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type }); };
+async function exportData() {
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังรวบรวมรูป...';
+  const photos = [];
+  if (db) {
+    const all = await req(tx('readonly').getAll());
+    for (const p of all) photos.push({ id: p.id, unitId: p.unitId, ts: p.ts, cover: !!p.cover, full: await blobToB64(p.full), thumb: await blobToB64(p.thumb) });
+  }
+  const payload = { app: 'staylow', version: 1, exportedAt: new Date().toISOString(), units, photos };
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  const name = 'staylow-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  const file = new File([blob], name, { type: 'application/json' });
+  prog.classList.add('hidden');
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Staylow backup' }); toast('สำรองข้อมูลแล้ว (เลือก Save to Files เพื่อเก็บไว้)'); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  toast(`สำรองข้อมูลแล้ว ${units.length} ห้อง ${photos.length} รูป`);
+}
+async function importData(file) {
+  if (!file) return;
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังอ่านไฟล์...';
+  try {
+    const data = JSON.parse(await file.text());
+    const inUnits = Array.isArray(data) ? data : (data.units || []);
+    const inPhotos = Array.isArray(data) ? [] : (data.photos || []);
+    if (!inUnits.length) throw new Error('ไม่พบข้อมูลห้องในไฟล์');
+    let added = 0, updated = 0;
+    inUnits.forEach(u => { const i = units.findIndex(x => x.id === u.id); if (i >= 0) { units[i] = u; updated++; } else { units.push(u); added++; } });
+    persist();
+    let pAdded = 0;
+    if (db && inPhotos.length) {
+      const existing = new Set((await req(tx('readonly').getAllKeys())));
+      for (let i = 0; i < inPhotos.length; i++) {
+        const p = inPhotos[i]; if (existing.has(p.id)) continue;
+        prog.textContent = `กำลังกู้คืนรูป ${i + 1}/${inPhotos.length}...`;
+        await req(tx('readwrite').put({ id: p.id, unitId: p.unitId, ts: p.ts, cover: p.cover, full: b64ToBlob(p.full, 'image/jpeg'), thumb: b64ToBlob(p.thumb, 'image/jpeg') }));
+        pAdded++;
+      }
+      await refreshCounts();
+    }
+    selectedId = units[0]?.id || null; render(); closeBackup();
+    toast(`กู้คืนแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง รูป ${pAdded} รูป`);
+  } catch (e) { toast('กู้คืนไม่สำเร็จ: ' + e.message); }
+  prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
 }
 
 // ===== Photos (IndexedDB) =====
@@ -415,20 +480,95 @@ async function deleteUnitPhotos(unitId) {
   await refreshCounts();
 }
 
-// compress: full ≤1600px JPEG for sharing, thumb ≤400px for grid
-function compress(file, max, q) {
+// ===== Watermark =====
+const WM_KEY = 'staylow_wm';
+let wmOn = (() => { try { return localStorage.getItem(WM_KEY) !== '0'; } catch (e) { return true; } })();
+let logoImg = null, logoTried = false;
+function setWm(v) { wmOn = v; try { localStorage.setItem(WM_KEY, v ? '1' : '0'); } catch (e) {} toast(v ? 'จะใส่ลายน้ำโลโก้ในรูปที่นำเข้าใหม่' : 'ปิดลายน้ำแล้ว'); }
+function loadLogo() {
+  if (logoTried) return Promise.resolve(logoImg);
+  logoTried = true;
+  return new Promise(res => { const im = new Image(); im.onload = () => { logoImg = im; res(im); }; im.onerror = () => res(null); im.src = 'logo.png'; });
+}
+function drawWatermark(ctx, w, h) {
+  if (!logoImg) return;
+  const lw = Math.round(w * 0.16), lh = Math.round(lw * logoImg.height / logoImg.width), pad = Math.round(w * 0.03);
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.shadowColor = 'rgba(255,255,255,0.9)'; ctx.shadowBlur = Math.round(lw * 0.08);
+  ctx.drawImage(logoImg, w - lw - pad, pad, lw, lh);
+  ctx.restore();
+}
+
+// decode once, output full ≤1600px (optionally watermarked) + thumb ≤400px
+function decodeImage(file) {
   return new Promise((res, rej) => {
     const img = new Image(); const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const r = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      c.toBlob(b => b ? res(b) : rej(new Error('encode failed')), 'image/jpeg', q);
-    };
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('อ่านรูปไม่ได้')); };
     img.src = url;
   });
+}
+function toJpeg(c, q) { return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('encode failed')), 'image/jpeg', q)); }
+function scaleCanvas(img, max) {
+  const r = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+async function processPhoto(file) {
+  const img = await decodeImage(file);
+  const fullC = scaleCanvas(img, 1600);
+  if (wmOn) { await loadLogo(); drawWatermark(fullC.getContext('2d'), fullC.width, fullC.height); }
+  const thumbC = document.createElement('canvas');
+  const tr = Math.min(1, 400 / Math.max(fullC.width, fullC.height));
+  thumbC.width = Math.round(fullC.width * tr); thumbC.height = Math.round(fullC.height * tr);
+  thumbC.getContext('2d').drawImage(fullC, 0, 0, thumbC.width, thumbC.height);
+  return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)];
+}
+
+// ===== Collage: one shareable overview image =====
+async function makeCollage() {
+  const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
+  const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
+  try {
+    await loadLogo();
+    const pics = galleryPhotos.slice(0, 6);
+    const W = 1080, cols = 2, gap = 12, headH = 170, footH = 120;
+    const cell = (W - gap * (cols + 1)) / cols;
+    const rows = Math.ceil(pics.length / cols);
+    const H = headH + rows * (cell + gap) + footH;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    // header
+    if (logoImg) { const lh = 110, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, gap * 2, 30, lw, lh); }
+    ctx.fillStyle = '#0b2a4a'; ctx.textAlign = 'right';
+    ctx.font = 'bold 40px Inter, "Noto Sans Thai", sans-serif'; ctx.fillText(u.project, W - gap * 2, 75);
+    ctx.font = '30px Inter, "Noto Sans Thai", sans-serif'; ctx.fillStyle = '#334155';
+    ctx.fillText(`ห้อง ${u.room}${u.floor ? ' · ชั้น ' + u.floor : ''} · ${u.type}${u.bath ? ' ' + u.bath + ' Bath' : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}`, W - gap * 2, 125);
+    ctx.textAlign = 'left';
+    // photos (center-crop to square)
+    for (let i = 0; i < pics.length; i++) {
+      const img = await decodeImage(pics[i].full);
+      const x = gap + (i % cols) * (cell + gap), y = headH + Math.floor(i / cols) * (cell + gap);
+      const s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+      ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cell, cell, 18); ctx.clip();
+      ctx.drawImage(img, sx, sy, s, s, x, y, cell, cell); ctx.restore();
+    }
+    // footer
+    ctx.fillStyle = '#0b2a4a'; ctx.fillRect(0, H - footH, W, footH);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 44px Inter, "Noto Sans Thai", sans-serif';
+    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, gap * 2, H - footH / 2 + 16);
+    ctx.textAlign = 'right'; ctx.font = '28px Inter, "Noto Sans Thai", sans-serif'; ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(galleryPhotos.length > 6 ? `+ อีก ${galleryPhotos.length - 6} รูป · MAX Real Estate Agent` : 'MAX Real Estate Agent', W - gap * 2, H - footH / 2 + 12);
+    const blob = await toJpeg(c, 0.88);
+    const file = new File([blob], `${u.project.replace(/\s+/g, '_')}_${u.room}_overview.jpg`, { type: 'image/jpeg' });
+    prog.classList.add('hidden');
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); }
+    } else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); }
+  } catch (e) { prog.classList.add('hidden'); toast('สร้างภาพรวมไม่สำเร็จ: ' + e.message); }
 }
 
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
@@ -440,7 +580,7 @@ async function importPhotos(files) {
   for (let i = 0; i < files.length; i++) {
     prog.textContent = `กำลังบันทึกรูป ${i + 1}/${files.length}...`;
     try {
-      const [full, thumb] = await Promise.all([compress(files[i], 1600, 0.82), compress(files[i], 400, 0.7)]);
+      const [full, thumb] = await processPhoto(files[i]);
       await req(tx('readwrite').put({ id: 'p' + Date.now() + '_' + i, unitId: galleryUnitId, full, thumb, ts: Date.now() + i, cover: false }));
       ok++;
     } catch (e) { console.error(e); }
@@ -455,6 +595,7 @@ async function openGallery(unitId) {
   galleryUnitId = unitId;
   const u = units.find(x => x.id === unitId);
   document.getElementById('galTitle').textContent = `รูปห้อง ${u ? u.room + ' · ' + u.project : ''}`;
+  document.getElementById('wmToggle').checked = wmOn;
   await renderGallery();
   document.getElementById('galOverlay').classList.remove('hidden');
   document.getElementById('gallery').classList.add('open');
