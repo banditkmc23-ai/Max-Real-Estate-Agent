@@ -278,8 +278,8 @@ function cardHTML(u) {
     </div>
     <div class="grid grid-cols-3 gap-2 my-4 py-3 border-y border-slate-800/80 text-center">
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-emerald-400 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
-      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. (ชั้น ${esc(u.floor || '-')})</p></div>
-      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">รูปแบบ / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ห้องนอน / ห้องน้ำ</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}</p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. · ชั้น ${esc(u.floor || '-')}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
     </div>
     ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
     <div class="grid grid-cols-2 gap-2.5">
@@ -528,40 +528,49 @@ async function processPhoto(file) {
 }
 
 // ===== Collage: one shareable overview image =====
+function bedLabel(t) { if (!t) return ''; if (/studio/i.test(t)) return 'สตูดิโอ'; if (/duplex/i.test(t)) return 'ดูเพล็กซ์'; const n = parseInt(t); return n ? `${n} ห้องนอน` : t; }
 async function makeCollage() {
   const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
   try {
     await loadLogo();
     const pics = galleryPhotos.slice(0, 6);
-    const W = 1080, cols = 2, gap = 12, headH = 170, footH = 120;
-    const cell = (W - gap * (cols + 1)) / cols;
+    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 250, footH = 90;
+    const cell = (W - pad * 2 - gap * (cols - 1)) / cols;
     const rows = Math.ceil(pics.length / cols);
-    const H = headH + rows * (cell + gap) + footH;
+    const H = headH + rows * cell + (rows - 1) * gap + pad + footH;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const ctx = c.getContext('2d');
+    const F = 'Inter, "Noto Sans Thai", -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
-    // header
-    if (logoImg) { const lh = 110, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, gap * 2, 30, lw, lh); }
-    ctx.fillStyle = '#0b2a4a'; ctx.textAlign = 'right';
-    ctx.font = 'bold 40px Inter, "Noto Sans Thai", sans-serif'; ctx.fillText(u.project, W - gap * 2, 75);
-    ctx.font = '30px Inter, "Noto Sans Thai", sans-serif'; ctx.fillStyle = '#334155';
-    ctx.fillText(`ห้อง ${u.room}${u.floor ? ' · ชั้น ' + u.floor : ''} · ${u.type}${u.bath ? ' ' + u.bath + ' Bath' : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}`, W - gap * 2, 125);
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    // logo (right side of header)
+    let textMax = W - pad * 2;
+    if (logoImg) { const lh = 150, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, W - pad - lw, 40, lw, lh); textMax = W - pad * 2 - lw - 30; }
+    const fit = (text, font) => { ctx.font = font; while (ctx.measureText(text).width > textMax && text.length > 3) text = text.slice(0, -2).trimEnd() + '…'; return text; };
+    // 1) condo name
+    ctx.fillStyle = '#0b2a4a'; ctx.font = `bold 52px ${F}`;
+    ctx.fillText(fit(u.project, `bold 52px ${F}`), pad, 96);
+    // 2) bedrooms · bathrooms · area
+    const specs = [bedLabel(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : ''].filter(Boolean).join('  ·  ');
+    ctx.fillStyle = '#334155'; ctx.font = `34px ${F}`;
+    ctx.fillText(fit(specs, `34px ${F}`), pad, 152);
+    // 3) rent
+    ctx.fillStyle = '#059669'; ctx.font = `bold 46px ${F}`;
+    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 212);
     // photos (center-crop to square)
     for (let i = 0; i < pics.length; i++) {
       const img = await decodeImage(pics[i].full);
-      const x = gap + (i % cols) * (cell + gap), y = headH + Math.floor(i / cols) * (cell + gap);
-      const s = Math.min(img.width, img.height), sx = (img.width - s) / 2, sy = (img.height - s) / 2;
-      ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cell, cell, 18); ctx.clip();
-      ctx.drawImage(img, sx, sy, s, s, x, y, cell, cell); ctx.restore();
+      const x = pad + (i % cols) * (cell + gap), y = headH + Math.floor(i / cols) * (cell + gap);
+      const sz = Math.min(img.width, img.height), sx = (img.width - sz) / 2, sy = (img.height - sz) / 2;
+      ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cell, cell, 20); ctx.clip();
+      ctx.drawImage(img, sx, sy, sz, sz, x, y, cell, cell); ctx.restore();
     }
     // footer
     ctx.fillStyle = '#0b2a4a'; ctx.fillRect(0, H - footH, W, footH);
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 44px Inter, "Noto Sans Thai", sans-serif';
-    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, gap * 2, H - footH / 2 + 16);
-    ctx.textAlign = 'right'; ctx.font = '28px Inter, "Noto Sans Thai", sans-serif'; ctx.fillStyle = '#cbd5e1';
-    ctx.fillText(galleryPhotos.length > 6 ? `+ อีก ${galleryPhotos.length - 6} รูป · MAX Real Estate Agent` : 'MAX Real Estate Agent', W - gap * 2, H - footH / 2 + 12);
+    ctx.fillStyle = '#ffffff'; ctx.font = `bold 30px ${F}`;
+    ctx.fillText('MAX Real Estate Agent', pad, H - footH / 2 + 11);
+    if (galleryPhotos.length > 6) { ctx.textAlign = 'right'; ctx.fillStyle = '#cbd5e1'; ctx.font = `26px ${F}`; ctx.fillText(`+ อีก ${galleryPhotos.length - 6} รูป`, W - pad, H - footH / 2 + 10); ctx.textAlign = 'left'; }
     const blob = await toJpeg(c, 0.88);
     const file = new File([blob], `${u.project.replace(/\s+/g, '_')}_${u.room}_overview.jpg`, { type: 'image/jpeg' });
     prog.classList.add('hidden');
