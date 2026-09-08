@@ -20,6 +20,7 @@ tailwind.config = { theme: { extend: { colors: {
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   body { font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#e9e6e1; color:#1c1917; -webkit-tap-highlight-color:transparent; }
   .app { max-width:430px; margin:0 auto; min-height:100vh; min-height:100dvh; background:#f4f2ef; display:flex; flex-direction:column; position:relative; }
@@ -41,7 +42,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.0</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.2</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -170,6 +171,11 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
       <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์สำรอง</button>
       <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
+    </div>
+    <div class="border-t border-slate-800 mt-4 pt-4">
+      <p class="text-xs text-slate-400 mb-3">นำเข้าห้องหลายรายการพร้อมกันจากไฟล์ Excel แบบฟอร์ม (โครงการ+เลขห้องซ้ำกับที่มีอยู่จะอัปเดตทับ ไม่ซ้ำจะเพิ่มใหม่)</p>
+      <button onclick="document.getElementById('xlFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-brick-600"></i>นำเข้าจาก Excel</button>
+      <input type="file" id="xlFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(this.files[0])">
     </div>
     <p id="bkProgress" class="text-xs text-brick-600 mt-3 hidden"></p>
     <button onclick="closeBackup()" class="w-full mt-4 text-sm text-slate-400 py-2">ปิด</button>
@@ -516,6 +522,65 @@ async function importData(file) {
   prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
 }
 
+// ===== Bulk import from Excel template =====
+function excelCellToDate(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+  return s;
+}
+const VALID_STATUS = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'];
+async function importExcel(file) {
+  if (!file) return;
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังอ่านไฟล์ Excel...';
+  try {
+    if (typeof XLSX === 'undefined') throw new Error('โหลดตัวอ่าน Excel ไม่สำเร็จ ลองใหม่อีกครั้งตอนต่อเน็ต');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheetName = wb.SheetNames.find(n => n.includes('รายการ')) || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+    if (rows.length < 2) throw new Error('ไม่พบแถวข้อมูลในไฟล์');
+    let added = 0, updated = 0, skipped = 0;
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const project = String(row[0] || '').trim(), room = String(row[1] || '').trim();
+      if (!project && !room) continue; // blank row
+      if (project === 'The Excel Sukhumvit 50' && room === '1203') continue; // template example row
+      const rent = Number(String(row[3] || '').replace(/[, ]/g, ''));
+      const bed = String(row[5] || '').trim(), bath = String(row[6] || '1').trim();
+      if (!project || !room || !rent || !bed) { skipped++; continue; }
+      let status = String(row[9] || 'AVAILABLE').trim().toUpperCase();
+      if (!VALID_STATUS.includes(status)) status = 'AVAILABLE';
+      const salePriceRaw = String(row[4] || '').replace(/[, ]/g, '');
+      const data = {
+        project, room,
+        floor: String(row[2] || '').trim(),
+        rent, salePrice: salePriceRaw ? Number(salePriceRaw) : '',
+        type: bed, bath,
+        size: String(row[7] || '').trim(),
+        view: String(row[8] || '').trim(),
+        status,
+        owner: String(row[10] || '').trim(),
+        ownerPhone: String(row[11] || '').trim(),
+        ownerLine: String(row[12] || '').trim(),
+        tenant: String(row[13] || '').trim(),
+        start: excelCellToDate(row[14]),
+        end: excelCellToDate(row[15]),
+        notes: String(row[16] || '').trim(),
+      };
+      const roomKnown = room && room !== '-' && room !== '–' && room.toLowerCase() !== 'n/a';
+      const i = roomKnown ? units.findIndex(u => (u.project || '').trim().toLowerCase() === project.toLowerCase() && (u.room || '').trim().toLowerCase() === room.toLowerCase()) : -1;
+      if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; } else { units.push({ id: 'u' + Date.now() + '_' + r, ...data }); added++; }
+    }
+    persist();
+    selectedId = units[0]?.id || null; render(); closeBackup();
+    toast(`นำเข้าแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง${skipped ? ` · ข้าม ${skipped} แถว (ข้อมูลไม่ครบ)` : ''}`);
+  } catch (e) { toast('นำเข้าไม่สำเร็จ: ' + e.message); }
+  prog.classList.add('hidden'); document.getElementById('xlFile').value = '';
+}
+
 // ===== Photos (IndexedDB) =====
 const photoCount = {};
 let db;
@@ -754,7 +819,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.2';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
