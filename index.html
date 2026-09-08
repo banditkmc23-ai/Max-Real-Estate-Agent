@@ -98,8 +98,9 @@ tailwind.config = { theme: { extend: { colors: {
     <input type="hidden" id="f_id">
     <div class="space-y-3 text-sm">
       <div class="grid grid-cols-2 gap-3">
-        <label class="col-span-2">โครงการ<input id="f_project" list="projectList" autocomplete="off" class="inp" placeholder="เช่น The Excel Sukhumvit 50"></label>
-        <datalist id="projectList"></datalist>
+        <label class="col-span-2 relative">โครงการ<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
+          <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto hide-scrollbar"></div>
+        </label>
         <label>เลขห้อง<input id="f_room" class="inp" placeholder="1203"></label>
         <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
         <label>ค่าเช่า (บาท/เดือน)<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
@@ -403,16 +404,28 @@ function contactOwner(id) {
 
 // sheet
 const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','owner','ownerPhone','ownerLine','tenant','start','end','notes'];
-function refreshProjectList() {
-  const dl = document.getElementById('projectList'); if (!dl) return;
-  const names = [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
-  dl.innerHTML = names.map(n => `<option value="${esc(n)}"></option>`).join('');
+function allProjectNames() {
+  return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
 }
+function showProjectSuggest() {
+  const input = document.getElementById('f_project'), box = document.getElementById('projectSuggest');
+  const q = input.value.trim().toLowerCase();
+  const names = allProjectNames().filter(n => !q || n.toLowerCase().includes(q));
+  if (!names.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = names.map(n => `<button type="button" onmousedown="event.preventDefault()" onclick="pickProject('${n.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2.5 text-sm text-slate-200 hover:bg-brick-500/10 active:bg-brick-500/15 border-b border-slate-800 last:border-0">${esc(n)}</button>`).join('');
+  box.classList.remove('hidden');
+}
+function pickProject(name) {
+  document.getElementById('f_project').value = name;
+  document.getElementById('projectSuggest').classList.add('hidden');
+}
+function hideProjectSuggest() { const b = document.getElementById('projectSuggest'); if (b) b.classList.add('hidden'); }
+document.addEventListener('click', e => { if (!e.target.closest('#f_project') && !e.target.closest('#projectSuggest')) hideProjectSuggest(); });
 function openSheet(mode, id) {
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
   document.getElementById('f_id').value = u ? u.id : '';
-  refreshProjectList();
+  hideProjectSuggest();
   F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
   document.getElementById('deleteBtn').classList.toggle('hidden', !u);
   const hasSale = !!(u && u.salePrice);
@@ -427,6 +440,7 @@ function openSheet(mode, id) {
 function closeSheet() {
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('sheet').classList.remove('open');
+  hideProjectSuggest();
 }
 function toggleSalePrice(on) {
   document.getElementById('salePriceWrap').classList.toggle('hidden', !on);
