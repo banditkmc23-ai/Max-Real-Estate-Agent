@@ -34,7 +34,7 @@
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-800/80">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v1.8</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-emerald-400 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.0</span></span></span>
       <h1 class="text-lg font-bold text-white tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 p-2.5 rounded-full transition-all shadow-lg shadow-emerald-500/20" aria-label="เพิ่มห้อง">
@@ -215,6 +215,15 @@ const statusMeta = {
   RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-amber-500/10 text-amber-400 border-amber-500/20', dot:'bg-amber-400' }
 };
 const EXPIRY_DAYS = 25;
+function statusOf(u) {
+  const d = daysLeft(u.end);
+  if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
+    return d < 0
+      ? { label: 'EXPIRED', th: 'หมดสัญญาแล้ว', cls: 'bg-rose-500/10 text-rose-400 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
+      : { label: `EXPIRING · ${d} วัน`, th: 'ใกล้หมดสัญญา', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dot: 'bg-amber-400', short: `เหลือ ${d} วัน` };
+  }
+  return statusMeta[u.status];
+}
 const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
 const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
 function daysLeft(end) {
@@ -249,12 +258,12 @@ function render() {
 
   // list
   document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
-    const m = statusMeta[x.status];
+    const m = statusOf(x);
     return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
       <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
       <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
       <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
-      <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0">${m.label}</span>
+      <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
       <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
 
@@ -262,7 +271,7 @@ function render() {
 }
 
 function cardHTML(u) {
-  const m = statusMeta[u.status];
+  const m = statusOf(u);
   const d = daysLeft(u.end);
   const contractBadge = d === null ? '' : d < 0
     ? `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
@@ -334,13 +343,18 @@ function addToCalendar(id) {
     `SUMMARY:${title}`, `DESCRIPTION:${desc}`,
     alarm(EXPIRY_DAYS, `เหลือ ${EXPIRY_DAYS} วัน: ${title}`), alarm(7, `เหลือ 7 วัน: ${title}`), alarm(0, title),
     'END:VEVENT','END:VCALENDAR'].join('\n');
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  document._lastIcs = ics;
+  // Open the .ics directly so iOS shows the "Add to Calendar" preview (no share sheet)
+  const url = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  const w = window.open(url, '_blank');
+  if (!w) location.href = url;
+  toast('กด "Add All" ในหน้าปฏิทินที่เปิดขึ้นมา');
+}
+function calendarFallback(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const blob = new Blob([document._lastIcs || ''], { type: 'text/calendar;charset=utf-8' });
   const file = new File([blob], `contract-${u.room}.ics`, { type: 'text/calendar' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title }).then(() => toast('เลือก "Calendar" หรือเปิดไฟล์เพื่อเพิ่มลงปฏิทิน')).catch(() => {});
-  } else {
-    location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-  }
+  if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file] }).catch(() => {});
 }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
@@ -703,7 +717,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '1.8';
+const APP_VERSION = '2.0';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
