@@ -41,7 +41,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v2.9</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.0</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -74,6 +74,7 @@ tailwind.config = { theme: { extend: { colors: {
           <button onclick="setFilter('all')" data-f="all" class="filter-btn px-2 py-1 rounded-lg">ทั้งหมด</button>
           <button onclick="setFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-2 py-1 rounded-lg">ว่าง</button>
           <button onclick="setFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-2 py-1 rounded-lg">มีผู้เช่า</button>
+          <button onclick="setFilter('PENDING')" data-f="PENDING" class="filter-btn px-2 py-1 rounded-lg">รอตรวจสอบ</button>
           <button onclick="setFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-2 py-1 rounded-lg">ขาย</button>
         </div>
       </div>
@@ -110,7 +111,7 @@ tailwind.config = { theme: { extend: { colors: {
         <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
         <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
         <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
-        <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option></select></label>
+        <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option><option value="PENDING">รอตรวจสอบ (PENDING)</option></select></label>
       </div>
       <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
         <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
@@ -225,7 +226,8 @@ function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } c
 const statusMeta = {
   AVAILABLE: { label:'AVAILABLE', th:'ว่าง', cls:'bg-brick-500/10 text-brick-600 border-brick-500/20', dot:'bg-brick-500' },
   OCCUPIED:  { label:'OCCUPIED',  th:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-600 border-rose-500/20', dot:'bg-rose-500' },
-  RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-sky-500/10 text-sky-600 border-sky-500/20', dot:'bg-sky-500' }
+  RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-sky-500/10 text-sky-600 border-sky-500/20', dot:'bg-sky-500' },
+  PENDING:   { label:'PENDING',   th:'รอตรวจสอบ', cls:'bg-slate-500/10 text-slate-500 border-slate-400/30', dot:'bg-slate-400' }
 };
 const EXPIRY_DAYS = 30;
 function statusOf(u) {
@@ -348,7 +350,7 @@ function showExpiring() {
 }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
-  const order = ['AVAILABLE', 'RESERVED', 'OCCUPIED'];
+  const order = ['AVAILABLE', 'RESERVED', 'PENDING', 'OCCUPIED'];
   u.status = order[(order.indexOf(u.status) + 1) % order.length];
   persist(); render(); toast(`เปลี่ยนสถานะเป็น ${statusMeta[u.status].th}`);
 }
@@ -752,7 +754,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '2.9';
+const APP_VERSION = '3.0';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
