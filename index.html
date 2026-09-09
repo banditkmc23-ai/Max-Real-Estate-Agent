@@ -42,7 +42,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.4</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.5</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -57,7 +57,7 @@ tailwind.config = { theme: { extend: { colors: {
     <!-- Search -->
     <div class="relative mb-5">
       <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-      <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
+      <input id="search" type="text" placeholder="ค้นหารหัส, ห้อง, คอนโด, ผู้เช่า..." oninput="render()"
         class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
     </div>
 
@@ -224,6 +224,13 @@ const seed = [
 
 let units = load().map((u, i) => ({ bath: '1', ownerLine: '', salePrice: '', createdAt: Date.now() - (9999 - i) * 1000, ...u }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
+(function backfillCodes() {
+  let changed = false;
+  units.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(u => {
+    if (!u.code) { u.code = makeCode(u, u.id); changed = true; }
+  });
+  if (changed) persist();
+})();
 let selectedId = null;
 let filter = 'all';
 let sortDir = 'new'; // 'new' = newest added first, 'old' = oldest first
@@ -242,6 +249,32 @@ const statusMeta = {
   PENDING:   { label:'PENDING',   th:'รอตรวจสอบ', cls:'bg-slate-500/10 text-slate-500 border-slate-400/30', dot:'bg-slate-400' }
 };
 const EXPIRY_DAYS = 30;
+
+// ===== Room code: 2 letters (type) + 2 digits (floor) + 2 digits (running) =====
+// RT = ให้เช่าอย่างเดียว, SL = ขายอย่างเดียว/ขายห้องว่าง, RS = ขายพร้อมผู้เช่า
+function codePrefix(u) {
+  const hasSale = !!u.salePrice;
+  const rented = u.status === 'OCCUPIED';
+  if (hasSale && rented) return 'RS';
+  if (hasSale) return 'SL';
+  return 'RT';
+}
+function floorPart(u) {
+  const n = parseInt(String(u.floor || '').replace(/[^0-9]/g, ''), 10);
+  return Number.isFinite(n) ? String(Math.min(n, 99)).padStart(2, '0') : '00';
+}
+function nextSerial(prefix, floor, exceptId) {
+  const used = units.filter(u => u.id !== exceptId && u.code && u.code.slice(0, 4) === prefix + floor)
+    .map(u => parseInt(u.code.slice(4), 10)).filter(Number.isFinite);
+  let n = 1; while (used.includes(n)) n++;
+  return String(Math.min(n, 99)).padStart(2, '0');
+}
+function makeCode(u, exceptId) {
+  const p = codePrefix(u), f = floorPart(u);
+  // keep the existing running number when only the type/floor changed
+  const keep = u.code && u.code.length === 6 && u.code.slice(0, 4) === p + f ? u.code.slice(4) : null;
+  return p + f + (keep || nextSerial(p, f, exceptId));
+}
 function statusOf(u) {
   const d = daysLeft(u.end);
   if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
@@ -266,11 +299,12 @@ function render() {
   list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
   if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
-    const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
+    const hay = u => [u.code, u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
     // rank: project-name matches first, then room number, then everything else
     const score = u => {
-      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase();
+      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase(), c = (u.code || '').toLowerCase();
+      if (c === q) return -1;
       if (p.startsWith(q)) return 0;
       if (p.includes(q)) return 1;
       if (r.includes(q)) return 2;
@@ -304,7 +338,7 @@ function render() {
     const m = statusOf(x);
     return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
       <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
-      <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
+      <p class="text-xs font-semibold text-slate-200 truncate">${x.code ? `<span class="font-mono text-brick-600">${esc(x.code)}</span> · ` : ''}${esc(x.project)} · ${esc(x.room)}</p>
       <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
       <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
@@ -326,7 +360,7 @@ function cardHTML(u) {
       <img id="coverImg" class="w-full h-full object-cover" alt="">
     </div>
     <div class="flex justify-between items-start mb-3">
-      <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
+      <div><div class="flex items-center gap-2"><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span>${u.code ? `<span class="text-[10px] font-mono font-semibold text-brick-600 bg-brick-500/10 border border-brick-500/20 px-1.5 py-0.5 rounded">${esc(u.code)}</span>` : ''}</div><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
       <div class="flex items-center gap-1.5">
         <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
           <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
@@ -488,8 +522,8 @@ function saveUnit() {
   const data = {}; F.forEach(k => data[k] = document.getElementById('f_' + k).value.trim());
   if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้องก่อน');
   data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
-  if (id) { Object.assign(units.find(x => x.id === id), data); toast('บันทึกการแก้ไขแล้ว'); }
-  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); units.unshift(data); selectedId = data.id; toast('เพิ่มห้องแล้ว'); }
+  if (id) { const t = units.find(x => x.id === id); Object.assign(t, data); t.code = makeCode(t, t.id); toast('บันทึกการแก้ไขแล้ว'); }
+  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); data.code = makeCode(data, data.id); units.unshift(data); selectedId = data.id; toast(`เพิ่มห้องแล้ว · รหัส ${data.code}`); }
   persist(); closeSheet(); render();
 }
 function deleteUnit() {
@@ -601,7 +635,7 @@ async function importExcel(file) {
       };
       const roomKnown = room && room !== '-' && room !== '–' && room.toLowerCase() !== 'n/a';
       const i = roomKnown ? units.findIndex(u => (u.project || '').trim().toLowerCase() === project.toLowerCase() && (u.room || '').trim().toLowerCase() === room.toLowerCase()) : -1;
-      if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; } else { units.push({ id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }); added++; }
+      if (i >= 0) { units[i] = { ...units[i], ...data }; units[i].code = makeCode(units[i], units[i].id); updated++; } else { const nu = { id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }; nu.code = makeCode(nu, nu.id); units.push(nu); added++; }
     }
     persist();
     selectedId = null; render(); closeBackup();
@@ -704,7 +738,7 @@ async function makeCollage() {
   try {
     await loadLogo();
     const pics = galleryPhotos.slice(0, 6);
-    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 250, footH = 128;
+    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 266, footH = 128;
     const cell = (W - pad * 2 - gap * (cols - 1)) / cols;
     const rows = Math.ceil(pics.length / cols);
     const H = headH + rows * cell + (rows - 1) * gap + pad + footH;
@@ -720,13 +754,14 @@ async function makeCollage() {
     // 1) condo name
     ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${F}`;
     ctx.fillText(fit(u.project, `bold 52px ${F}`), pad, 96);
+    if (u.code) { ctx.fillStyle = '#b85c38'; ctx.font = `bold 24px ${F}`; ctx.fillText(u.code, pad, 132); }
     // 2) bedrooms · bathrooms · area
     const specs = [bedLabel(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
     ctx.fillStyle = '#6b6058'; ctx.font = `34px ${F}`;
-    ctx.fillText(fit(specs, `34px ${F}`), pad, 152);
+    ctx.fillText(fit(specs, `34px ${F}`), pad, 176);
     // 3) rent
     ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${F}`;
-    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 212);
+    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 228);
     // photos (center-crop to square)
     for (let i = 0; i < pics.length; i++) {
       const img = await decodeImage(pics[i].full);
@@ -848,7 +883,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '3.4';
+const APP_VERSION = '3.5';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
