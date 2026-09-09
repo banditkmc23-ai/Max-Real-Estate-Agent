@@ -42,7 +42,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.3</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.4</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -224,7 +224,7 @@ const seed = [
 
 let units = load().map((u, i) => ({ bath: '1', ownerLine: '', salePrice: '', createdAt: Date.now() - (9999 - i) * 1000, ...u }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
-let selectedId = units[0]?.id || null;
+let selectedId = null;
 let filter = 'all';
 let sortDir = 'new'; // 'new' = newest added first, 'old' = oldest first
 function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
@@ -264,7 +264,20 @@ function render() {
   const q = document.getElementById('search').value.trim().toLowerCase();
   let list = units.filter(u => filter === 'all' || (filter === 'FOR_SALE' ? !!u.salePrice : u.status === filter));
   list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
-  if (q) list = list.filter(u => [u.project, u.room, u.tenant, u.owner, u.notes].join(' ').toLowerCase().includes(q));
+  if (q) {
+    const terms = q.split(/\s+/).filter(Boolean);
+    const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
+    list = list.filter(u => terms.every(t => hay(u).includes(t)));
+    // rank: project-name matches first, then room number, then everything else
+    const score = u => {
+      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase();
+      if (p.startsWith(q)) return 0;
+      if (p.includes(q)) return 1;
+      if (r.includes(q)) return 2;
+      return 3;
+    };
+    list = list.slice().sort((a, b) => score(a) - score(b) || (sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0)));
+  }
 
   // summary
   const cnt = s => units.filter(u => u.status === s).length;
@@ -279,10 +292,12 @@ function render() {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
   document.getElementById('listTitle').textContent = `รายการห้องพัก (${list.length})`;
 
-  // selected card
-  const u = units.find(x => x.id === selectedId) || list[0];
-  if (u) selectedId = u.id;
-  document.getElementById('unitCard').innerHTML = u ? cardHTML(u) : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-brick-600 font-semibold">+ เพิ่มห้องแรก</button></div>`;
+  // selected card — shown only after tapping a room in the list
+  const u = selectedId ? units.find(x => x.id === selectedId) : null;
+  if (selectedId && !u) selectedId = null;
+  document.getElementById('unitCard').innerHTML = u
+    ? cardHTML(u)
+    : (units.length ? '' : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-brick-600 font-semibold">+ เพิ่มห้องแรก</button></div>`);
 
   // list
   document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
@@ -312,8 +327,11 @@ function cardHTML(u) {
     </div>
     <div class="flex justify-between items-start mb-3">
       <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
-      <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
-        <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
+      <div class="flex items-center gap-1.5">
+        <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
+          <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
+        <button onclick="closeCard()" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center active:scale-95" aria-label="ปิด"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+      </div>
     </div>
     <div class="grid grid-cols-3 gap-2 my-4 py-3 border-y border-slate-800/80 text-center">
       <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-brick-600 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
@@ -353,7 +371,11 @@ function cardHTML(u) {
   </div>`;
 }
 
-function select(id) { selectedId = id; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function select(id) {
+  if (selectedId === id) { selectedId = null; render(); return; }
+  selectedId = id; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function closeCard() { selectedId = null; render(); }
 function setFilter(f) { filter = f; render(); }
 function showExpiring() {
   const soon = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS; }).sort((a,b) => daysLeft(a.end) - daysLeft(b.end));
@@ -475,7 +497,7 @@ function deleteUnit() {
   const u = units.find(x => x.id === id);
   if (!u || !confirm(`ลบ ${u.project} ห้อง ${u.room} ออกจากระบบ?`)) return;
   units = units.filter(x => x.id !== id);
-  if (selectedId === id) selectedId = units[0]?.id || null;
+  if (selectedId === id) selectedId = null;
   deleteUnitPhotos(id);
   persist(); closeSheet(); render(); toast('ลบห้องแล้ว');
 }
@@ -523,7 +545,7 @@ async function importData(file) {
       }
       await refreshCounts();
     }
-    selectedId = units[0]?.id || null; render(); closeBackup();
+    selectedId = null; render(); closeBackup();
     toast(`กู้คืนแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง รูป ${pAdded} รูป`);
   } catch (e) { toast('กู้คืนไม่สำเร็จ: ' + e.message); }
   prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
@@ -582,7 +604,7 @@ async function importExcel(file) {
       if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; } else { units.push({ id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }); added++; }
     }
     persist();
-    selectedId = units[0]?.id || null; render(); closeBackup();
+    selectedId = null; render(); closeBackup();
     toast(`นำเข้าแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง${skipped ? ` · ข้าม ${skipped} แถว (ข้อมูลไม่ครบ)` : ''}`);
   } catch (e) { toast('นำเข้าไม่สำเร็จ: ' + e.message); }
   prog.classList.add('hidden'); document.getElementById('xlFile').value = '';
@@ -826,7 +848,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '3.3';
+const APP_VERSION = '3.4';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
