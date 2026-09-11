@@ -53,7 +53,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v5.2</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v5.3</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <div class="flex items-center gap-1.5">
@@ -178,6 +178,12 @@ tailwind.config = { theme: { extend: { colors: {
       <label>LINE ID<input id="cfg_lineId" class="inp" placeholder="max.kmc"></label>
       <label>Hashtag (คั่นด้วยช่องว่าง)<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ"></textarea></label>
       <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_showContact" class="inp-check"><span>ใส่ข้อมูลติดต่อในข้อความที่แชร์</span></label>
+      <div class="border-t border-slate-800 pt-3 mt-2">
+        <p class="text-xs font-semibold text-slate-300 mb-2">Facebook / Meta</p>
+        <label>Meta App ID<input id="cfg_fbAppId" class="inp" inputmode="numeric" placeholder="ใส่ App ID ของ Meta"></label>
+        <label class="mt-2 block">Graph API Version<input id="cfg_fbVersion" class="inp" placeholder="เช่น v23.0"></label>
+        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">ต้องตั้งค่า App ใน Meta for Developers และเพิ่มสิทธิ์สำหรับ Page ก่อนใช้งานจริง · ห้ามใส่ App Secret ในหน้าเว็บ</p>
+      </div>
     </div>
     <div class="flex gap-2 mt-5">
       <button onclick="closeSettings()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
@@ -276,6 +282,42 @@ tailwind.config = { theme: { extend: { colors: {
     </div>
   </div>
 
+  <!-- Facebook posting sheet -->
+  <div id="fbOverlay" class="fixed inset-0 bg-black/30 z-[60] hidden" onclick="closeFacebookPost()"></div>
+  <div id="fbSheet" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-[60] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[94vh] overflow-y-auto hide-scrollbar">
+    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+    <div class="flex items-center justify-between mb-1">
+      <div><h2 class="text-base font-bold text-ink">โพสต์ลง Facebook</h2><p id="fbUnitLabel" class="text-xs text-slate-400 mt-0.5"></p></div>
+      <button onclick="closeFacebookPost()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="fbConnectState" class="mt-4"></div>
+    <div id="fbPostArea" class="hidden mt-4">
+      <label>เลือก Facebook Page<select id="fbPageSelect" class="inp" onchange="fbSelectedPageChanged()"></select></label>
+      <label class="block mt-3">ข้อความโพสต์<textarea id="fbPostText" rows="10" class="inp"></textarea></label>
+      <div class="mt-3 rounded-2xl overflow-hidden border border-slate-700 bg-slate-800">
+        <div class="px-3 py-2 text-[10px] text-slate-400 border-b border-slate-700">รูปที่จะโพสต์</div>
+        <div id="fbPhotoPreview" class="grid grid-cols-3 gap-1 p-1"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-4">
+        <button onclick="fbPreviewPost()" class="bg-slate-800 text-slate-200 border border-slate-700 py-3 rounded-full text-xs font-semibold">ดูตัวอย่าง</button>
+        <button onclick="fbPublishPost()" class="bg-[#1877F2] text-white py-3 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="facebook" class="w-4 h-4"></i>โพสต์ทันที</button>
+      </div>
+      <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">โพสต์จริงต้องใช้งานผ่าน HTTPS และ Meta App ที่ตั้งค่า Page permissions/Review ครบแล้ว หากเปิดไฟล์ตรงจากเครื่องโดยไม่มี App ID ระบบจะยังไม่เชื่อมต่อ Facebook</p>
+    </div>
+  </div>
+
+  <div id="fbPreviewOverlay" class="fixed inset-0 bg-black/40 z-[70] hidden" onclick="closeFacebookPreview()"></div>
+  <div id="fbPreviewSheet" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white border-t border-slate-700 rounded-t-3xl z-[70] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto">
+    <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4"></div>
+    <h2 class="text-base font-bold mb-3">ตัวอย่างโพสต์</h2>
+    <div class="border border-slate-200 rounded-2xl overflow-hidden">
+      <div class="p-3 flex items-center gap-2 border-b border-slate-100"><div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">f</div><div><p id="fbPreviewPage" class="text-sm font-semibold"></p><p class="text-[10px] text-slate-400">สาธารณะ · ตอนนี้</p></div></div>
+      <div id="fbPreviewText" class="p-3 text-sm whitespace-pre-line leading-relaxed"></div>
+      <div id="fbPreviewPhotos" class="grid grid-cols-2 gap-0.5 bg-slate-100"></div>
+    </div>
+    <button onclick="closeFacebookPreview()" class="w-full mt-4 bg-slate-900 text-white py-3 rounded-full text-sm font-semibold">ปิดตัวอย่าง</button>
+  </div>
+
   <div id="toast" class="toast bg-ink border border-ink text-white text-xs px-4 py-2.5 rounded-xl shadow-xl max-w-[360px] text-center"></div>
 </div>
 
@@ -310,7 +352,9 @@ const DEFAULT_CFG = {
   phone: '062-242-3154',
   lineId: 'max.kmc',
   hashtags: '#คอนโดให้เช่า #คอนโดกรุงเทพ #ห้องเช่า #คอนโดติดBTS',
-  showContact: true
+  showContact: true,
+  fbAppId: '',
+  fbVersion: 'v23.0'
 };
 function getPostConfig() {
   try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; }
@@ -325,6 +369,8 @@ function openSettings() {
   document.getElementById('cfg_lineId').value = c.lineId;
   document.getElementById('cfg_hashtags').value = c.hashtags;
   document.getElementById('cfg_showContact').checked = c.showContact;
+  document.getElementById('cfg_fbAppId').value = c.fbAppId || '';
+  document.getElementById('cfg_fbVersion').value = c.fbVersion || 'v23.0';
   document.getElementById('cfgOverlay').classList.remove('hidden');
   document.getElementById('cfgSheet').classList.add('open');
 }
@@ -338,12 +384,161 @@ function saveSettings() {
     phone: document.getElementById('cfg_phone').value.trim() || DEFAULT_CFG.phone,
     lineId: document.getElementById('cfg_lineId').value.trim() || DEFAULT_CFG.lineId,
     hashtags: document.getElementById('cfg_hashtags').value.trim() || DEFAULT_CFG.hashtags,
-    showContact: document.getElementById('cfg_showContact').checked
+    showContact: document.getElementById('cfg_showContact').checked,
+    fbAppId: document.getElementById('cfg_fbAppId').value.trim(),
+    fbVersion: document.getElementById('cfg_fbVersion').value.trim() || 'v23.0'
   };
   savePostConfig(cfg);
   closeSettings();
   toast('บันทึกการตั้งค่าแล้ว');
   render();
+}
+
+// ============= FACEBOOK POSTING =============
+let fbSDKReady = false;
+let fbConnected = false;
+let fbPages = [];
+let fbUnitId = null;
+let fbPhotos = [];
+let fbUserToken = null;
+
+function fbCfg() { return getPostConfig(); }
+function loadFacebookSDK(appId) {
+  return new Promise((resolve, reject) => {
+    if (!appId) return reject(new Error('ยังไม่ได้ใส่ Meta App ID'));
+    if (window.FB) {
+      try { window.FB.init({ appId, cookie: true, xfbml: false, version: fbCfg().fbVersion || 'v23.0' }); fbSDKReady = true; resolve(); } catch(e) { reject(e); }
+      return;
+    }
+    window.fbAsyncInit = function() {
+      try { window.FB.init({ appId, cookie: true, xfbml: false, version: fbCfg().fbVersion || 'v23.0' }); fbSDKReady = true; resolve(); }
+      catch(e) { reject(e); }
+    };
+    const old = document.getElementById('facebook-jssdk');
+    if (old) return;
+    const js = document.createElement('script'); js.id = 'facebook-jssdk'; js.async = true; js.defer = true; js.crossOrigin = 'anonymous'; js.src = 'https://connect.facebook.net/en_US/sdk.js';
+    js.onerror = () => reject(new Error('โหลด Facebook SDK ไม่สำเร็จ')); document.body.appendChild(js);
+  });
+}
+function fbApi(path, params = {}, method = 'get') {
+  return new Promise((resolve, reject) => {
+    if (!window.FB) return reject(new Error('Facebook SDK ยังไม่พร้อม'));
+    FB.api(path, method, params, res => res && !res.error ? resolve(res) : reject(new Error(res?.error?.message || 'Facebook API error')));
+  });
+}
+async function connectFacebook() {
+  const c = fbCfg();
+  if (!c.fbAppId) { toast('ไปที่ ⚙ ตั้งค่า แล้วใส่ Meta App ID ก่อน'); return; }
+  try {
+    document.getElementById('fbConnectState').innerHTML = '<p class="text-xs text-slate-400">กำลังเชื่อมต่อ Facebook…</p>';
+    await loadFacebookSDK(c.fbAppId);
+    FB.login(async response => {
+      if (!response.authResponse) { toast('ยกเลิกการเชื่อมต่อ Facebook'); return; }
+      try {
+        fbUserToken = response.authResponse.accessToken;
+        const res = await fbApi('/me/accounts', { access_token: fbUserToken, fields: 'id,name,access_token,tasks' });
+        fbPages = res.data || [];
+        fbConnected = true;
+        renderFacebookConnection();
+        toast(`เชื่อมต่อแล้ว ${fbPages.length} Page`);
+      } catch (e) { fbConnected = false; renderFacebookConnection(e.message); }
+    }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts' });
+  } catch (e) { renderFacebookConnection(e.message); }
+}
+function renderFacebookConnection(error='') {
+  const box = document.getElementById('fbConnectState'); if (!box) return;
+  if (!fbConnected) {
+    box.innerHTML = `<div class="rounded-2xl border border-slate-700 bg-slate-800/70 p-4"><p class="text-sm font-semibold text-slate-200">ยังไม่ได้เชื่อมต่อ Facebook</p><p class="text-[10px] text-slate-500 mt-1 leading-relaxed">${esc(error || 'เชื่อมต่อบัญชี Facebook เพื่อเลือก Page ที่ต้องการโพสต์')}</p><button onclick="connectFacebook()" class="w-full mt-3 bg-[#1877F2] text-white py-3 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="facebook" class="w-4 h-4"></i>Connect Facebook</button></div>`;
+  } else {
+    box.innerHTML = `<div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center justify-between"><div><p class="text-xs font-semibold text-emerald-700">✓ เชื่อมต่อ Facebook แล้ว</p><p class="text-[10px] text-slate-500">พบ ${fbPages.length} Page</p></div><button onclick="connectFacebook()" class="text-[10px] text-blue-600 font-semibold">เปลี่ยนบัญชี</button></div>`;
+    document.getElementById('fbPostArea').classList.remove('hidden');
+    const sel = document.getElementById('fbPageSelect');
+    sel.innerHTML = fbPages.length ? fbPages.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('') : '<option>ไม่พบ Page</option>';
+    fbSelectedPageChanged();
+  }
+  lucide.createIcons();
+}
+async function openFacebookPost(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  fbUnitId = id;
+  document.getElementById('fbOverlay').classList.remove('hidden');
+  document.getElementById('fbSheet').classList.add('open');
+  document.getElementById('fbUnitLabel').textContent = `${u.project} · ห้อง ${u.room}`;
+  const c = fbCfg();
+  document.getElementById('fbPostArea').classList.add('hidden');
+  if (!c.fbAppId) renderFacebookConnection('ยังไม่ได้ตั้งค่า Meta App ID ใน Settings');
+  else if (!fbConnected) renderFacebookConnection();
+  else renderFacebookConnection();
+  fbPhotos = await getUnitPhotos(id);
+  renderFacebookPhotoPreview();
+  document.getElementById('fbPostText').value = buildFacebookText(u);
+  lucide.createIcons();
+}
+function closeFacebookPost() { document.getElementById('fbOverlay').classList.add('hidden'); document.getElementById('fbSheet').classList.remove('open'); }
+function buildFacebookText(u) {
+  const c = fbCfg();
+  const promo = hasActivePromo(u);
+  const price = promo ? Number(u.promoRent || 0) : Number(u.rent || 0);
+  const lines = [`🔥 ให้เช่า ${u.project || ''} | ${fmtNum(price)} บ./เดือน`, `${u.type || ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.floor ? ' · ชั้น ' + u.floor : ''}${u.view ? ' · วิว ' + u.view : ''}`];
+  if (u.notes) lines.push('', u.notes.trim());
+  if (c.showContact) lines.push('', `📞 ${c.phone}`, `LINE: ${c.lineId}`, `— ${c.agentName} – Staylow Agent`);
+  if (c.hashtags) lines.push('', c.hashtags);
+  return lines.filter((x,i,a) => x !== '' || a[i-1] !== '').join('\n');
+}
+function renderFacebookPhotoPreview() {
+  const el = document.getElementById('fbPhotoPreview'); if (!el) return;
+  el.innerHTML = fbPhotos.length ? fbPhotos.map(p => `<img src="${thumbUrlOf(p)}" class="w-full aspect-square object-cover" alt="">`).join('') : '<div class="col-span-3 py-8 text-center text-xs text-slate-500">ยังไม่มีรูป — โพสต์ข้อความได้ แต่ถ้าต้องการรูปให้เพิ่มในคลังรูปก่อน</div>';
+}
+function fbSelectedPageChanged() {
+  const p = fbPages.find(x => x.id === document.getElementById('fbPageSelect')?.value);
+  const btn = document.querySelector('#fbSheet button[onclick="fbPublishPost()"]');
+  if (btn) btn.disabled = !p;
+}
+function fbPreviewPost() {
+  const p = fbPages.find(x => x.id === document.getElementById('fbPageSelect').value);
+  document.getElementById('fbPreviewPage').textContent = p?.name || 'Facebook Page';
+  document.getElementById('fbPreviewText').textContent = document.getElementById('fbPostText').value;
+  document.getElementById('fbPreviewPhotos').innerHTML = fbPhotos.map(x => `<img src="${thumbUrlOf(x)}" class="w-full aspect-square object-cover" alt="">`).join('');
+  document.getElementById('fbPreviewOverlay').classList.remove('hidden');
+  document.getElementById('fbPreviewSheet').classList.add('open');
+}
+function closeFacebookPreview() { document.getElementById('fbPreviewOverlay').classList.add('hidden'); document.getElementById('fbPreviewSheet').classList.remove('open'); }
+async function fbPublishPost() {
+  const u = units.find(x => x.id === fbUnitId); if (!u) return;
+  const page = fbPages.find(x => x.id === document.getElementById('fbPageSelect').value);
+  if (!page) return toast('กรุณาเลือก Facebook Page');
+  const message = document.getElementById('fbPostText').value.trim();
+  if (!message) return toast('กรุณาใส่ข้อความโพสต์');
+  const btn = document.querySelector('#fbSheet button[onclick="fbPublishPost()"]');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'กำลังโพสต์…'; }
+    let result;
+    if (fbPhotos.length) {
+      // Upload photos as unpublished Page media, then create ONE feed post with all selected photos.
+      const media = [];
+      for (let i = 0; i < Math.min(fbPhotos.length, 10); i++) {
+        const photo = fbPhotos[i];
+        const fd = new FormData();
+        fd.append('source', photo.full, `${u.project}_${u.room}_${i + 1}.jpg`);
+        fd.append('published', 'false');
+        fd.append('access_token', page.access_token);
+        const r = await fetch(`https://graph.facebook.com/${fbCfg().fbVersion}/${page.id}/photos`, { method:'POST', body:fd });
+        const j = await r.json();
+        if (!r.ok || j.error) throw new Error(j.error?.message || `อัปโหลดรูปที่ ${i + 1} ไม่สำเร็จ`);
+        if (j.id) media.push({ media_fbid: j.id });
+      }
+      result = await fbApi(`/${page.id}/feed`, { message, access_token: page.access_token, attached_media: media.map((m, i) => JSON.stringify(m)) }, 'post');
+    } else {
+      result = await fbApi(`/${page.id}/feed`, { message, access_token: page.access_token }, 'post');
+    }
+    u.lastPosted = Date.now(); u.postCount = (u.postCount || 0) + 1; u.lastFacebookPostId = result.id || result.post_id || null; u.lastFacebookPageId = page.id; u.lastFacebookPageName = page.name;
+    persist(); closeFacebookPost(); render();
+    toast(`โพสต์สำเร็จบน ${page.name}`);
+  } catch (e) {
+    toast('โพสต์ไม่สำเร็จ: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="facebook" class="w-4 h-4"></i>โพสต์ทันที'; lucide.createIcons(); }
+  }
 }
 
 // ============= STATUS / UTILS =============
@@ -504,6 +699,9 @@ function cardHTML(u) {
       <button onclick="markAsPosted('${u.id}')" class="text-[#06C755] font-semibold underline">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
 
+    <button onclick="openFacebookPost('${u.id}')" class="w-full bg-[#1877F2] hover:bg-[#166FE5] active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-2 mb-2 transition-all shadow-md shadow-blue-500/20">
+      <i data-lucide="facebook" class="w-4 h-4"></i>โพสต์ลง Facebook
+    </button>
     <div class="grid grid-cols-2 gap-2 mb-2">
       <button onclick="quickCopy('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 transition-all shadow-md shadow-brick-500/25">
         <i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด
@@ -1137,7 +1335,7 @@ openDB().then(async () => { await refreshCounts(); render(); }).catch(() => {});
 render();
 
 // ============= UPDATE CHECK =============
-const APP_VERSION = '5.2';
+const APP_VERSION = '5.3';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
