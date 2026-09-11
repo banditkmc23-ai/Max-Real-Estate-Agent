@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f4f2ef">
+<meta name="apple-mobile-web-app-title" content="MAX Agent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<title>Staylow Property Manager</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: {
+  brick: { 300:'#e6a88c', 400:'#cf7a56', 500:'#b85c38', 600:'#a04d2c', 700:'#83401f' },
+  ink: '#1c1917',
+  slate: { 200:'#1c1917', 300:'#3f3733', 400:'#6b625a', 500:'#8a8078', 700:'#e4dfd9', 800:'#f1eeea', 900:'#ffffff', 950:'#f4f2ef' }
+} }, borderRadius: { xl: '14px', '2xl': '22px', '3xl': '28px' } } }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  body { font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#e9e6e1; color:#1c1917; -webkit-tap-highlight-color:transparent; }
+  .app { max-width:430px; margin:0 auto; min-height:100vh; min-height:100dvh; background:#f4f2ef; display:flex; flex-direction:column; position:relative; }
+  .hide-scrollbar::-webkit-scrollbar { display:none; } .hide-scrollbar { scrollbar-width:none; }
+  .toast { position:fixed; box-shadow:0 10px 30px rgba(0,0,0,.15); left:50%; bottom:96px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .sheet { transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
+  .sheet.open { transform:translateY(0); }
+  input, select, textarea { font-family:inherit; }
+  .unit-row { transition: border-color .15s, background .15s; }
+  .unit-row.active { border-color:#b85c38; background:#fbf3ee; }
+  .photo-cell { touch-action: manipulation; transition: transform .15s; }
+  .photo-cell.dragging-src { opacity: .35; }
+  .photo-cell.drop-target { outline: 3px solid #b85c38; outline-offset: -3px; transform: scale(.96); }
+  .photo-ghost img { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-row { transition:none; } }
+</style>
+</head>
+<body class="flex justify-center min-h-screen">
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
+    <div>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.7</span></span></span>
+      <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
+    </div>
+    <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
+      <i data-lucide="plus" class="w-5 h-5"></i>
+    </button>
+  </header>
+
+  <div id="updateBar" onclick="applyUpdate()" class="hidden bg-brick-500 text-white text-xs font-semibold text-center py-2 cursor-pointer active:bg-brick-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
+  <!-- Main -->
+  <main class="flex-1 overflow-y-auto p-4 pb-28 hide-scrollbar">
+
+    <!-- Search -->
+    <div class="relative mb-5">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+      <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
+        class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
+    </div>
+
+    <!-- Summary strip -->
+    <div id="summary" class="grid grid-cols-3 gap-2 mb-5"></div>
+
+    <!-- Selected unit card -->
+    <div id="unitCard"></div>
+
+    <!-- Unit list -->
+    <div>
+      <div class="flex justify-between items-center mb-2">
+        <h3 id="listTitle" class="text-sm font-semibold text-slate-300">รายการห้องพักทั้งหมด</h3>
+        <button onclick="toggleSort()" class="flex items-center gap-1 text-[11px] text-slate-400 border border-slate-700 rounded-full px-2.5 py-1 active:scale-95">
+          <i data-lucide="arrow-down-up" class="w-3 h-3"></i><span id="sortLabel">ใหม่ก่อน</span>
+        </button>
+      </div>
+      <div class="flex gap-1 text-[11px] mb-3 overflow-x-auto hide-scrollbar">
+          <button onclick="setFilter('all')" data-f="all" class="filter-btn px-2 py-1 rounded-lg shrink-0">ทั้งหมด</button>
+          <button onclick="setFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-2 py-1 rounded-lg shrink-0">ว่าง</button>
+          <button onclick="setFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-2 py-1 rounded-lg shrink-0">มีผู้เช่า</button>
+          <button onclick="setFilter('PENDING')" data-f="PENDING" class="filter-btn px-2 py-1 rounded-lg shrink-0">รอตรวจสอบ</button>
+          <button onclick="setFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-2 py-1 rounded-lg shrink-0">ขาย</button>
+      </div>
+      <div id="unitList" class="space-y-2"></div>
+    </div>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/90 backdrop-blur-lg border-t border-slate-700 p-2 px-4 pb-[max(8px,env(safe-area-inset-bottom))] flex justify-between items-center z-40">
+    <button onclick="setFilter('all')" class="flex flex-col items-center gap-1 text-brick-600 p-1.5"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">Home</span></button>
+    <button onclick="setFilter('AVAILABLE')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="building-2" class="w-5 h-5"></i><span class="text-[10px] font-medium">Available</span></button>
+    <button onclick="showExpiring()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium">Expiring</span></button>
+    <button onclick="openSheet('add')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="plus-square" class="w-5 h-5"></i><span class="text-[10px] font-medium">Add</span></button>
+    <button onclick="openBackup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="database" class="w-5 h-5"></i><span class="text-[10px] font-medium">Backup</span></button>
+  </nav>
+
+  <!-- Bottom sheet: add / edit -->
+  <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()"></div>
+  <div id="sheet" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar">
+    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+    <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
+    <input type="hidden" id="f_id">
+    <div class="space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="col-span-2 relative">โครงการ<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
+          <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto hide-scrollbar"></div>
+        </label>
+        <label>เลขห้อง<input id="f_room" class="inp" placeholder="1203"></label>
+        <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
+        <label>ค่าเช่า (บาท/เดือน)<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
+        <label class="col-span-2 flex items-center gap-2 text-slate-300"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="w-4 h-4 accent-[#b85c38]"><span>ห้องนี้ปล่อยขายด้วย</span></label>
+        <label id="salePriceWrap" class="col-span-2 hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
+        <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
+        <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
+        <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
+        <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
+        <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option><option value="PENDING">รอตรวจสอบ (PENDING)</option></select></label>
+      </div>
+      <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
+        <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
+        <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
+        <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88 หรือวางลิงก์ line.me/ti/p/... จากโปรไฟล์เจ้าของ"></label>
+      </div>
+      <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
+        <label class="col-span-2">ผู้เช่าปัจจุบัน<input id="f_tenant" class="inp" placeholder="เว้นว่างถ้าห้องว่าง"></label>
+        <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
+        <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp"></label>
+      </div>
+      <label>รายละเอียดห้อง<textarea id="f_notes" rows="6" class="inp" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์"></textarea></label>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
+      <button onclick="closeSheet()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
+      <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
+    </div>
+  </div>
+
+  <!-- Gallery sheet -->
+  <div id="galOverlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeGallery()"></div>
+  <div id="gallery" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar">
+    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+    <div class="flex justify-between items-center mb-4">
+      <h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2>
+      <button onclick="closeGallery()" class="text-slate-400 p-1" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
+      <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
+    </div>
+    <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1">
+      <span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX ตอนนำเข้ารูป</span>
+      <input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]">
+    </label>
+    <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
+    <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
+    <p class="text-[11px] text-slate-500 mb-3 -mt-1">เคล็ดลับ: ในหน้าต่างเลือกรูป แตะ Albums เพื่อไปอัลบั้มที่ต้องการ แล้วลากนิ้วผ่านรูปต่อเนื่องเพื่อเลือกทีเดียวหลายรูป</p>
+    <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
+    <p class="text-[11px] text-slate-500 mb-2">กดค้างที่รูปแล้วลากเพื่อจัดลำดับ รูปแรกจะเป็นรูปหน้าปก</p>
+    <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
+    <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้<br><span class="text-xs text-slate-500">เลือกรูปจากอัลบั้มในเครื่องเพื่อเริ่มต้น</span></div>
+    <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
+      <button onclick="sharePhotos()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปทั้งหมด</button>
+      <button onclick="makeCollage()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
+      <p class="col-span-2 text-[11px] text-slate-500 text-center">ต้องการส่ง LINE แบบกริด: กด "ส่งรูปทั้งหมด" → Save Images → เลือกรูปใน LINE</p>
+    </div>
+  </div>
+
+  <!-- Backup sheet -->
+  <div id="bkOverlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeBackup()"></div>
+  <div id="backup" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+    <h2 class="text-base font-bold text-ink mb-1">สำรอง / กู้คืนข้อมูล</h2>
+    <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้องและรูปทั้งหมด ใช้ย้ายข้อมูลระหว่าง Safari กับแอปบนหน้าจอโฮม หรือย้ายไปเครื่องใหม่</p>
+    <div class="space-y-2">
+      <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
+      <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์สำรอง</button>
+      <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
+    </div>
+    <div class="border-t border-slate-800 mt-4 pt-4">
+      <p class="text-xs text-slate-400 mb-3">นำเข้าห้องหลายรายการพร้อมกันจากไฟล์ Excel แบบฟอร์ม (โครงการ+เลขห้องซ้ำกับที่มีอยู่จะอัปเดตทับ ไม่ซ้ำจะเพิ่มใหม่)</p>
+      <button onclick="document.getElementById('xlFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-brick-600"></i>นำเข้าจาก Excel</button>
+      <input type="file" id="xlFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(this.files[0])">
+    </div>
+    <p id="bkProgress" class="text-xs text-brick-600 mt-3 hidden"></p>
+    <button onclick="closeBackup()" class="w-full mt-4 text-sm text-slate-400 py-2">ปิด</button>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="fixed inset-0 bg-black/95 z-[70] hidden flex-col">
+    <div class="flex justify-between items-center p-4 pt-[max(16px,env(safe-area-inset-top))] text-slate-300">
+      <span id="lbCount" class="text-xs"></span>
+      <div class="flex gap-4">
+        <button onclick="deleteCurrentPhoto()" class="text-rose-600" aria-label="ลบรูป"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+        <button onclick="closeLightbox()" aria-label="ปิด"><i data-lucide="x" class="w-6 h-6"></i></button>
+      </div>
+    </div>
+    <div class="flex-1 flex items-center justify-center overflow-hidden" onclick="closeLightbox()">
+      <img id="lbImg" class="max-w-full max-h-full object-contain" alt="">
+    </div>
+    <div class="flex justify-between p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+      <button onclick="stepPhoto(-1)" class="text-slate-300 p-2"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+      <button onclick="setCover()" class="text-xs text-brick-600 px-3 py-2 border border-brick-500/30 rounded-lg">ตั้งเป็นรูปหน้าปก</button>
+      <button onclick="stepPhoto(1)" class="text-slate-300 p-2"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast bg-ink border border-ink text-white text-xs px-4 py-2.5 rounded-xl shadow-xl z-[60] max-w-[360px] text-center"></div>
+</div>
+
+<style>
+  .inp { display:block; width:100%; margin-top:4px; background:#fff; border:1px solid #e4dfd9; border-radius:12px; padding:10px 12px; font-size:14px; color:#1c1917; }
+  .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 3px rgba(184,92,56,.15); }
+  label { color:#6b625a; font-size:12px; }
+  .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; }
+  .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; }
+</style>
+
+<script>
+const KEY = 'staylow_units_v1';
+const seed = [
+  { id:'u1', project:'The Excel Sukhumvit 50', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', tenant:'', start:'', end:'', notes:'' },
+  { id:'u2', project:'The Base Park West', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', tenant:'คุณอนันต์', start:'2025-10-01', end:'2026-09-30', notes:'' },
+  { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', tenant:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' }
+];
+
+let units = load().map((u, i) => ({ bath: '1', ownerLine: '', salePrice: '', createdAt: Date.now() - (9999 - i) * 1000, ...u }));
+units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
+let selectedId = null;
+let filter = 'all';
+let sortDir = 'new'; // 'new' = newest added first, 'old' = oldest first
+function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
+
+function load() {
+  try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {}
+  return JSON.parse(JSON.stringify(seed));
+}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
+
+const statusMeta = {
+  AVAILABLE: { label:'AVAILABLE', th:'ว่าง', cls:'bg-brick-500/10 text-brick-600 border-brick-500/20', dot:'bg-brick-500' },
+  OCCUPIED:  { label:'OCCUPIED',  th:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-600 border-rose-500/20', dot:'bg-rose-500' },
+  RESERVED:  { label:'RESERVED',  th:'จอง', cls:'bg-sky-500/10 text-sky-600 border-sky-500/20', dot:'bg-sky-500' },
+  PENDING:   { label:'PENDING',   th:'รอตรวจสอบ', cls:'bg-slate-500/10 text-slate-500 border-slate-400/30', dot:'bg-slate-400' }
+};
+const EXPIRY_DAYS = 30;
+
+function statusOf(u) {
+  const d = daysLeft(u.end);
+  if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
+    return d < 0
+      ? { label: 'EXPIRED', th: 'หมดสัญญาแล้ว', cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
+      : { label: `EXPIRING · ${d} วัน`, th: 'ใกล้หมดสัญญา', cls: 'bg-amber-500/10 text-amber-700 border-amber-500/30', dot: 'bg-amber-400', short: `เหลือ ${d} วัน` };
+  }
+  return statusMeta[u.status];
+}
+const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
+const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
+function daysLeft(end) {
+  if (!end) return null;
+  const ms = new Date(end + 'T00:00:00') - new Date(new Date().toDateString());
+  return Math.ceil(ms / 86400000);
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let list = units.filter(u => filter === 'all' || (filter === 'FOR_SALE' ? !!u.salePrice : u.status === filter));
+  list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
+  if (q) {
+    const terms = q.split(/\s+/).filter(Boolean);
+    const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
+    list = list.filter(u => terms.every(t => hay(u).includes(t)));
+    // rank: project-name matches first, then room number, then everything else
+    const score = u => {
+      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase();
+      if (p.startsWith(q)) return 0;
+      if (p.includes(q)) return 1;
+      if (r.includes(q)) return 2;
+      return 3;
+    };
+    list = list.slice().sort((a, b) => score(a) - score(b) || (sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0)));
+  }
+
+  // summary
+  const cnt = s => units.filter(u => u.status === s).length;
+  const expiring = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS && d >= 0; }).length;
+  document.getElementById('summary').innerHTML = [
+    ['ว่าง', cnt('AVAILABLE'), 'text-brick-600'],
+    ['มีผู้เช่า', cnt('OCCUPIED'), 'text-rose-600'],
+    ['สัญญาใกล้หมด', expiring, 'text-amber-600']
+  ].map(([l, v, c]) => `<div class="bg-slate-900 border border-slate-800/80 rounded-xl p-3 text-center"><p class="text-lg font-bold ${c}">${v}</p><p class="text-[10px] text-slate-500">${l}</p></div>`).join('');
+
+  // filters
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
+  document.getElementById('listTitle').textContent = `รายการห้องพัก (${list.length})`;
+
+  // selected card — shown only after tapping a room in the list
+  const u = selectedId ? units.find(x => x.id === selectedId) : null;
+  if (selectedId && !u) selectedId = null;
+  document.getElementById('unitCard').innerHTML = u
+    ? cardHTML(u)
+    : (units.length ? '' : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-brick-600 font-semibold">+ เพิ่มห้องแรก</button></div>`);
+
+  // list
+  document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
+    const m = statusOf(x);
+    return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
+      <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
+      <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
+      <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
+      <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
+      <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
+  }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
+
+  lucide.createIcons();
+}
+
+function cardHTML(u) {
+  const m = statusOf(u);
+  const d = daysLeft(u.end);
+  const contractBadge = d === null ? '' : d < 0
+    ? `<span class="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
+    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
+  return `
+  <div class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-3 shadow-[0_8px_30px_-12px_rgba(0,0,0,.15)] relative overflow-hidden">
+    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-brick-500/10 rounded-full blur-xl pointer-events-none"></div>
+    <div id="coverStrip" onclick="openGallery('${u.id}')" class="-mx-5 -mt-5 mb-4 h-40 bg-slate-800 overflow-hidden ${photoCount[u.id] ? '' : 'hidden'}">
+      <img id="coverImg" class="w-full h-full object-cover" alt="">
+    </div>
+    <div class="flex justify-between items-start mb-3">
+      <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
+          <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
+        <button onclick="closeCard()" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center active:scale-95" aria-label="ปิด"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-2 my-4 py-3 border-y border-slate-800/80 text-center">
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ค่าเช่า</p><p class="text-sm font-bold text-brick-600 mt-0.5">${baht(u.rent)}<span class="text-[10px] text-slate-400 font-normal">/ด.</span></p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ห้องนอน / ห้องน้ำ</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.type)}${u.bath ? ' · ' + esc(u.bath) + ' Bath' : ''}</p></div>
+      <div><p class="text-[10px] uppercase tracking-wider text-slate-500">ขนาด / ชั้น / วิว</p><p class="text-sm font-semibold text-slate-200 mt-0.5">${esc(u.size)} ตร.ม. · ชั้น ${esc(u.floor || '-')}${u.view ? ' · ' + esc(u.view) : ''}</p></div>
+    </div>
+    ${u.salePrice ? `<div class="flex items-center justify-between bg-brick-500/8 border border-brick-500/20 rounded-xl px-3 py-2 mb-3"><span class="text-xs text-slate-400">ราคาขาย</span><span class="text-sm font-bold text-brick-600">${baht(u.salePrice)}</span></div>` : ''}
+    ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
+    <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="shareListing('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ / คัดลอก</button>
+      <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>ติดต่อเจ้าของ</button>
+      <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไขข้อมูล</button>
+      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
+    </div>
+  </div>
+  <div class="space-y-3 mb-5">
+    <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs">OW</div>
+        <div><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-sm font-semibold text-slate-200">${esc(u.owner || '-')}</p></div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        ${u.ownerPhone ? `<a href="tel:${esc(u.ownerPhone.replace(/[^0-9+]/g,''))}" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-brick-600" aria-label="โทรเจ้าของ"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
+        ${u.ownerLine ? `<button onclick="openOwnerLine('${u.id}')" class="w-9 h-9 rounded-full bg-[#06C755]/15 flex items-center justify-center text-[#06C755]" aria-label="LINE เจ้าของ"><i data-lucide="message-circle" class="w-4 h-4"></i></button>` : ''}
+        ${!u.ownerPhone && !u.ownerLine ? `<span class="text-xs text-slate-500">ยังไม่มีช่องทางติดต่อ</span>` : ''}
+      </div>
+    </div>
+    <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-4">
+      <div class="flex justify-between items-center mb-2">
+        <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-xs font-semibold text-slate-300">สัญญาเช่าปัจจุบัน</p></div>${contractBadge}
+      </div>
+      <div class="text-xs text-slate-400 space-y-1 pl-6">
+        <p>ผู้เช่า: <span class="text-slate-200 font-medium">${esc(u.tenant || 'ยังไม่มีผู้เช่า')}</span></p>
+        <p>ระยะเวลา: ${fmtDate(u.start)} – ${fmtDate(u.end)}</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function select(id) {
+  if (selectedId === id) { selectedId = null; render(); return; }
+  selectedId = id; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function closeCard() { selectedId = null; render(); }
+function setFilter(f) { filter = f; render(); }
+function showExpiring() {
+  const soon = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS; }).sort((a,b) => daysLeft(a.end) - daysLeft(b.end));
+  if (!soon.length) return toast('ไม่มีสัญญาที่ใกล้หมดใน ' + EXPIRY_DAYS + ' วัน');
+  selectedId = soon[0].id; filter = 'all'; render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast(`มี ${soon.length} ห้องที่สัญญาใกล้หมด/หมดแล้ว`);
+}
+function cycleStatus(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const order = ['AVAILABLE', 'RESERVED', 'PENDING', 'OCCUPIED'];
+  u.status = order[(order.indexOf(u.status) + 1) % order.length];
+  persist(); render(); toast(`เปลี่ยนสถานะเป็น ${statusMeta[u.status].th}`);
+}
+
+function customerText(u) {
+  if (u.notes && u.notes.trim()) return u.notes.trim();
+  toast('ห้องนี้ยังไม่มีรายละเอียดห้อง ส่งข้อมูลพื้นฐานแทน');
+  const lines = [
+    `🏢 ${u.salePrice ? 'ให้เช่า/ขาย' : 'ให้เช่า'} ${u.project}`,
+    `• ห้อง ${u.room}${u.floor ? ' ชั้น ' + u.floor : ''}`,
+    `• ${u.type}${u.bath ? ' ' + u.bath + ' Bath' : ''}${u.size ? ' ขนาด ' + u.size + ' ตร.ม.' : ''}${u.view ? ' วิว' + u.view : ''}`,
+    `💰 ค่าเช่า ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน`
+  ];
+  if (u.salePrice) lines.push(`🏷️ ราคาขาย ${Number(u.salePrice).toLocaleString('th-TH')} บาท`);
+  return lines.join('\n');
+}
+function lineShare(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const text = customerText(u);
+  copy(text, true);
+  const w = window.open('https://line.me/R/share?text=' + encodeURIComponent(text), '_blank');
+  if (!w) location.href = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+}
+function shareListing(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const text = customerText(u);
+  if (navigator.share) { navigator.share({ text }).catch(() => copy(text)); }
+  else copy(text);
+}
+function copy(text, silent) {
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => { if (!silent) toast('คัดลอกข้อความแล้ว พร้อมวางใน LINE'); }).catch(() => {});
+  else if (!silent) alert(text);
+}
+function lineUrlOf(v) {
+  v = (v || '').trim(); if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/line\.me\//i.test(v)) return 'https://' + v.replace(/^\/+/, '');
+  return 'https://line.me/ti/p/~' + encodeURIComponent(v.replace(/^@/, ''));
+}
+function openOwnerLine(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const url = lineUrlOf(u.ownerLine);
+  if (!url) return toast('ยังไม่ได้ใส่ LINE ID ของเจ้าของ');
+  const w = window.open(url, '_blank'); if (!w) location.href = url;
+}
+function contactOwner(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const tel = (u.ownerPhone || '').replace(/[^0-9+]/g, '');
+  if (u.ownerLine) return openOwnerLine(id);
+  if (tel && /^\+?\d{6,}$/.test(tel)) location.href = 'tel:' + tel;
+  else toast(`ยังไม่มีเบอร์หรือ LINE ของ ${u.owner || 'เจ้าของ'} — แก้ไขข้อมูลเพื่อเพิ่ม`);
+}
+
+// sheet
+const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','owner','ownerPhone','ownerLine','tenant','start','end','notes'];
+function allProjectNames() {
+  return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+}
+function showProjectSuggest() {
+  const input = document.getElementById('f_project'), box = document.getElementById('projectSuggest');
+  const q = input.value.trim().toLowerCase();
+  const names = allProjectNames().filter(n => !q || n.toLowerCase().includes(q));
+  if (!names.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = names.map(n => `<button type="button" onmousedown="event.preventDefault()" onclick="pickProject('${n.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2.5 text-sm text-slate-200 hover:bg-brick-500/10 active:bg-brick-500/15 border-b border-slate-800 last:border-0">${esc(n)}</button>`).join('');
+  box.classList.remove('hidden');
+}
+function pickProject(name) {
+  document.getElementById('f_project').value = name;
+  document.getElementById('projectSuggest').classList.add('hidden');
+}
+function hideProjectSuggest() { const b = document.getElementById('projectSuggest'); if (b) b.classList.add('hidden'); }
+document.addEventListener('click', e => { if (!e.target.closest('#f_project') && !e.target.closest('#projectSuggest')) hideProjectSuggest(); });
+function openSheet(mode, id) {
+  const u = mode === 'edit' ? units.find(x => x.id === id) : null;
+  document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
+  document.getElementById('f_id').value = u ? u.id : '';
+  hideProjectSuggest();
+  F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
+  document.getElementById('deleteBtn').classList.toggle('hidden', !u);
+  const hasSale = !!(u && u.salePrice);
+  document.getElementById('f_forSale').checked = hasSale;
+  toggleSalePrice(hasSale);
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('sheet').classList.add('open');
+  const sheetEl = document.getElementById('sheet');
+  sheetEl.scrollTop = 0;
+  requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
+}
+function closeSheet() {
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('sheet').classList.remove('open');
+  hideProjectSuggest();
+}
+function toggleSalePrice(on) {
+  document.getElementById('salePriceWrap').classList.toggle('hidden', !on);
+  if (!on) document.getElementById('f_salePrice').value = '';
+}
+function saveUnit() {
+  const id = document.getElementById('f_id').value;
+  const data = {}; F.forEach(k => data[k] = document.getElementById('f_' + k).value.trim());
+  if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้องก่อน');
+  data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
+  if (id) { const t = units.find(x => x.id === id); Object.assign(t, data); toast('บันทึกการแก้ไขแล้ว'); }
+  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); units.unshift(data); selectedId = data.id; toast('เพิ่มห้องแล้ว'); }
+  persist(); closeSheet(); render();
+}
+function deleteUnit() {
+  const id = document.getElementById('f_id').value;
+  const u = units.find(x => x.id === id);
+  if (!u || !confirm(`ลบ ${u.project} ห้อง ${u.room} ออกจากระบบ?`)) return;
+  units = units.filter(x => x.id !== id);
+  if (selectedId === id) selectedId = null;
+  deleteUnitPhotos(id);
+  persist(); closeSheet(); render(); toast('ลบห้องแล้ว');
+}
+function openBackup() { document.getElementById('bkOverlay').classList.remove('hidden'); document.getElementById('backup').classList.add('open'); lucide.createIcons(); }
+function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); }
+const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(b); });
+const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type }); };
+async function exportData() {
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังรวบรวมรูป...';
+  const photos = [];
+  if (db) {
+    const all = await req(tx('readonly').getAll());
+    for (const p of all) photos.push({ id: p.id, unitId: p.unitId, ts: p.ts, cover: !!p.cover, full: await blobToB64(p.full), thumb: await blobToB64(p.thumb) });
+  }
+  const payload = { app: 'staylow', version: 1, exportedAt: new Date().toISOString(), units, photos };
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  const name = 'staylow-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  const file = new File([blob], name, { type: 'application/json' });
+  prog.classList.add('hidden');
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Staylow backup' }); toast('สำรองข้อมูลแล้ว (เลือก Save to Files เพื่อเก็บไว้)'); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  toast(`สำรองข้อมูลแล้ว ${units.length} ห้อง ${photos.length} รูป`);
+}
+async function importData(file) {
+  if (!file) return;
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังอ่านไฟล์...';
+  try {
+    const data = JSON.parse(await file.text());
+    const inUnits = Array.isArray(data) ? data : (data.units || []);
+    const inPhotos = Array.isArray(data) ? [] : (data.photos || []);
+    if (!inUnits.length) throw new Error('ไม่พบข้อมูลห้องในไฟล์');
+    let added = 0, updated = 0;
+    inUnits.forEach(u => { const i = units.findIndex(x => x.id === u.id); if (i >= 0) { units[i] = u; updated++; } else { units.push(u); added++; } });
+    persist();
+    let pAdded = 0;
+    if (db && inPhotos.length) {
+      const existing = new Set((await req(tx('readonly').getAllKeys())));
+      for (let i = 0; i < inPhotos.length; i++) {
+        const p = inPhotos[i]; if (existing.has(p.id)) continue;
+        prog.textContent = `กำลังกู้คืนรูป ${i + 1}/${inPhotos.length}...`;
+        await req(tx('readwrite').put({ id: p.id, unitId: p.unitId, ts: p.ts, cover: p.cover, full: b64ToBlob(p.full, 'image/jpeg'), thumb: b64ToBlob(p.thumb, 'image/jpeg') }));
+        pAdded++;
+      }
+      await refreshCounts();
+    }
+    selectedId = null; render(); closeBackup();
+    toast(`กู้คืนแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง รูป ${pAdded} รูป`);
+  } catch (e) { toast('กู้คืนไม่สำเร็จ: ' + e.message); }
+  prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
+}
+
+// ===== Bulk import from Excel template =====
+function excelCellToDate(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+  return s;
+}
+const VALID_STATUS = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'];
+async function importExcel(file) {
+  if (!file) return;
+  const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังอ่านไฟล์ Excel...';
+  try {
+    if (typeof XLSX === 'undefined') throw new Error('โหลดตัวอ่าน Excel ไม่สำเร็จ ลองใหม่อีกครั้งตอนต่อเน็ต');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheetName = wb.SheetNames.find(n => n.includes('รายการ')) || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+    if (rows.length < 2) throw new Error('ไม่พบแถวข้อมูลในไฟล์');
+    let added = 0, updated = 0, skipped = 0;
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const project = String(row[0] || '').trim(), room = String(row[1] || '').trim();
+      if (!project && !room) continue; // blank row
+      if (project === 'The Excel Sukhumvit 50' && room === '1203') continue; // template example row
+      const rent = Number(String(row[3] || '').replace(/[, ]/g, ''));
+      const bed = String(row[5] || '').trim(), bath = String(row[6] || '1').trim();
+      if (!project || !room || !rent || !bed) { skipped++; continue; }
+      let status = String(row[9] || 'AVAILABLE').trim().toUpperCase();
+      if (!VALID_STATUS.includes(status)) status = 'AVAILABLE';
+      const salePriceRaw = String(row[4] || '').replace(/[, ]/g, '');
+      const data = {
+        project, room,
+        floor: String(row[2] || '').trim(),
+        rent, salePrice: salePriceRaw ? Number(salePriceRaw) : '',
+        type: bed, bath,
+        size: String(row[7] || '').trim(),
+        view: String(row[8] || '').trim(),
+        status,
+        owner: String(row[10] || '').trim(),
+        ownerPhone: String(row[11] || '').trim(),
+        ownerLine: String(row[12] || '').trim(),
+        tenant: String(row[13] || '').trim(),
+        start: excelCellToDate(row[14]),
+        end: excelCellToDate(row[15]),
+        notes: String(row[16] || '').trim(),
+      };
+      const roomKnown = room && room !== '-' && room !== '–' && room.toLowerCase() !== 'n/a';
+      const i = roomKnown ? units.findIndex(u => (u.project || '').trim().toLowerCase() === project.toLowerCase() && (u.room || '').trim().toLowerCase() === room.toLowerCase()) : -1;
+      if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; } else { units.push({ id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }); added++; }
+    }
+    persist();
+    selectedId = null; render(); closeBackup();
+    toast(`นำเข้าแล้ว: เพิ่ม ${added} ห้อง อัปเดต ${updated} ห้อง${skipped ? ` · ข้าม ${skipped} แถว (ข้อมูลไม่ครบ)` : ''}`);
+  } catch (e) { toast('นำเข้าไม่สำเร็จ: ' + e.message); }
+  prog.classList.add('hidden'); document.getElementById('xlFile').value = '';
+}
+
+// ===== Photos (IndexedDB) =====
+const photoCount = {};
+let db;
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('staylow_photos', 1);
+    r.onupgradeneeded = e => {
+      const s = e.target.result.createObjectStore('photos', { keyPath: 'id' });
+      s.createIndex('unit', 'unitId');
+    };
+    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onerror = () => rej(r.error);
+  });
+}
+function tx(mode) { return db.transaction('photos', mode).objectStore('photos'); }
+function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function getUnitPhotos(unitId) {
+  return req(tx('readonly').index('unit').getAll(unitId)).then(a => a.sort((x, y) => (x.order ?? x.ts ?? 0) - (y.order ?? y.ts ?? 0)));
+}
+async function refreshCounts() {
+  if (!db) return;
+  const all = await req(tx('readonly').getAll());
+  Object.keys(photoCount).forEach(k => delete photoCount[k]);
+  all.forEach(p => photoCount[p.unitId] = (photoCount[p.unitId] || 0) + 1);
+}
+async function loadCover() {
+  const strip = document.getElementById('coverStrip'), img = document.getElementById('coverImg');
+  if (!strip || !db || !selectedId) return;
+  const ps = await getUnitPhotos(selectedId);
+  if (!ps.length) { strip.classList.add('hidden'); return; }
+  img.src = URL.createObjectURL(ps[0].thumb); strip.classList.remove('hidden');
+}
+async function deleteUnitPhotos(unitId) {
+  if (!db) return;
+  const ps = await getUnitPhotos(unitId);
+  const s = tx('readwrite'); ps.forEach(p => s.delete(p.id));
+  await refreshCounts();
+}
+
+// ===== Watermark =====
+const WM_KEY = 'staylow_wm';
+let wmOn = (() => { try { return localStorage.getItem(WM_KEY) !== '0'; } catch (e) { return true; } })();
+let logoImg = null, logoTried = false;
+function setWm(v) { wmOn = v; try { localStorage.setItem(WM_KEY, v ? '1' : '0'); } catch (e) {} toast(v ? 'จะใส่ลายน้ำโลโก้ในรูปที่นำเข้าใหม่' : 'ปิดลายน้ำแล้ว'); }
+function loadLogo() {
+  if (logoTried) return Promise.resolve(logoImg);
+  logoTried = true;
+  return new Promise(res => { const im = new Image(); im.onload = () => { logoImg = im; res(im); }; im.onerror = () => res(null); im.src = 'logo.png'; });
+}
+function drawWatermark(ctx, w, h) {
+  if (!logoImg) return;
+  const lw = Math.round(w * 0.16), lh = Math.round(lw * logoImg.height / logoImg.width), pad = Math.round(w * 0.03);
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.shadowColor = 'rgba(255,255,255,0.9)'; ctx.shadowBlur = Math.round(lw * 0.08);
+  ctx.drawImage(logoImg, w - lw - pad, pad, lw, lh);
+  ctx.restore();
+}
+
+// decode once, output full ≤1600px (optionally watermarked) + thumb ≤400px
+function decodeImage(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('อ่านรูปไม่ได้')); };
+    img.src = url;
+  });
+}
+function toJpeg(c, q) { return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('encode failed')), 'image/jpeg', q)); }
+function scaleCanvas(img, max) {
+  const r = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+async function processPhoto(file) {
+  const img = await decodeImage(file);
+  const fullC = scaleCanvas(img, 1600);
+  if (wmOn) { await loadLogo(); drawWatermark(fullC.getContext('2d'), fullC.width, fullC.height); }
+  const thumbC = document.createElement('canvas');
+  const tr = Math.min(1, 400 / Math.max(fullC.width, fullC.height));
+  thumbC.width = Math.round(fullC.width * tr); thumbC.height = Math.round(fullC.height * tr);
+  thumbC.getContext('2d').drawImage(fullC, 0, 0, thumbC.width, thumbC.height);
+  return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)];
+}
+
+// ===== Collage: one shareable overview image =====
+function bedLabel(t) { if (!t) return ''; if (/studio/i.test(t)) return 'สตูดิโอ'; if (/duplex/i.test(t)) return 'ดูเพล็กซ์'; const n = parseInt(t); return n ? `${n} ห้องนอน` : t; }
+async function makeCollage() {
+  const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
+  const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
+  try {
+    await loadLogo();
+    const pics = galleryPhotos.slice(0, 6);
+    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 250, footH = 128;
+    const cell = (W - pad * 2 - gap * (cols - 1)) / cols;
+    const rows = Math.ceil(pics.length / cols);
+    const H = headH + rows * cell + (rows - 1) * gap + pad + footH;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    const F = 'Inter, "Noto Sans Thai", -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    // logo (right side of header)
+    let textMax = W - pad * 2;
+    if (logoImg) { const lh = 150, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, W - pad - lw, 40, lw, lh); textMax = W - pad * 2 - lw - 30; }
+    const fit = (text, font) => { ctx.font = font; while (ctx.measureText(text).width > textMax && text.length > 3) text = text.slice(0, -2).trimEnd() + '…'; return text; };
+    // 1) condo name
+    ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${F}`;
+    ctx.fillText(fit(u.project, `bold 52px ${F}`), pad, 96);
+    // 2) bedrooms · bathrooms · area
+    const specs = [bedLabel(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
+    ctx.fillStyle = '#6b6058'; ctx.font = `34px ${F}`;
+    ctx.fillText(fit(specs, `34px ${F}`), pad, 152);
+    // 3) rent
+    ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${F}`;
+    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 212);
+    // photos (center-crop to square)
+    for (let i = 0; i < pics.length; i++) {
+      const img = await decodeImage(pics[i].full);
+      const x = pad + (i % cols) * (cell + gap), y = headH + Math.floor(i / cols) * (cell + gap);
+      const sz = Math.min(img.width, img.height), sx = (img.width - sz) / 2, sy = (img.height - sz) / 2;
+      ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cell, cell, 20); ctx.clip();
+      ctx.drawImage(img, sx, sy, sz, sz, x, y, cell, cell); ctx.restore();
+    }
+    // footer
+    ctx.fillStyle = '#b85c38'; ctx.fillRect(0, H - footH, W, footH);
+    ctx.fillStyle = '#ffffff'; ctx.font = `bold 32px ${F}`;
+    ctx.fillText('MAX Real Estate Agent', pad, H - footH + 48);
+    ctx.font = `26px ${F}`; ctx.fillStyle = '#f5d9cc';
+    ctx.fillText('LINE: max.kmc   ·   โทร 062-242-3154', pad, H - footH + 92);
+    const blob = await toJpeg(c, 0.88);
+    const file = new File([blob], `${u.project.replace(/\s+/g, '_')}_${u.room}_overview.jpg`, { type: 'image/jpeg' });
+    prog.classList.add('hidden');
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); }
+    } else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); }
+  } catch (e) { prog.classList.add('hidden'); toast('สร้างภาพรวมไม่สำเร็จ: ' + e.message); }
+}
+
+let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
+const photoUrlCache = new Map(); // photo id -> { thumbUrl, fullUrl }
+function thumbUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb);
+  return e.thumbUrl;
+}
+function fullUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.fullUrl) e.fullUrl = URL.createObjectURL(p.full);
+  return e.fullUrl;
+}
+function clearPhotoUrlCache() {
+  photoUrlCache.forEach(e => { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); });
+  photoUrlCache.clear();
+}
+function pickPhotos(src) { document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum').click(); }
+async function importPhotos(files) {
+  if (!files || !files.length || !galleryUnitId) return;
+  const prog = document.getElementById('galProgress'); prog.classList.remove('hidden');
+  let ok = 0;
+  const base = Date.now();
+  for (let i = 0; i < files.length; i++) {
+    prog.textContent = `กำลังบันทึกรูป ${i + 1}/${files.length}...`;
+    try {
+      const [full, thumb] = await processPhoto(files[i]);
+      await req(tx('readwrite').put({ id: 'p' + base + '_' + i, unitId: galleryUnitId, full, thumb, ts: base + i, order: base + i }));
+      ok++;
+    } catch (e) { console.error(e); }
+  }
+  prog.classList.add('hidden');
+  document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
+  await refreshCounts(); await renderGallery(); render();
+  toast(ok === files.length ? `เพิ่มรูป ${ok} รูปแล้ว` : `บันทึกได้ ${ok}/${files.length} รูป`);
+}
+async function openGallery(unitId) {
+  if (!db) return toast('เบราว์เซอร์นี้ไม่รองรับการเก็บรูปในเครื่อง');
+  clearPhotoUrlCache();
+  galleryUnitId = unitId;
+  const u = units.find(x => x.id === unitId);
+  document.getElementById('galTitle').textContent = `รูปห้อง ${u ? u.room + ' · ' + u.project : ''}`;
+  document.getElementById('wmToggle').checked = wmOn;
+  await renderGallery();
+  document.getElementById('galOverlay').classList.remove('hidden');
+  document.getElementById('gallery').classList.add('open');
+}
+function closeGallery() {
+  document.getElementById('galOverlay').classList.add('hidden');
+  document.getElementById('gallery').classList.remove('open');
+  clearPhotoUrlCache();
+}
+async function renderGallery() {
+  galleryPhotos = await getUnitPhotos(galleryUnitId);
+  const grid = document.getElementById('galGrid');
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 select-none" data-id="${p.id}">
+    <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
+    ${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded pointer-events-none">ปก</span>' : ''}
+    <span class="drag-handle absolute bottom-1 right-1 w-6 h-6 rounded-md bg-black/45 flex items-center justify-center text-white"><i data-lucide="grip-vertical" class="w-3.5 h-3.5 pointer-events-none"></i></span>
+  </div>`).join('');
+  document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
+  document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
+  lucide.createIcons();
+  setupPhotoDrag();
+}
+
+// long-press a thumbnail to pick it up, drag over another to swap, release to drop
+function setupPhotoDrag() {
+  const grid = document.getElementById('galGrid');
+  let dragId = null, ghost = null, longPress = null, startX = 0, startY = 0, armed = false, moved = false, hoverCell = null;
+  const LONG_PRESS_MS = 260, MOVE_CANCEL = 10;
+
+  function cleanup() {
+    clearTimeout(longPress);
+    if (ghost) { ghost.remove(); ghost = null; }
+    if (hoverCell) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+    grid.querySelectorAll('.photo-cell').forEach(c => c.classList.remove('dragging-src'));
+    dragId = null; armed = false; moved = false;
+  }
+
+  grid.querySelectorAll('.photo-cell').forEach(cell => {
+    cell.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX; startY = e.clientY; moved = false; armed = false;
+      const id = cell.dataset.id;
+      longPress = setTimeout(() => {
+        armed = true; dragId = id;
+        cell.classList.add('dragging-src');
+        if (navigator.vibrate) navigator.vibrate(8);
+        const r = cell.getBoundingClientRect();
+        ghost = cell.cloneNode(true);
+        ghost.classList.add('photo-ghost');
+        ghost.style.cssText = `position:fixed; left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; pointer-events:none; z-index:200; opacity:.95; transform:scale(1.08) rotate(-2deg); box-shadow:0 12px 30px rgba(0,0,0,.35); border-radius:10px;`;
+        document.body.appendChild(ghost);
+      }, LONG_PRESS_MS);
+    });
+
+    cell.addEventListener('pointermove', (e) => {
+      if (!armed) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_CANCEL) clearTimeout(longPress);
+        return;
+      }
+      moved = true; e.preventDefault();
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (ghost) { const r0 = cell.getBoundingClientRect(); ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.08) rotate(-2deg)`; }
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const target = el && el.closest ? el.closest('.photo-cell') : null;
+      if (hoverCell && hoverCell !== target) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+      if (target && target.dataset.id !== dragId) { target.classList.add('drop-target'); hoverCell = target; }
+    }, { passive: false });
+
+    const endHandler = (e) => {
+      clearTimeout(longPress);
+      const wasDrag = armed && moved;
+      if (wasDrag && hoverCell) {
+        const fromId = dragId, toId = hoverCell.dataset.id;
+        const ids = galleryPhotos.map(p => p.id);
+        const fi = ids.indexOf(fromId), ti = ids.indexOf(toId);
+        if (fi > -1 && ti > -1 && fi !== ti) {
+          const [m] = ids.splice(fi, 1); ids.splice(ti, 0, m);
+          commitPhotoOrder(ids);
+        }
+      }
+      cleanup();
+      cell.dataset.justDragged = wasDrag ? '1' : '0';
+    };
+    cell.addEventListener('pointerup', endHandler);
+    cell.addEventListener('pointercancel', cleanup);
+    cell.addEventListener('click', () => {
+      if (cell.dataset.justDragged === '1') { cell.dataset.justDragged = '0'; return; }
+      const idx = galleryPhotos.findIndex(p => p.id === cell.dataset.id);
+      if (idx > -1) openLightbox(idx);
+    });
+  });
+}
+async function commitPhotoOrder(idsInOrder) {
+  const s = tx('readwrite');
+  galleryPhotos.forEach(p => { const idx = idsInOrder.indexOf(p.id); if (idx > -1) { p.order = idx; s.put(p); } });
+  await renderGallery(); render();
+}
+function openLightbox(i) {
+  lbIndex = i; showLb();
+  const lb = document.getElementById('lightbox'); lb.classList.remove('hidden'); lb.classList.add('flex');
+}
+function showLb() {
+  const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox();
+  document.getElementById('lbImg').src = fullUrlOf(p);
+  document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`;
+}
+function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % galleryPhotos.length; showLb(); }
+function closeLightbox() { const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
+async function deleteCurrentPhoto() {
+  const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
+  await req(tx('readwrite').delete(p.id));
+  const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
+  await refreshCounts(); await renderGallery(); render();
+  if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
+  toast('ลบรูปแล้ว');
+}
+async function setCover() {
+  const p = galleryPhotos[lbIndex]; if (!p) return;
+  const ids = galleryPhotos.map(x => x.id).filter(id => id !== p.id);
+  ids.unshift(p.id);
+  await commitPhotoOrder(ids);
+  lbIndex = 0; showLb();
+  toast('ตั้งเป็นรูปหน้าปกแล้ว');
+}
+async function sharePhotos() {
+  const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
+  const files = galleryPhotos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
+  const text = `🏢 ${u.project} ห้อง ${u.room} · ${u.type} ${u.size} ตร.ม. · ${Number(u.rent).toLocaleString('th-TH')} บาท/เดือน`;
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try { await navigator.share({ files, text }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); }
+  } else {
+    // fallback: download as individual files
+    files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
+    toast('เบราว์เซอร์นี้แชร์รูปตรงไม่ได้ ดาวน์โหลดให้แทนแล้ว');
+  }
+}
+
+// hook cover into render
+const _render = render;
+render = function () { _render(); loadCover(); };
+
+openDB().then(async () => { await refreshCounts(); render(); }).catch(() => {});
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+render();
+
+// ===== Update check =====
+const APP_VERSION = '3.7';
+async function checkUpdate() {
+  try {
+    const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) { document.getElementById('newVer').textContent = 'v' + m[1]; document.getElementById('updateBar').classList.remove('hidden'); }
+  } catch (e) {}
+}
+function applyUpdate() { location.replace(location.pathname + '?v=' + Date.now()); }
+if (location.search.startsWith('?v=')) history.replaceState(null, '', location.pathname);
+setTimeout(checkUpdate, 1500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+</script>
+</body>
+</html>
