@@ -53,7 +53,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v4.6</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v5.2</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <div class="flex items-center gap-1.5">
@@ -68,18 +68,20 @@ tailwind.config = { theme: { extend: { colors: {
 
   <div id="updateBar" onclick="applyUpdate()" class="hidden bg-brick-500 text-white text-xs font-semibold text-center py-2 cursor-pointer active:bg-brick-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
 
-  <!-- Main -->
-  <main class="flex-1 overflow-y-auto p-4 pb-28 hide-scrollbar">
-
-    <!-- Search -->
-    <div class="relative mb-5">
+  <!-- Search bar — STICKY (ติดจอ) -->
+  <div class="sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(24px, env(safe-area-inset-top)) + 76px);">
+    <div class="relative">
       <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
       <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
         class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
     </div>
+  </div>
+
+  <!-- Main -->
+  <main class="flex-1 overflow-y-auto px-4 pb-28 hide-scrollbar">
 
     <!-- Summary strip -->
-    <div id="summary" class="grid grid-cols-3 gap-2 mb-5"></div>
+    <div id="summary" class="grid grid-cols-3 gap-2 mb-5 pt-4"></div>
 
     <!-- Selected unit card -->
     <div id="unitCard"></div>
@@ -376,8 +378,6 @@ function hasActivePromo(u) {
   if (!u.promoRent || !u.promoUntil) return false;
   return new Date(u.promoUntil + 'T23:59:59') >= new Date();
 }
-
-// ⭐ postedState — แสดง "โพสต์วันนี้ · 3 ครั้ง · ล่าสุด 14:32"
 function postedState(u) {
   if (!u.lastPosted) return { level:'never', label:'ยังไม่โพสต์', cls:'text-amber-600' };
   const d = new Date(u.lastPosted);
@@ -391,63 +391,6 @@ function postedState(u) {
   if (days === 1) return { level:'ok', label:`โพสต์เมื่อวาน${cnt}${time}`, cls:'text-slate-500' };
   if (days < STALE_DAYS) return { level:'aging', label:`โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-slate-500' };
   return { level:'stale', label:`⚠ โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-amber-600 font-semibold' };
-}
-
-// ============= CAPTION BUILDER =============
-function bedLabelTH(t) {
-  if (!t) return '';
-  if (/studio/i.test(t)) return 'สตูดิโอ';
-  if (/duplex/i.test(t)) return 'ดูเพล็กซ์';
-  const n = parseInt(t);
-  return n ? `${n} ห้องนอน` : t;
-}
-function formatUnitFB(u) {
-  const L = [];
-  const bed = bedLabelTH(u.type);
-  L.push(`🏢 ห้อง ${u.room}${u.floor ? ' ชั้น ' + u.floor : ''} | ${bed}${u.bath ? ' ' + u.bath + ' ห้องน้ำ' : ''}${u.size ? ' | ' + u.size + ' ตร.ม.' : ''}`);
-  if (hasActivePromo(u)) {
-    L.push(`💰 ~~${fmtNum(u.rent)}~~ → ${fmtNum(u.promoRent)} บาท/เดือน 🔥 โปรถึง ${fmtDate(u.promoUntil)}`);
-  } else {
-    L.push(`💰 ${fmtNum(u.rent)} บาท/เดือน`);
-  }
-  if (u.salePrice) L.push(`🏷️ ขาย: ${fmtNum(u.salePrice)} บาท`);
-  if (u.view) L.push(`🌇 วิว${u.view}`);
-  if (u.notes) {
-    const first = u.notes.split('\n').slice(0, 2).join(' ').trim();
-    if (first) L.push(`📝 ${first}`);
-  }
-  return L.join('\n');
-}
-function formatUnitLine(u) {
-  const bed = bedLabelTH(u.type);
-  const spec = [bed, u.bath ? u.bath + ' น้ำ' : '', u.size ? u.size + ' ตร.ม.' : ''].filter(Boolean).join(' · ');
-  let priceLine;
-  if (hasActivePromo(u)) priceLine = `🔥 ${fmtNum(u.promoRent)}.-/ด. (จาก ${fmtNum(u.rent)})`;
-  else priceLine = `${fmtNum(u.rent)}.-/ด.`;
-  return `📍 ${u.project} ห้อง ${u.room} (${spec}) — ${priceLine}`;
-}
-function buildCaption(u, platform = 'fb') {
-  const cfg = getPostConfig();
-  let body;
-  if (platform === 'line') {
-    const lines = [`🏢 ${u.project}`, formatUnitLine(u)];
-    if (u.salePrice) lines.push(`🏷️ ขาย ${fmtNum(u.salePrice)} บาท`);
-    body = lines.join('\n');
-  } else {
-    body = formatUnitFB(u);
-  }
-  const parts = [body];
-  if (cfg.showContact) {
-    parts.push('');
-    parts.push(platform === 'line'
-      ? `📞 สนใจติดต่อ ${cfg.phone} | LINE: ${cfg.lineId}`
-      : `📞 ${cfg.phone}  |  💚 LINE: ${cfg.lineId}\n👤 ${cfg.agentName}`);
-  }
-  if (platform === 'fb' && cfg.hashtags) {
-    parts.push('');
-    parts.push(cfg.hashtags);
-  }
-  return parts.join('\n');
 }
 
 // ============= RENDER =============
@@ -513,7 +456,7 @@ function render() {
       <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p>
       <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
-      <button onclick="event.stopPropagation(); quickCopy('${x.id}','fb')" class="shrink-0 w-8 h-8 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95" aria-label="คัดลอกรายละเอียด"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
+      <button onclick="event.stopPropagation(); quickCopy('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95" aria-label="คัดลอกรายละเอียด"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
 
   lucide.createIcons();
@@ -524,6 +467,8 @@ function cardHTML(u) {
   const d = daysLeft(u.end);
   const promo = hasActivePromo(u);
   const ps = postedState(u);
+  const pic = photoCount[u.id] || 0;
+  const hasPhotos = pic > 0;
   const contractBadge = d === null ? '' : d < 0
     ? `<span class="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
     : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
@@ -559,15 +504,22 @@ function cardHTML(u) {
       <button onclick="markAsPosted('${u.id}')" class="text-[#06C755] font-semibold underline">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
 
-    <button onclick="quickCopy('${u.id}','fb')" class="w-full bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 mb-2 transition-all shadow-md shadow-brick-500/25">
-      <i data-lucide="copy" class="w-4 h-4"></i>คัดลอกรายละเอียด
-    </button>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <button onclick="quickCopy('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 transition-all shadow-md shadow-brick-500/25">
+        <i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด
+      </button>
+      ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="bg-brick-300 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 transition-all shadow-md shadow-brick-300/25">
+        <i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูปทั้งหมด (${pic})
+      </button>` : `<button disabled class="bg-slate-800/60 text-slate-500 font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 cursor-not-allowed">
+        <i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป
+      </button>`}
+    </div>
     <button onclick="contactOwner('${u.id}')" class="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 mb-2 transition-all">
       <i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>ติดต่อเจ้าของห้อง
     </button>
     <div class="grid grid-cols-2 gap-2.5">
       <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไข</button>
-      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
+      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${pic})</button>
     </div>
   </div>
   <div class="space-y-3 mb-5">
@@ -623,13 +575,63 @@ function markAsPosted(id) {
   toast(`บันทึกว่าโพสต์แล้ว (ครั้งที่ ${u.postCount})`);
 }
 
-// ⭐ quickCopy — คัดลอกเฉพาะช่อง "รายละเอียดห้อง" (notes)
-function quickCopy(id, platform) {
+// ⭐ ปุ่ม 1: quickCopy — คัดลอกเฉพาะช่อง "รายละเอียดห้อง" (notes)
+function quickCopy(id) {
   const u = units.find(x => x.id === id); if (!u) return;
   const text = (u.notes || '').trim();
   if (!text) return toast('ห้องนี้ยังไม่มีรายละเอียด — กรอกในช่อง "รายละเอียดห้อง" ก่อน');
   copy(text);
   toast('คัดลอกรายละเอียดแล้ว — พร้อมวาง');
+}
+
+// ⭐ ปุ่ม 2: copyAndSharePhotos — คัดลอกรูปทั้งหมด (แชร์ผ่าน Share Sheet)
+async function copyAndSharePhotos(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+
+  // 1. ดึงรูปทั้งหมดของห้องนี้
+  const photos = await getUnitPhotos(id);
+  if (!photos.length) {
+    return toast('ห้องนี้ยังไม่มีรูป');
+  }
+
+  // 2. คัดลอกข้อความลง clipboard ไว้ก่อน (เผื่อปลายทางไม่รับ text)
+  const text = (u.notes || '').trim();
+  if (text) copy(text, true);
+
+  // 3. สร้าง File objects จากรูปทั้งหมด
+  const files = photos.map((p, i) => new File(
+    [p.full],
+    `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`,
+    { type: 'image/jpeg' }
+  ));
+
+  // 4. ใช้ Web Share API — แชร์รูปทั้งหมด (แนบข้อความไปด้วยถ้ามี)
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({ files, text: text || undefined });
+      toast('แชร์รูปทั้งหมดแล้ว');
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        // fallback: ดาวน์โหลดรูปทั้งหมด
+        files.forEach(f => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(f);
+          a.download = f.name;
+          a.click();
+        });
+        toast('ดาวน์โหลดรูปทั้งหมดแล้ว');
+      }
+    }
+  } else {
+    // fallback สำหรับ browser เก่า: ดาวน์โหลดรูป
+    files.forEach(f => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(f);
+      a.download = f.name;
+      a.click();
+    });
+    toast('ดาวน์โหลดรูปทั้งหมดแล้ว');
+  }
 }
 
 function copy(text, silent) {
@@ -749,7 +751,7 @@ async function exportData() {
     for (const p of all) photos.push({ id: p.id, unitId: p.unitId, ts: p.ts, order: p.order, cover: !!p.cover, full: await blobToB64(p.full), thumb: await blobToB64(p.thumb) });
   }
   const cfg = getPostConfig();
-  const payload = { app: 'staylow', version: 4, exportedAt: new Date().toISOString(), units, photos, cfg };
+  const payload = { app: 'staylow', version: 7, exportedAt: new Date().toISOString(), units, photos, cfg };
   const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0, 10) + '.json';
   const file = new File([blob], name, { type: 'application/json' });
@@ -946,7 +948,7 @@ async function makeCollage(selectedPhotos) {
     const fit = (text, font) => { ctx.font = font; while (ctx.measureText(text).width > textMax && text.length > 3) text = text.slice(0, -2).trimEnd() + '…'; return text; };
     ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${Fn}`;
     ctx.fillText(fit(u.project, `bold 52px ${Fn}`), pad, 96);
-    const specs = [bedLabelTH(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
+    const specs = [(u.type === 'Studio' ? 'สตูดิโอ' : u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
     ctx.fillStyle = '#6b6058'; ctx.font = `34px ${Fn}`;
     ctx.fillText(fit(specs, `34px ${Fn}`), pad, 152);
     ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${Fn}`;
@@ -1135,7 +1137,7 @@ openDB().then(async () => { await refreshCounts(); render(); }).catch(() => {});
 render();
 
 // ============= UPDATE CHECK =============
-const APP_VERSION = '4.6';
+const APP_VERSION = '5.2';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
