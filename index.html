@@ -32,6 +32,10 @@ tailwind.config = { theme: { extend: { colors: {
   input, select, textarea { font-family:inherit; }
   .unit-row { transition: border-color .15s, background .15s; }
   .unit-row.active { border-color:#b85c38; background:#fbf3ee; }
+  .photo-cell { touch-action: manipulation; transition: transform .15s; }
+  .photo-cell.dragging-src { opacity: .35; }
+  .photo-cell.drop-target { outline: 3px solid #b85c38; outline-offset: -3px; transform: scale(.96); }
+  .photo-ghost img { pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-row { transition:none; } }
 </style>
 </head>
@@ -42,7 +46,7 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.5</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v3.7</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <button onclick="openSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white p-2.5 rounded-full transition-all shadow-md shadow-brick-500/30" aria-label="เพิ่มห้อง">
@@ -57,7 +61,7 @@ tailwind.config = { theme: { extend: { colors: {
     <!-- Search -->
     <div class="relative mb-5">
       <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-      <input id="search" type="text" placeholder="ค้นหารหัส, ห้อง, คอนโด, ผู้เช่า..." oninput="render()"
+      <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า, รายละเอียด..." oninput="render()"
         class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
     </div>
 
@@ -154,7 +158,9 @@ tailwind.config = { theme: { extend: { colors: {
     </label>
     <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
     <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
+    <p class="text-[11px] text-slate-500 mb-3 -mt-1">เคล็ดลับ: ในหน้าต่างเลือกรูป แตะ Albums เพื่อไปอัลบั้มที่ต้องการ แล้วลากนิ้วผ่านรูปต่อเนื่องเพื่อเลือกทีเดียวหลายรูป</p>
     <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
+    <p class="text-[11px] text-slate-500 mb-2">กดค้างที่รูปแล้วลากเพื่อจัดลำดับ รูปแรกจะเป็นรูปหน้าปก</p>
     <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
     <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้<br><span class="text-xs text-slate-500">เลือกรูปจากอัลบั้มในเครื่องเพื่อเริ่มต้น</span></div>
     <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
@@ -224,13 +230,6 @@ const seed = [
 
 let units = load().map((u, i) => ({ bath: '1', ownerLine: '', salePrice: '', createdAt: Date.now() - (9999 - i) * 1000, ...u }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
-(function backfillCodes() {
-  let changed = false;
-  units.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(u => {
-    if (!u.code) { u.code = makeCode(u, u.id); changed = true; }
-  });
-  if (changed) persist();
-})();
 let selectedId = null;
 let filter = 'all';
 let sortDir = 'new'; // 'new' = newest added first, 'old' = oldest first
@@ -250,31 +249,6 @@ const statusMeta = {
 };
 const EXPIRY_DAYS = 30;
 
-// ===== Room code: 2 letters (type) + 2 digits (floor) + 2 digits (running) =====
-// RT = ให้เช่าอย่างเดียว, SL = ขายอย่างเดียว/ขายห้องว่าง, RS = ขายพร้อมผู้เช่า
-function codePrefix(u) {
-  const hasSale = !!u.salePrice;
-  const rented = u.status === 'OCCUPIED';
-  if (hasSale && rented) return 'RS';
-  if (hasSale) return 'SL';
-  return 'RT';
-}
-function floorPart(u) {
-  const n = parseInt(String(u.floor || '').replace(/[^0-9]/g, ''), 10);
-  return Number.isFinite(n) ? String(Math.min(n, 99)).padStart(2, '0') : '00';
-}
-function nextSerial(prefix, floor, exceptId) {
-  const used = units.filter(u => u.id !== exceptId && u.code && u.code.slice(0, 4) === prefix + floor)
-    .map(u => parseInt(u.code.slice(4), 10)).filter(Number.isFinite);
-  let n = 1; while (used.includes(n)) n++;
-  return String(Math.min(n, 99)).padStart(2, '0');
-}
-function makeCode(u, exceptId) {
-  const p = codePrefix(u), f = floorPart(u);
-  // keep the existing running number when only the type/floor changed
-  const keep = u.code && u.code.length === 6 && u.code.slice(0, 4) === p + f ? u.code.slice(4) : null;
-  return p + f + (keep || nextSerial(p, f, exceptId));
-}
 function statusOf(u) {
   const d = daysLeft(u.end);
   if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
@@ -299,12 +273,11 @@ function render() {
   list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
   if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
-    const hay = u => [u.code, u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
+    const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
     // rank: project-name matches first, then room number, then everything else
     const score = u => {
-      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase(), c = (u.code || '').toLowerCase();
-      if (c === q) return -1;
+      const p = (u.project || '').toLowerCase(), r = (u.room || '').toLowerCase();
       if (p.startsWith(q)) return 0;
       if (p.includes(q)) return 1;
       if (r.includes(q)) return 2;
@@ -338,7 +311,7 @@ function render() {
     const m = statusOf(x);
     return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
       <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
-      <p class="text-xs font-semibold text-slate-200 truncate">${x.code ? `<span class="font-mono text-brick-600">${esc(x.code)}</span> · ` : ''}${esc(x.project)} · ${esc(x.room)}</p>
+      <p class="text-xs font-semibold text-slate-200 truncate">${esc(x.project)} · ${esc(x.room)}</p>
       <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
       <button onclick="lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
@@ -360,7 +333,7 @@ function cardHTML(u) {
       <img id="coverImg" class="w-full h-full object-cover" alt="">
     </div>
     <div class="flex justify-between items-start mb-3">
-      <div><div class="flex items-center gap-2"><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span>${u.code ? `<span class="text-[10px] font-mono font-semibold text-brick-600 bg-brick-500/10 border border-brick-500/20 px-1.5 py-0.5 rounded">${esc(u.code)}</span>` : ''}</div><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
+      <div><span class="text-xs text-slate-400 font-medium">${esc(u.project)}</span><h2 class="text-xl font-bold text-ink">ห้อง ${esc(u.room)}</h2></div>
       <div class="flex items-center gap-1.5">
         <button onclick="cycleStatus('${u.id}')" class="${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 active:scale-95" title="แตะเพื่อเปลี่ยนสถานะ">
           <span class="w-1.5 h-1.5 rounded-full ${m.dot} animate-pulse"></span>${m.label}</button>
@@ -522,8 +495,8 @@ function saveUnit() {
   const data = {}; F.forEach(k => data[k] = document.getElementById('f_' + k).value.trim());
   if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้องก่อน');
   data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
-  if (id) { const t = units.find(x => x.id === id); Object.assign(t, data); t.code = makeCode(t, t.id); toast('บันทึกการแก้ไขแล้ว'); }
-  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); data.code = makeCode(data, data.id); units.unshift(data); selectedId = data.id; toast(`เพิ่มห้องแล้ว · รหัส ${data.code}`); }
+  if (id) { const t = units.find(x => x.id === id); Object.assign(t, data); toast('บันทึกการแก้ไขแล้ว'); }
+  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); units.unshift(data); selectedId = data.id; toast('เพิ่มห้องแล้ว'); }
   persist(); closeSheet(); render();
 }
 function deleteUnit() {
@@ -635,7 +608,7 @@ async function importExcel(file) {
       };
       const roomKnown = room && room !== '-' && room !== '–' && room.toLowerCase() !== 'n/a';
       const i = roomKnown ? units.findIndex(u => (u.project || '').trim().toLowerCase() === project.toLowerCase() && (u.room || '').trim().toLowerCase() === room.toLowerCase()) : -1;
-      if (i >= 0) { units[i] = { ...units[i], ...data }; units[i].code = makeCode(units[i], units[i].id); updated++; } else { const nu = { id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }; nu.code = makeCode(nu, nu.id); units.push(nu); added++; }
+      if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; } else { units.push({ id: 'u' + Date.now() + '_' + r, createdAt: Date.now() + r, ...data }); added++; }
     }
     persist();
     selectedId = null; render(); closeBackup();
@@ -661,7 +634,7 @@ function openDB() {
 function tx(mode) { return db.transaction('photos', mode).objectStore('photos'); }
 function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 function getUnitPhotos(unitId) {
-  return req(tx('readonly').index('unit').getAll(unitId)).then(a => a.sort((x, y) => (y.cover ? 1 : 0) - (x.cover ? 1 : 0) || x.ts - y.ts));
+  return req(tx('readonly').index('unit').getAll(unitId)).then(a => a.sort((x, y) => (x.order ?? x.ts ?? 0) - (y.order ?? y.ts ?? 0)));
 }
 async function refreshCounts() {
   if (!db) return;
@@ -738,7 +711,7 @@ async function makeCollage() {
   try {
     await loadLogo();
     const pics = galleryPhotos.slice(0, 6);
-    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 266, footH = 128;
+    const W = 1080, cols = 2, gap = 14, pad = 36, headH = 250, footH = 128;
     const cell = (W - pad * 2 - gap * (cols - 1)) / cols;
     const rows = Math.ceil(pics.length / cols);
     const H = headH + rows * cell + (rows - 1) * gap + pad + footH;
@@ -754,14 +727,13 @@ async function makeCollage() {
     // 1) condo name
     ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${F}`;
     ctx.fillText(fit(u.project, `bold 52px ${F}`), pad, 96);
-    if (u.code) { ctx.fillStyle = '#b85c38'; ctx.font = `bold 24px ${F}`; ctx.fillText(u.code, pad, 132); }
     // 2) bedrooms · bathrooms · area
     const specs = [bedLabel(u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
     ctx.fillStyle = '#6b6058'; ctx.font = `34px ${F}`;
-    ctx.fillText(fit(specs, `34px ${F}`), pad, 176);
+    ctx.fillText(fit(specs, `34px ${F}`), pad, 152);
     // 3) rent
     ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${F}`;
-    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 228);
+    ctx.fillText(`฿${Number(u.rent).toLocaleString('th-TH')} / เดือน`, pad, 212);
     // photos (center-crop to square)
     for (let i = 0; i < pics.length; i++) {
       const img = await decodeImage(pics[i].full);
@@ -786,16 +758,34 @@ async function makeCollage() {
 }
 
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
+const photoUrlCache = new Map(); // photo id -> { thumbUrl, fullUrl }
+function thumbUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb);
+  return e.thumbUrl;
+}
+function fullUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.fullUrl) e.fullUrl = URL.createObjectURL(p.full);
+  return e.fullUrl;
+}
+function clearPhotoUrlCache() {
+  photoUrlCache.forEach(e => { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); });
+  photoUrlCache.clear();
+}
 function pickPhotos(src) { document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum').click(); }
 async function importPhotos(files) {
   if (!files || !files.length || !galleryUnitId) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden');
   let ok = 0;
+  const base = Date.now();
   for (let i = 0; i < files.length; i++) {
     prog.textContent = `กำลังบันทึกรูป ${i + 1}/${files.length}...`;
     try {
       const [full, thumb] = await processPhoto(files[i]);
-      await req(tx('readwrite').put({ id: 'p' + Date.now() + '_' + i, unitId: galleryUnitId, full, thumb, ts: Date.now() + i, cover: false }));
+      await req(tx('readwrite').put({ id: 'p' + base + '_' + i, unitId: galleryUnitId, full, thumb, ts: base + i, order: base + i }));
       ok++;
     } catch (e) { console.error(e); }
   }
@@ -806,6 +796,7 @@ async function importPhotos(files) {
 }
 async function openGallery(unitId) {
   if (!db) return toast('เบราว์เซอร์นี้ไม่รองรับการเก็บรูปในเครื่อง');
+  clearPhotoUrlCache();
   galleryUnitId = unitId;
   const u = units.find(x => x.id === unitId);
   document.getElementById('galTitle').textContent = `รูปห้อง ${u ? u.room + ' · ' + u.project : ''}`;
@@ -817,17 +808,95 @@ async function openGallery(unitId) {
 function closeGallery() {
   document.getElementById('galOverlay').classList.add('hidden');
   document.getElementById('gallery').classList.remove('open');
+  clearPhotoUrlCache();
 }
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
-  grid.querySelectorAll('img').forEach(i => URL.revokeObjectURL(i.src));
-  grid.innerHTML = galleryPhotos.map((p, i) => `<button onclick="openLightbox(${i})" class="relative aspect-square rounded-lg overflow-hidden bg-slate-800 active:scale-95 transition-transform">
-    <img src="${URL.createObjectURL(p.thumb)}" class="w-full h-full object-cover" alt="">
-    ${p.cover ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}</button>`).join('');
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 select-none" data-id="${p.id}">
+    <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
+    ${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded pointer-events-none">ปก</span>' : ''}
+    <span class="drag-handle absolute bottom-1 right-1 w-6 h-6 rounded-md bg-black/45 flex items-center justify-center text-white"><i data-lucide="grip-vertical" class="w-3.5 h-3.5 pointer-events-none"></i></span>
+  </div>`).join('');
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
+  setupPhotoDrag();
+}
+
+// long-press a thumbnail to pick it up, drag over another to swap, release to drop
+function setupPhotoDrag() {
+  const grid = document.getElementById('galGrid');
+  let dragId = null, ghost = null, longPress = null, startX = 0, startY = 0, armed = false, moved = false, hoverCell = null;
+  const LONG_PRESS_MS = 260, MOVE_CANCEL = 10;
+
+  function cleanup() {
+    clearTimeout(longPress);
+    if (ghost) { ghost.remove(); ghost = null; }
+    if (hoverCell) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+    grid.querySelectorAll('.photo-cell').forEach(c => c.classList.remove('dragging-src'));
+    dragId = null; armed = false; moved = false;
+  }
+
+  grid.querySelectorAll('.photo-cell').forEach(cell => {
+    cell.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX; startY = e.clientY; moved = false; armed = false;
+      const id = cell.dataset.id;
+      longPress = setTimeout(() => {
+        armed = true; dragId = id;
+        cell.classList.add('dragging-src');
+        if (navigator.vibrate) navigator.vibrate(8);
+        const r = cell.getBoundingClientRect();
+        ghost = cell.cloneNode(true);
+        ghost.classList.add('photo-ghost');
+        ghost.style.cssText = `position:fixed; left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; pointer-events:none; z-index:200; opacity:.95; transform:scale(1.08) rotate(-2deg); box-shadow:0 12px 30px rgba(0,0,0,.35); border-radius:10px;`;
+        document.body.appendChild(ghost);
+      }, LONG_PRESS_MS);
+    });
+
+    cell.addEventListener('pointermove', (e) => {
+      if (!armed) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_CANCEL) clearTimeout(longPress);
+        return;
+      }
+      moved = true; e.preventDefault();
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (ghost) { const r0 = cell.getBoundingClientRect(); ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.08) rotate(-2deg)`; }
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const target = el && el.closest ? el.closest('.photo-cell') : null;
+      if (hoverCell && hoverCell !== target) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+      if (target && target.dataset.id !== dragId) { target.classList.add('drop-target'); hoverCell = target; }
+    }, { passive: false });
+
+    const endHandler = (e) => {
+      clearTimeout(longPress);
+      const wasDrag = armed && moved;
+      if (wasDrag && hoverCell) {
+        const fromId = dragId, toId = hoverCell.dataset.id;
+        const ids = galleryPhotos.map(p => p.id);
+        const fi = ids.indexOf(fromId), ti = ids.indexOf(toId);
+        if (fi > -1 && ti > -1 && fi !== ti) {
+          const [m] = ids.splice(fi, 1); ids.splice(ti, 0, m);
+          commitPhotoOrder(ids);
+        }
+      }
+      cleanup();
+      cell.dataset.justDragged = wasDrag ? '1' : '0';
+    };
+    cell.addEventListener('pointerup', endHandler);
+    cell.addEventListener('pointercancel', cleanup);
+    cell.addEventListener('click', () => {
+      if (cell.dataset.justDragged === '1') { cell.dataset.justDragged = '0'; return; }
+      const idx = galleryPhotos.findIndex(p => p.id === cell.dataset.id);
+      if (idx > -1) openLightbox(idx);
+    });
+  });
+}
+async function commitPhotoOrder(idsInOrder) {
+  const s = tx('readwrite');
+  galleryPhotos.forEach(p => { const idx = idsInOrder.indexOf(p.id); if (idx > -1) { p.order = idx; s.put(p); } });
+  await renderGallery(); render();
 }
 function openLightbox(i) {
   lbIndex = i; showLb();
@@ -835,9 +904,7 @@ function openLightbox(i) {
 }
 function showLb() {
   const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox();
-  const img = document.getElementById('lbImg');
-  if (img.src) URL.revokeObjectURL(img.src);
-  img.src = URL.createObjectURL(p.full);
+  document.getElementById('lbImg').src = fullUrlOf(p);
   document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`;
 }
 function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % galleryPhotos.length; showLb(); }
@@ -845,15 +912,18 @@ function closeLightbox() { const lb = document.getElementById('lightbox'); lb.cl
 async function deleteCurrentPhoto() {
   const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
   await req(tx('readwrite').delete(p.id));
+  const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
   await refreshCounts(); await renderGallery(); render();
   if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
   toast('ลบรูปแล้ว');
 }
 async function setCover() {
   const p = galleryPhotos[lbIndex]; if (!p) return;
-  const s = tx('readwrite');
-  galleryPhotos.forEach(x => { x.cover = x.id === p.id; s.put(x); });
-  await renderGallery(); render(); toast('ตั้งเป็นรูปหน้าปกแล้ว');
+  const ids = galleryPhotos.map(x => x.id).filter(id => id !== p.id);
+  ids.unshift(p.id);
+  await commitPhotoOrder(ids);
+  lbIndex = 0; showLb();
+  toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
 async function sharePhotos() {
   const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
@@ -883,7 +953,7 @@ function toast(msg) {
 render();
 
 // ===== Update check =====
-const APP_VERSION = '3.5';
+const APP_VERSION = '3.7';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
