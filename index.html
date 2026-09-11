@@ -32,17 +32,19 @@ tailwind.config = { theme: { extend: { colors: {
   input, select, textarea { font-family:inherit; }
   .unit-row { transition: border-color .15s, background .15s; }
   .unit-row.active { border-color:#b85c38; background:#fbf3ee; }
-  .photo-cell { position:relative; touch-action: manipulation; }
-  .pick-cell { transition: transform .12s; cursor:pointer; }
-  .pick-cell:active { transform: scale(.96); }
-  .pick-cell.selected { outline: 3px solid #b85c38; outline-offset: -3px; }
-  .pick-cell .order-badge { position:absolute; top:4px; left:4px; min-width:22px; height:22px; border-radius:11px; background:#b85c38; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; }
+  .unit-row.selected { border-color:#06C755; background:#f0fdf4; }
+  .photo-cell { touch-action: manipulation; transition: transform .15s; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .photo-cell.dragging-src { opacity: .35; }
+  .photo-cell.drop-target { outline: 3px solid #b85c38; outline-offset: -3px; transform: scale(.96); }
+  .photo-ghost { -webkit-touch-callout: none; transition: none !important; }
+  .photo-ghost img { pointer-events: none; }
   .inp { display:block; width:100%; margin-top:4px; background:#fff; border:1px solid #e4dfd9; border-radius:12px; padding:10px 12px; font-size:14px; color:#1c1917; }
   .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 3px rgba(184,92,56,.15); }
   .inp-check { width:18px; height:18px; accent-color:#b85c38; }
   label { color:#6b625a; font-size:12px; }
   .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; }
   .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; }
+  .chip { display:inline-flex; align-items:center; gap:4px; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-row { transition:none; } }
 </style>
 </head>
@@ -53,10 +55,13 @@ tailwind.config = { theme: { extend: { colors: {
   <!-- Header -->
   <header class="p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
     <div>
-      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v4.5</span></span></span>
+      <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v4.0</span></span></span>
       <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
     </div>
     <div class="flex items-center gap-1.5">
+      <button onclick="toggleSelectMode()" id="selectModeBtn" class="text-slate-500 hover:text-brick-600 p-2.5 rounded-full transition-all" aria-label="โหมดเลือกหลายห้อง">
+        <i data-lucide="check-square" class="w-5 h-5"></i>
+      </button>
       <button onclick="openSettings()" class="text-slate-500 hover:text-brick-600 p-2.5 rounded-full transition-all" aria-label="ตั้งค่า">
         <i data-lucide="settings" class="w-5 h-5"></i>
       </button>
@@ -68,8 +73,14 @@ tailwind.config = { theme: { extend: { colors: {
 
   <div id="updateBar" onclick="applyUpdate()" class="hidden bg-brick-500 text-white text-xs font-semibold text-center py-2 cursor-pointer active:bg-brick-400">มีเวอร์ชันใหม่ <span id="newVer"></span> · แตะเพื่ออัปเดต</div>
 
+  <!-- Select mode bar -->
+  <div id="selectBar" class="hidden bg-[#06C755] text-white text-xs font-semibold px-4 py-2 flex items-center justify-between">
+    <span id="selectCount">เลือกแล้ว 0 ห้อง</span>
+    <button onclick="toggleSelectMode()" class="underline">ยกเลิก</button>
+  </div>
+
   <!-- Main -->
-  <main class="flex-1 overflow-y-auto p-4 pb-28 hide-scrollbar">
+  <main class="flex-1 overflow-y-auto p-4 pb-40 hide-scrollbar">
 
     <!-- Search -->
     <div class="relative mb-5">
@@ -106,11 +117,25 @@ tailwind.config = { theme: { extend: { colors: {
     </div>
   </main>
 
-  <!-- Bottom nav (4 ปุ่ม) -->
-  <nav class="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/90 backdrop-blur-lg border-t border-slate-700 p-2 px-6 pb-[max(8px,env(safe-area-inset-bottom))] flex justify-around items-center z-40">
+  <!-- Bottom batch action bar (select mode) -->
+  <div id="batchBar" class="hidden fixed bottom-[68px] left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 px-3 py-2.5 z-40 grid grid-cols-3 gap-2">
+    <button onclick="batchCopy('fb')" class="bg-[#1877F2] text-white text-xs font-semibold py-2.5 rounded-full flex items-center justify-center gap-1.5 active:scale-95">
+      <i data-lucide="facebook" class="w-4 h-4"></i>Facebook
+    </button>
+    <button onclick="batchCopy('line')" class="bg-[#06C755] text-white text-xs font-semibold py-2.5 rounded-full flex items-center justify-center gap-1.5 active:scale-95">
+      <i data-lucide="message-circle" class="w-4 h-4"></i>LINE
+    </button>
+    <button onclick="batchCopy('plain')" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold py-2.5 rounded-full flex items-center justify-center gap-1.5 active:scale-95">
+      <i data-lucide="copy" class="w-4 h-4"></i>Copy
+    </button>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/90 backdrop-blur-lg border-t border-slate-700 p-2 px-4 pb-[max(8px,env(safe-area-inset-bottom))] flex justify-between items-center z-40">
     <button onclick="setFilter('all')" class="flex flex-col items-center gap-1 text-brick-600 p-1.5"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">Home</span></button>
     <button onclick="setFilter('AVAILABLE')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="building-2" class="w-5 h-5"></i><span class="text-[10px] font-medium">Available</span></button>
     <button onclick="showExpiring()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium">Expiring</span></button>
+    <button onclick="openSheet('add')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="plus-square" class="w-5 h-5"></i><span class="text-[10px] font-medium">Add</span></button>
     <button onclick="openBackup()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 p-1.5"><i data-lucide="database" class="w-5 h-5"></i><span class="text-[10px] font-medium">Backup</span></button>
   </nav>
 
@@ -148,7 +173,7 @@ tailwind.config = { theme: { extend: { colors: {
       <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
         <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
         <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
-        <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88"></label>
+        <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88 หรือลิงก์ line.me/ti/p/..."></label>
       </div>
       <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
         <label class="col-span-2">ผู้เช่าปัจจุบัน<input id="f_tenant" class="inp" placeholder="เว้นว่างถ้าห้องว่าง"></label>
@@ -174,7 +199,7 @@ tailwind.config = { theme: { extend: { colors: {
       <label>ชื่อเอเจ้น<input id="cfg_agentName" class="inp" placeholder="MAX"></label>
       <label>เบอร์โทร<input id="cfg_phone" type="tel" class="inp" placeholder="062-242-3154"></label>
       <label>LINE ID<input id="cfg_lineId" class="inp" placeholder="max.kmc"></label>
-      <label>Hashtag (คั่นด้วยช่องว่าง)<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ"></textarea></label>
+      <label>Hashtag (คั่นด้วยช่องว่าง)<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ #ห้องเช่า"></textarea></label>
       <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_showContact" class="inp-check"><span>ใส่ข้อมูลติดต่อในข้อความที่แชร์</span></label>
     </div>
     <div class="flex gap-2 mt-5">
@@ -201,38 +226,16 @@ tailwind.config = { theme: { extend: { colors: {
     </label>
     <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
     <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
+    <p class="text-[11px] text-slate-500 mb-3 -mt-1">เคล็ดลับ: ในหน้าต่างเลือกรูป แตะ Albums เพื่อไปอัลบั้มที่ต้องการ แล้วลากนิ้วผ่านรูปต่อเนื่องเพื่อเลือกทีเดียวหลายรูป</p>
     <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
-    <p class="text-[11px] text-slate-500 mb-2">แตะรูปเพื่อดูเต็ม · เลือกติ๊กตอนกดปุ่มด้านล่าง</p>
+    <p class="text-[11px] text-slate-500 mb-2">กดค้างที่รูปแล้วลากเพื่อจัดลำดับ รูปแรกจะเป็นรูปหน้าปก</p>
     <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
     <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้<br><span class="text-xs text-slate-500">เลือกรูปจากอัลบั้มในเครื่องเพื่อเริ่มต้น</span></div>
     <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
-      <button onclick="openPhotoPicker('share')" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปที่เลือก</button>
-      <button onclick="openPhotoPicker('collage')" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
+      <button onclick="sharePhotos()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปทั้งหมด</button>
+      <button onclick="makeCollage()" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
+      <p class="col-span-2 text-[11px] text-slate-500 text-center">ต้องการส่ง LINE แบบกริด: กด "ส่งรูปทั้งหมด" → Save Images → เลือกรูปใน LINE</p>
     </div>
-  </div>
-
-  <!-- Photo picker sheet -->
-  <div id="pickOverlay" class="fixed inset-0 bg-black/40 z-[55] hidden" onclick="closePhotoPicker()"></div>
-  <div id="pickSheet" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-[56] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar">
-    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
-    <div class="flex justify-between items-center mb-1">
-      <h2 id="pickTitle" class="text-base font-bold text-ink">เลือกรูป</h2>
-      <button onclick="closePhotoPicker()" class="text-slate-400 p-1" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button>
-    </div>
-    <p id="pickHint" class="text-xs text-slate-400 mb-4">แตะเพื่อเลือก/ยกเลิก · ลำดับที่เลือกจะแสดงบนรูป</p>
-
-    <div class="flex gap-2 mb-3">
-      <button onclick="pickAll()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold py-2 rounded-full active:scale-95">เลือกทั้งหมด</button>
-      <button onclick="pickNone()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold py-2 rounded-full active:scale-95">ล้างที่เลือก</button>
-    </div>
-
-    <div id="pickGrid" class="grid grid-cols-3 gap-1.5 mb-3"></div>
-
-    <p id="pickCount" class="text-xs text-slate-400 text-center mb-3">เลือกแล้ว 0 รูป</p>
-
-    <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40">
-      <i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span>
-    </button>
   </div>
 
   <!-- Backup sheet -->
@@ -240,14 +243,14 @@ tailwind.config = { theme: { extend: { colors: {
   <div id="backup" class="sheet fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 p-5 pb-[max(20px,env(safe-area-inset-bottom))]">
     <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
     <h2 class="text-base font-bold text-ink mb-1">สำรอง / กู้คืนข้อมูล</h2>
-    <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้องและรูปทั้งหมด</p>
+    <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้องและรูปทั้งหมด ใช้ย้ายข้อมูลระหว่าง Safari กับแอปบนหน้าจอโฮม หรือย้ายไปเครื่องใหม่</p>
     <div class="space-y-2">
       <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล (ดาวน์โหลดไฟล์)</button>
       <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์สำรอง</button>
       <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
     </div>
     <div class="border-t border-slate-800 mt-4 pt-4">
-      <p class="text-xs text-slate-400 mb-3">นำเข้าห้องหลายรายการพร้อมกันจากไฟล์ Excel</p>
+      <p class="text-xs text-slate-400 mb-3">นำเข้าห้องหลายรายการพร้อมกันจากไฟล์ Excel (โครงการ+เลขห้องซ้ำจะอัปเดตทับ ไม่ซ้ำจะเพิ่มใหม่)</p>
       <button onclick="document.getElementById('xlFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-brick-600"></i>นำเข้าจาก Excel</button>
       <input type="file" id="xlFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(this.files[0])">
     </div>
@@ -297,9 +300,15 @@ units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.le
 let selectedId = null;
 let filter = 'all';
 let sortDir = 'new';
+let selectMode = false;
+let selectedForPost = new Set();
 
 function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
-function load() { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(seed)); }
+
+function load() {
+  try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {}
+  return JSON.parse(JSON.stringify(seed));
+}
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 
 // ============= POST CONFIG =============
@@ -376,21 +385,13 @@ function hasActivePromo(u) {
   if (!u.promoRent || !u.promoUntil) return false;
   return new Date(u.promoUntil + 'T23:59:59') >= new Date();
 }
-
-// ⭐ postedState — แสดง "โพสต์วันนี้ · 3 ครั้ง · ล่าสุด 14:32"
 function postedState(u) {
   if (!u.lastPosted) return { level:'never', label:'ยังไม่โพสต์', cls:'text-amber-600' };
-  const d = new Date(u.lastPosted);
-  const timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  const today = new Date(); today.setHours(0,0,0,0);
-  const postDay = new Date(u.lastPosted); postDay.setHours(0,0,0,0);
-  const days = Math.floor((today - postDay) / 86400000);
-  const cnt = u.postCount ? ` · ${u.postCount} ครั้ง` : '';
-  const time = ` · ล่าสุด ${timeStr}`;
-  if (days === 0) return { level:'fresh', label:`โพสต์วันนี้${cnt}${time}`, cls:'text-emerald-600' };
-  if (days === 1) return { level:'ok', label:`โพสต์เมื่อวาน${cnt}${time}`, cls:'text-slate-500' };
-  if (days < STALE_DAYS) return { level:'aging', label:`โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-slate-500' };
-  return { level:'stale', label:`⚠ โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-amber-600 font-semibold' };
+  const days = Math.floor((Date.now() - u.lastPosted) / 86400000);
+  if (days === 0) return { level:'fresh', label:'โพสต์วันนี้', cls:'text-emerald-600' };
+  if (days < 3) return { level:'ok', label:`โพสต์ ${days} วันก่อน`, cls:'text-slate-500' };
+  if (days < STALE_DAYS) return { level:'aging', label:`โพสต์ ${days} วันก่อน`, cls:'text-slate-500' };
+  return { level:'stale', label:`⚠ โพสต์ ${days} วันก่อน`, cls:'text-amber-600 font-semibold' };
 }
 
 // ============= CAPTION BUILDER =============
@@ -428,12 +429,16 @@ function formatUnitLine(u) {
 }
 function buildCaption(u, platform = 'fb') {
   const cfg = getPostConfig();
+  const header = u.project;
   let body;
   if (platform === 'line') {
-    const lines = [`🏢 ${u.project}`, formatUnitLine(u)];
+    const lines = [`🏢 ${header}`, formatUnitLine(u)];
     if (u.salePrice) lines.push(`🏷️ ขาย ${fmtNum(u.salePrice)} บาท`);
     body = lines.join('\n');
+  } else if (platform === 'plain') {
+    body = formatUnitFB(u);
   } else {
+    // fb — full
     body = formatUnitFB(u);
   }
   const parts = [body];
@@ -441,6 +446,33 @@ function buildCaption(u, platform = 'fb') {
     parts.push('');
     parts.push(platform === 'line'
       ? `📞 สนใจติดต่อ ${cfg.phone} | LINE: ${cfg.lineId}`
+      : `📞 ${cfg.phone}  |  💚 LINE: ${cfg.lineId}\n👤 ${cfg.agentName}`);
+  }
+  if (platform === 'fb' && cfg.hashtags) {
+    parts.push('');
+    parts.push(cfg.hashtags);
+  }
+  return parts.join('\n');
+}
+function buildBatchCaption(list, platform = 'fb') {
+  const cfg = getPostConfig();
+  const project = list[0]?.project || '';
+  const sameProj = list.every(u => u.project === project);
+  const header = sameProj
+    ? `✅ ${project} — ${list.length} ห้อง`
+    : `✅ รวม ${list.length} ห้อง`;
+  const separator = '━━━━━━━━━━━━━━━━';
+  let body;
+  if (platform === 'line') {
+    body = list.map(u => formatUnitLine(u)).join('\n');
+  } else {
+    body = list.map(u => formatUnitFB(u)).join('\n\n');
+  }
+  const parts = [header, separator, body];
+  if (cfg.showContact) {
+    parts.push('');
+    parts.push(platform === 'line'
+      ? `📞 ติดต่อ ${cfg.phone} | LINE: ${cfg.lineId}`
       : `📞 ${cfg.phone}  |  💚 LINE: ${cfg.lineId}\n👤 ${cfg.agentName}`);
   }
   if (platform === 'fb' && cfg.hashtags) {
@@ -481,6 +513,7 @@ function render() {
     list = list.slice().sort((a, b) => score(a) - score(b) || (sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0)));
   }
 
+  // summary
   const cnt = s => units.filter(u => u.status === s).length;
   const expiring = units.filter(u => { const d = daysLeft(u.end); return d !== null && d <= EXPIRY_DAYS && d >= 0; }).length;
   const unposted = units.filter(u => !u.lastPosted).length;
@@ -490,6 +523,7 @@ function render() {
     ['ยังไม่โพสต์', unposted, 'text-amber-600']
   ].map(([l, v, c]) => `<div class="bg-slate-900 border border-slate-800/80 rounded-xl p-3 text-center"><p class="text-lg font-bold ${c}">${v}</p><p class="text-[10px] text-slate-500">${l}</p></div>`).join('');
 
+  // filters
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
   document.getElementById('listTitle').textContent =
     filter === 'EXPIRING' ? `ห้องใกล้หมดสัญญา (${list.length})` :
@@ -497,23 +531,36 @@ function render() {
     filter === 'STALE' ? `โพสต์เกิน ${STALE_DAYS} วัน (${list.length})` :
     `รายการห้องพัก (${list.length})`;
 
+  // select bar
+  const sb = document.getElementById('selectBar');
+  const bb = document.getElementById('batchBar');
+  if (selectMode) { sb.classList.remove('hidden'); bb.classList.remove('hidden'); document.getElementById('selectCount').textContent = `เลือกแล้ว ${selectedForPost.size} ห้อง`; }
+  else { sb.classList.add('hidden'); bb.classList.add('hidden'); }
+
+  document.getElementById('selectModeBtn').classList.toggle('text-brick-600', selectMode);
+
+  // selected card
   const u = selectedId ? units.find(x => x.id === selectedId) : null;
   if (selectedId && !u) selectedId = null;
   document.getElementById('unitCard').innerHTML = u
     ? cardHTML(u)
     : (units.length ? '' : `<div class="bg-slate-900 border border-dashed border-slate-700 rounded-2xl p-8 mb-5 text-center text-sm text-slate-400">ยังไม่มีห้องในระบบ<br><button onclick="openSheet('add')" class="mt-3 text-brick-600 font-semibold">+ เพิ่มห้องแรก</button></div>`);
 
+  // list
   document.getElementById('unitList').innerHTML = list.length ? list.map(x => {
     const m = statusOf(x);
     const ps = postedState(x);
+    const isSel = selectedForPost.has(x.id);
     const promoBadge = hasActivePromo(x) ? `<span class="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-bold">PRO</span>` : '';
-    return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''}">
-      <button onclick="select('${x.id}')" class="flex-1 text-left min-w-0">
+    return `<div class="unit-row bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 ${x.id === selectedId ? 'active' : ''} ${isSel ? 'selected' : ''}">
+      ${selectMode ? `<button onclick="event.stopPropagation(); toggleSelectUnit('${x.id}')" class="shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center ${isSel ? 'bg-[#06C755] border-[#06C755] text-white' : 'border-slate-400'}">${isSel ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</button>` : ''}
+      <button onclick="${selectMode ? `toggleSelectUnit('${x.id}')` : `select('${x.id}')`}" class="flex-1 text-left min-w-0">
       <p class="text-xs font-semibold text-slate-200 truncate">${promoBadge} ${esc(x.project)} · ${esc(x.room)}</p>
       <p class="text-[11px] text-slate-400">${baht(x.rent)} / เดือน · ${esc(x.type)}${x.bath ? ' ' + esc(x.bath) + ' Bath' : ''}${x.salePrice ? ' · ขาย ' + baht(x.salePrice) : ''}${photoCount[x.id] ? ' · 📷 ' + photoCount[x.id] : ''}${x.tenant ? ' · ' + esc(x.tenant) : ''}</p>
       <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p></button>
       <span class="text-[10px] ${m.cls} border px-2 py-0.5 rounded font-medium shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</span>
-      <button onclick="event.stopPropagation(); quickCopy('${x.id}','fb')" class="shrink-0 w-8 h-8 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95" aria-label="คัดลอกรายละเอียด"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
+      <button onclick="event.stopPropagation(); quickCopy('${x.id}','fb')" class="shrink-0 w-8 h-8 rounded-lg bg-[#1877F2]/15 text-[#1877F2] flex items-center justify-center active:scale-95" aria-label="คัดลอก Facebook"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+      <button onclick="event.stopPropagation(); lineShare('${x.id}')" class="shrink-0 w-8 h-8 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95" aria-label="ส่งไป LINE"><i data-lucide="message-circle" class="w-4 h-4"></i></button></div>`;
   }).join('') : `<p class="text-xs text-slate-500 text-center py-6">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
 
   lucide.createIcons();
@@ -555,19 +602,20 @@ function cardHTML(u) {
     ${u.notes ? `<p class="text-xs text-slate-400 mb-3 pl-1 whitespace-pre-line line-clamp-4">${esc(u.notes)}</p>` : ''}
 
     <div class="flex items-center justify-between text-[11px] mb-3 px-1">
-      <span class="${ps.cls}">${ps.label}</span>
+      <span class="${ps.cls}">${ps.label}${u.postCount ? ' · ' + u.postCount + ' ครั้ง' : ''}</span>
       <button onclick="markAsPosted('${u.id}')" class="text-[#06C755] font-semibold underline">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
 
-    <button onclick="quickCopy('${u.id}','fb')" class="w-full bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 mb-2 transition-all shadow-md shadow-brick-500/25">
-      <i data-lucide="copy" class="w-4 h-4"></i>คัดลอกรายละเอียด
-    </button>
-    <button onclick="contactOwner('${u.id}')" class="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 mb-2 transition-all">
-      <i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>ติดต่อเจ้าของห้อง
-    </button>
+    <div class="grid grid-cols-3 gap-2 mb-2">
+      <button onclick="quickCopy('${u.id}','fb')" class="col-span-1 bg-[#1877F2] hover:bg-[#166fe5] active:scale-95 text-white font-semibold text-[11px] py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="copy" class="w-3.5 h-3.5"></i>FB</button>
+      <button onclick="lineShare('${u.id}')" class="col-span-1 bg-[#06C755] hover:bg-[#05b34b] active:scale-95 text-white font-semibold text-[11px] py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>
+      <button onclick="quickCopy('${u.id}','plain')" class="col-span-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-[11px] py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="clipboard" class="w-3.5 h-3.5"></i>Copy</button>
+    </div>
     <div class="grid grid-cols-2 gap-2.5">
-      <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไข</button>
-      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูปห้อง (${photoCount[u.id] || 0})</button>
+      <button onclick="shareListing('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์</button>
+      <button onclick="contactOwner('${u.id}')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>เจ้าของ</button>
+      <button onclick="openSheet('edit','${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i>แก้ไข</button>
+      <button onclick="openGallery('${u.id}')" class="bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-800 text-xs py-2 px-3 rounded-full flex items-center justify-center gap-2 transition-all"><i data-lucide="image" class="w-4 h-4 text-slate-400"></i>รูป (${photoCount[u.id] || 0})</button>
     </div>
   </div>
   <div class="space-y-3 mb-5">
@@ -626,14 +674,25 @@ function quickCopy(id, platform) {
   const u = units.find(x => x.id === id); if (!u) return;
   const text = buildCaption(u, platform);
   copy(text);
-  toast('คัดลอกรายละเอียดแล้ว — พร้อมวาง');
+  const label = platform === 'fb' ? 'Facebook' : platform === 'line' ? 'LINE' : 'ข้อความ';
+  toast(`คัดลอกสำหรับ ${label} แล้ว — พร้อมวาง`);
+}
+function lineShare(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const text = buildCaption(u, 'line');
+  copy(text, true);
+  const w = window.open('https://line.me/R/share?text=' + encodeURIComponent(text), '_blank');
+  if (!w) location.href = 'https://line.me/R/share?text=' + encodeURIComponent(text);
+}
+function shareListing(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const text = buildCaption(u, 'fb');
+  if (navigator.share) { navigator.share({ text }).catch(() => copy(text)); }
+  else copy(text);
 }
 function copy(text, silent) {
-  if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  else fallbackCopy(text);
-}
-function fallbackCopy(text) {
-  try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (e) {}
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => { if (!silent) {} }).catch(() => {});
+  else { try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (e) {} }
 }
 function lineUrlOf(v) {
   v = (v || '').trim(); if (!v) return '';
@@ -652,7 +711,28 @@ function contactOwner(id) {
   const tel = (u.ownerPhone || '').replace(/[^0-9+]/g, '');
   if (u.ownerLine) return openOwnerLine(id);
   if (tel && /^\+?\d{6,}$/.test(tel)) location.href = 'tel:' + tel;
-  else toast(`ยังไม่มีเบอร์หรือ LINE ของ ${u.owner || 'เจ้าของ'}`);
+  else toast(`ยังไม่มีเบอร์หรือ LINE ของ ${u.owner || 'เจ้าของ'} — แก้ไขข้อมูลเพื่อเพิ่ม`);
+}
+
+// ============= MULTI-SELECT =============
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  if (!selectMode) selectedForPost.clear();
+  selectedId = null;
+  render();
+}
+function toggleSelectUnit(id) {
+  if (selectedForPost.has(id)) selectedForPost.delete(id);
+  else selectedForPost.add(id);
+  render();
+}
+function batchCopy(platform) {
+  const list = units.filter(u => selectedForPost.has(u.id));
+  if (!list.length) return toast('ยังไม่ได้เลือกห้อง');
+  const text = buildBatchCaption(list, platform);
+  copy(text);
+  const label = platform === 'fb' ? 'Facebook' : platform === 'line' ? 'LINE' : 'ข้อความ';
+  toast(`คัดลอก ${list.length} ห้องสำหรับ ${label} แล้ว`);
 }
 
 // ============= SHEET =============
@@ -728,6 +808,7 @@ function deleteUnit() {
   if (!u || !confirm(`ลบ ${u.project} ห้อง ${u.room} ออกจากระบบ?`)) return;
   units = units.filter(x => x.id !== id);
   if (selectedId === id) selectedId = null;
+  selectedForPost.delete(id);
   deleteUnitPhotos(id);
   persist(); closeSheet(); render(); toast('ลบห้องแล้ว');
 }
@@ -745,7 +826,7 @@ async function exportData() {
     for (const p of all) photos.push({ id: p.id, unitId: p.unitId, ts: p.ts, order: p.order, cover: !!p.cover, full: await blobToB64(p.full), thumb: await blobToB64(p.thumb) });
   }
   const cfg = getPostConfig();
-  const payload = { app: 'staylow', version: 3, exportedAt: new Date().toISOString(), units, photos, cfg };
+  const payload = { app: 'staylow', version: 2, exportedAt: new Date().toISOString(), units, photos, cfg };
   const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0, 10) + '.json';
   const file = new File([blob], name, { type: 'application/json' });
@@ -818,12 +899,20 @@ async function importExcel(file) {
       if (!VALID_STATUS.includes(status)) status = 'AVAILABLE';
       const salePriceRaw = String(row[4] || '').replace(/[, ]/g, '');
       const data = {
-        project, room, floor: String(row[2] || '').trim(),
+        project, room,
+        floor: String(row[2] || '').trim(),
         rent, salePrice: salePriceRaw ? Number(salePriceRaw) : '',
-        type: bed, bath, size: String(row[7] || '').trim(), view: String(row[8] || '').trim(),
-        status, owner: String(row[10] || '').trim(), ownerPhone: String(row[11] || '').trim(),
-        ownerLine: String(row[12] || '').trim(), tenant: String(row[13] || '').trim(),
-        start: excelCellToDate(row[14]), end: excelCellToDate(row[15]), notes: String(row[16] || '').trim(),
+        type: bed, bath,
+        size: String(row[7] || '').trim(),
+        view: String(row[8] || '').trim(),
+        status,
+        owner: String(row[10] || '').trim(),
+        ownerPhone: String(row[11] || '').trim(),
+        ownerLine: String(row[12] || '').trim(),
+        tenant: String(row[13] || '').trim(),
+        start: excelCellToDate(row[14]),
+        end: excelCellToDate(row[15]),
+        notes: String(row[16] || '').trim(),
       };
       const roomKnown = room && room !== '-' && room !== '–' && room.toLowerCase() !== 'n/a';
       const i = roomKnown ? units.findIndex(u => (u.project || '').trim().toLowerCase() === project.toLowerCase() && (u.room || '').trim().toLowerCase() === room.toLowerCase()) : -1;
@@ -922,12 +1011,12 @@ async function processPhoto(file) {
 }
 
 // ============= COLLAGE =============
-async function makeCollage(selectedPhotos) {
-  const u = units.find(x => x.id === galleryUnitId); if (!u || !selectedPhotos.length) return;
+async function makeCollage() {
+  const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
   try {
     await loadLogo();
-    const pics = selectedPhotos.slice(0, 6);
+    const pics = galleryPhotos.slice(0, 6);
     const W = 1080, cols = 2, gap = 14, pad = 36, headH = 250, footH = 128;
     const cell = (W - pad * 2 - gap * (cols - 1)) / cols;
     const rows = Math.ceil(pics.length / cols);
@@ -973,21 +1062,35 @@ async function makeCollage(selectedPhotos) {
 // ============= GALLERY =============
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
 const photoUrlCache = new Map();
-function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb); return e.thumbUrl; }
-function fullUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.fullUrl) e.fullUrl = URL.createObjectURL(p.full); return e.fullUrl; }
-function clearPhotoUrlCache() { photoUrlCache.forEach(e => { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); }); photoUrlCache.clear(); }
+function thumbUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb);
+  return e.thumbUrl;
+}
+function fullUrlOf(p) {
+  let e = photoUrlCache.get(p.id);
+  if (!e) { e = {}; photoUrlCache.set(p.id, e); }
+  if (!e.fullUrl) e.fullUrl = URL.createObjectURL(p.full);
+  return e.fullUrl;
+}
+function clearPhotoUrlCache() {
+  photoUrlCache.forEach(e => { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl) URL.revokeObjectURL(e.fullUrl); });
+  photoUrlCache.clear();
+}
 function pickPhotos(src) { document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum').click(); }
 async function importPhotos(files) {
   if (!files || !files.length || !galleryUnitId) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden');
-  let ok = 0; const base = Date.now();
+  let ok = 0;
+  const base = Date.now();
   for (let i = 0; i < files.length; i++) {
     prog.textContent = `กำลังบันทึกรูป ${i + 1}/${files.length}...`;
     try {
       const [full, thumb] = await processPhoto(files[i]);
       await req(tx('readwrite').put({ id: 'p' + base + '_' + i, unitId: galleryUnitId, full, thumb, ts: base + i, order: base + i }));
       ok++;
-    } catch (e) {}
+    } catch (e) { console.error(e); }
   }
   prog.classList.add('hidden');
   document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
@@ -1013,20 +1116,102 @@ function closeGallery() {
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
-  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800" data-id="${p.id}" onclick="openLightboxById('${p.id}')">
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 select-none" data-id="${p.id}">
     <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
     ${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded pointer-events-none">ปก</span>' : ''}
+    <span class="drag-handle absolute bottom-1 right-1 w-6 h-6 rounded-md bg-black/45 flex items-center justify-center text-white"><i data-lucide="grip-vertical" class="w-3.5 h-3.5 pointer-events-none"></i></span>
   </div>`).join('');
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
+  setupPhotoDrag();
 }
-function openLightboxById(id) {
-  const idx = galleryPhotos.findIndex(p => p.id === id);
-  if (idx > -1) openLightbox(idx);
+function setupPhotoDrag() {
+  const grid = document.getElementById('galGrid');
+  let dragId = null, ghost = null, longPress = null, startX = 0, startY = 0, armed = false, moved = false, hoverCell = null, armedCell = null, pointerId = null;
+  const LONG_PRESS_MS = 220, MOVE_CANCEL = 12;
+  function cleanup() {
+    clearTimeout(longPress);
+    if (ghost) { ghost.remove(); ghost = null; }
+    if (hoverCell) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+    grid.querySelectorAll('.photo-cell').forEach(c => c.classList.remove('dragging-src'));
+    if (armedCell) {
+      armedCell.style.touchAction = '';
+      if (pointerId != null) { try { armedCell.releasePointerCapture(pointerId); } catch (err) {} }
+      armedCell = null;
+    }
+    dragId = null; armed = false; moved = false; pointerId = null;
+  }
+  grid.querySelectorAll('.photo-cell').forEach(cell => {
+    cell.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX; startY = e.clientY; moved = false; armed = false;
+      const id = cell.dataset.id;
+      longPress = setTimeout(() => {
+        armed = true; dragId = id; armedCell = cell; pointerId = e.pointerId;
+        try { cell.setPointerCapture(e.pointerId); } catch (err) {}
+        cell.style.touchAction = 'none';
+        cell.classList.add('dragging-src');
+        if (navigator.vibrate) navigator.vibrate(8);
+        const r = cell.getBoundingClientRect();
+        ghost = cell.cloneNode(true);
+        ghost.classList.add('photo-ghost');
+        ghost.style.cssText = `position:fixed; left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; margin:0; pointer-events:none; z-index:200; opacity:.95; transform:scale(1.08) rotate(-2deg); box-shadow:0 12px 30px rgba(0,0,0,.35); border-radius:10px;`;
+        document.body.appendChild(ghost);
+      }, LONG_PRESS_MS);
+    });
+    cell.addEventListener('pointermove', (e) => {
+      if (!armed) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_CANCEL) clearTimeout(longPress);
+        return;
+      }
+      e.preventDefault();
+      moved = true;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (ghost) ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.08) rotate(-2deg)`;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const target = el && el.closest ? el.closest('.photo-cell') : null;
+      if (hoverCell && hoverCell !== target) { hoverCell.classList.remove('drop-target'); hoverCell = null; }
+      if (target && target.dataset.id !== dragId) { target.classList.add('drop-target'); hoverCell = target; }
+    }, { passive: false });
+    const endHandler = () => {
+      clearTimeout(longPress);
+      const wasDrag = armed && moved;
+      if (wasDrag && hoverCell) {
+        const fromId = dragId, toId = hoverCell.dataset.id;
+        const ids = galleryPhotos.map(p => p.id);
+        const fi = ids.indexOf(fromId), ti = ids.indexOf(toId);
+        if (fi > -1 && ti > -1 && fi !== ti) {
+          const [m] = ids.splice(fi, 1); ids.splice(ti, 0, m);
+          commitPhotoOrder(ids);
+        }
+      }
+      cleanup();
+      cell.dataset.justDragged = wasDrag ? '1' : '0';
+    };
+    cell.addEventListener('pointerup', endHandler);
+    cell.addEventListener('pointercancel', cleanup);
+    cell.addEventListener('click', () => {
+      if (cell.dataset.justDragged === '1') { cell.dataset.justDragged = '0'; return; }
+      const idx = galleryPhotos.findIndex(p => p.id === cell.dataset.id);
+      if (idx > -1) openLightbox(idx);
+    });
+  });
 }
-function openLightbox(i) { lbIndex = i; showLb(); const lb = document.getElementById('lightbox'); lb.classList.remove('hidden'); lb.classList.add('flex'); }
-function showLb() { const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox(); document.getElementById('lbImg').src = fullUrlOf(p); document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`; }
+async function commitPhotoOrder(idsInOrder) {
+  const s = tx('readwrite');
+  galleryPhotos.forEach(p => { const idx = idsInOrder.indexOf(p.id); if (idx > -1) { p.order = idx; s.put(p); } });
+  await renderGallery(); render();
+}
+function openLightbox(i) {
+  lbIndex = i; showLb();
+  const lb = document.getElementById('lightbox'); lb.classList.remove('hidden'); lb.classList.add('flex');
+}
+function showLb() {
+  const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox();
+  document.getElementById('lbImg').src = fullUrlOf(p);
+  document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`;
+}
 function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % galleryPhotos.length; showLb(); }
 function closeLightbox() { const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
 async function deleteCurrentPhoto() {
@@ -1039,85 +1224,25 @@ async function deleteCurrentPhoto() {
 }
 async function setCover() {
   const p = galleryPhotos[lbIndex]; if (!p) return;
-  const s = tx('readwrite');
-  const minOrder = Math.min(...galleryPhotos.map(x => x.order ?? x.ts ?? 0));
-  p.order = minOrder - 1;
-  s.put(p);
-  await renderGallery(); render();
+  const ids = galleryPhotos.map(x => x.id).filter(id => id !== p.id);
+  ids.unshift(p.id);
+  await commitPhotoOrder(ids);
+  lbIndex = 0; showLb();
   toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
-
-// ============= PHOTO PICKER =============
-let pickerMode = null;
-let pickerSelected = [];
-
-function openPhotoPicker(mode) {
-  pickerMode = mode;
-  pickerSelected = [];
-  document.getElementById('pickTitle').textContent = mode === 'collage' ? 'เลือกรูปสำหรับภาพรวม' : 'เลือกรูปที่จะส่ง';
-  document.getElementById('pickHint').textContent = mode === 'collage'
-    ? 'เลือกได้สูงสุด 6 รูป · ลำดับที่เลือกจะแสดงบนรูป'
-    : 'แตะเพื่อเลือก/ยกเลิก · ลำดับที่เลือกจะแสดงบนรูป';
-  document.getElementById('pickConfirmLabel').textContent = mode === 'collage' ? 'สร้างภาพรวม' : 'ส่งรูป';
-  renderPicker();
-  document.getElementById('pickOverlay').classList.remove('hidden');
-  document.getElementById('pickSheet').classList.add('open');
-  lucide.createIcons();
-}
-function closePhotoPicker() {
-  document.getElementById('pickOverlay').classList.add('hidden');
-  document.getElementById('pickSheet').classList.remove('open');
-  pickerMode = null; pickerSelected = [];
-}
-function renderPicker() {
-  const grid = document.getElementById('pickGrid');
-  grid.innerHTML = galleryPhotos.map(p => {
-    const idx = pickerSelected.indexOf(p.id);
-    const isSel = idx >= 0;
-    return `<div class="pick-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 ${isSel ? 'selected' : ''}" onclick="togglePick('${p.id}')">
-      <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
-      ${isSel ? `<div class="order-badge">${idx + 1}</div>` : ''}
-    </div>`;
-  }).join('');
-  const c = pickerSelected.length;
-  document.getElementById('pickCount').textContent = `เลือกแล้ว ${c} รูป${pickerMode === 'collage' ? ' / สูงสุด 6' : ''}`;
-  document.getElementById('pickConfirm').disabled = c === 0;
-}
-function togglePick(id) {
-  const i = pickerSelected.indexOf(id);
-  if (i >= 0) pickerSelected.splice(i, 1);
-  else {
-    if (pickerMode === 'collage' && pickerSelected.length >= 6) return toast('เลือกได้สูงสุด 6 รูป');
-    pickerSelected.push(id);
-  }
-  renderPicker();
-}
-function pickAll() {
-  if (pickerMode === 'collage') pickerSelected = galleryPhotos.slice(0, 6).map(p => p.id);
-  else pickerSelected = galleryPhotos.map(p => p.id);
-  renderPicker();
-}
-function pickNone() { pickerSelected = []; renderPicker(); }
-function confirmPhotoPicker() {
-  if (!pickerSelected.length) return;
-  const picked = pickerSelected.map(id => galleryPhotos.find(p => p.id === id)).filter(Boolean);
-  const mode = pickerMode;
-  closePhotoPicker();
-  if (mode === 'collage') makeCollage(picked);
-  else shareSelectedPhotos(picked);
-}
-async function shareSelectedPhotos(photos) {
-  const u = units.find(x => x.id === galleryUnitId); if (!u) return;
-  const files = photos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
+async function sharePhotos() {
+  const u = units.find(x => x.id === galleryUnitId); if (!u || !galleryPhotos.length) return;
+  const files = galleryPhotos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
+  const text = buildCaption(u, 'line');
   if (navigator.canShare && navigator.canShare({ files })) {
-    try { await navigator.share({ files }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); }
+    try { await navigator.share({ files, text }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); }
   } else {
     files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
     toast('เบราว์เซอร์นี้แชร์รูปตรงไม่ได้ ดาวน์โหลดให้แทนแล้ว');
   }
 }
 
-// ============= INIT =============
+// ============= HOOK RENDER + INIT =============
 const _render = render;
 render = function () { _render(); loadCover(); };
 
@@ -1131,7 +1256,7 @@ openDB().then(async () => { await refreshCounts(); render(); }).catch(() => {});
 render();
 
 // ============= UPDATE CHECK =============
-const APP_VERSION = '4.5';
+const APP_VERSION = '4.0';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
