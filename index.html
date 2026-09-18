@@ -32,29 +32,21 @@ tailwind.config = { theme: { extend: { colors: {
   .sheet:not(.open) { visibility: hidden; pointer-events: none; }
   @media (min-width: 1024px) {
     #sheet, #cfgSheet, #gallery, #pickSheet, #backup {
-      left: 50% !important;
-      right: auto !important;
-      top: 50% !important;
-      bottom: auto !important;
+      left: 50% !important; right: auto !important;
+      top: 50% !important; bottom: auto !important;
       transform: translate(-50%, -50%) scale(1) !important;
-      margin: 0 !important;
-      opacity: 1 !important;
-      visibility: visible !important;
+      margin: 0 !important; opacity: 1 !important; visibility: visible !important;
     }
     #sheet:not(.open), #cfgSheet:not(.open), #gallery:not(.open), #pickSheet:not(.open), #backup:not(.open) {
       transform: translate(-50%, 20px) scale(.98) !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      pointer-events: none;
+      opacity: 0 !important; visibility: hidden !important; pointer-events: none;
     }
   }
   input, select, textarea { font-family:inherit; }
   .unit-card { transition: border-color .15s, transform .15s, box-shadow .15s; cursor: pointer; }
   .unit-card:hover { border-color:#b85c38; transform:translateY(-1px); box-shadow:0 4px 12px rgba(184,92,56,.1); }
-  .unit-card.active { border-color:#b85c38; background:#fbf3ee; }
   .unit-row { transition: border-color .15s, background .15s; cursor: pointer; }
   .unit-row:hover { border-color:#b85c38; }
-  .unit-row.active { border-color:#b85c38; background:#fbf3ee; }
   .photo-cell { position:relative; touch-action: manipulation; }
   .pick-cell { transition: transform .12s; cursor:pointer; }
   .pick-cell:active { transform: scale(.96); }
@@ -80,16 +72,11 @@ tailwind.config = { theme: { extend: { colors: {
   .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 12px; margin-top:4px; background:#0ea5e9; color:#fff; border-radius:12px; font-size:12px; font-weight:600; transition:all .15s; }
   .url-open-btn:active { transform:scale(.96); background:#0284c7; }
   .url-open-btn:disabled { background:#e4dfd9; color:#8a8078; cursor:not-allowed; }
-  .url-open-btn:disabled:active { transform:none; background:#e4dfd9; }
-  /* ⭐ Owner action buttons - 3 sizes */
   .owner-action { display:flex; align-items:center; justify-content:center; gap:5px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
   .owner-action.phone { background:#f1eeea; color:#a04d2c; border-color:#e4dfd9; }
-  .owner-action.phone:hover { background:#fbf3ee; }
   .owner-action.line { background:rgba(6,199,85,.08); color:#06C755; border-color:rgba(6,199,85,.25); }
-  .owner-action.line:hover { background:rgba(6,199,85,.15); }
   .owner-action.source { background:rgba(14,165,233,.08); color:#0284c7; border-color:rgba(14,165,233,.25); }
-  .owner-action.source:hover { background:rgba(14,165,233,.15); }
   .kpi { background:#fff; border:1px solid #e4dfd9; border-radius:16px; padding:16px; position:relative; overflow:hidden; transition: all .15s; }
   .kpi:hover { border-color:#b85c38; }
   .kpi .kpi-value { font-size:28px; font-weight:700; line-height:1; margin-bottom:4px; }
@@ -130,7 +117,53 @@ tailwind.config = { theme: { extend: { colors: {
     }
     .detail-view-content.show { transform: translate(-50%, 0) scale(1); }
   }
-  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content { transition:none; } }
+  /* ⭐ Safe area for iPhone 17 / Dynamic Island */
+  .dv-header {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: 12px;
+  }
+  @media (min-width: 1024px) {
+    .dv-header {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+  }
+  /* ⭐ Inline edit styles */
+  .inline-edit {
+    display: inline-block;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    border-radius: 6px;
+    cursor: text;
+    transition: background .15s;
+    border: 1px dashed transparent;
+    min-width: 30px;
+  }
+  .inline-edit:hover {
+    background: rgba(184,92,56,.08);
+    border-color: rgba(184,92,56,.2);
+  }
+  .inline-edit.editing {
+    background: #fff;
+    border: 1px solid #b85c38;
+    box-shadow: 0 0 0 3px rgba(184,92,56,.15);
+    padding: 4px 8px;
+    margin: -4px -8px;
+  }
+  input.inline-input, select.inline-select, textarea.inline-textarea {
+    background: #fff;
+    border: 1px solid #b85c38;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: inherit;
+    font-family: inherit;
+    color: inherit;
+    font-weight: inherit;
+    width: 100%;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(184,92,56,.15);
+  }
+  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit { transition:none; } }
   @media (min-width: 1024px) {
     .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1600px; margin: 0 auto; }
     .sidebar { display: flex !important; }
@@ -217,16 +250,16 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2">v7.6 · <span id="totalUnitBadge">0</span> ห้อง</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2">v7.7 · <span id="totalUnitBadge">0</span> ห้อง</p>
     </div>
   </aside>
 
   <!-- Main -->
   <div class="flex flex-col min-h-screen bg-slate-950">
 
-    <header class="mobile-header p-4 pt-[max(24px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
+    <header class="mobile-header p-4 pt-[max(28px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
       <div>
-        <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v7.6</span></span></span>
+        <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v7.7</span></span></span>
         <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
       </div>
       <div class="flex items-center gap-1.5">
@@ -259,7 +292,7 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <div class="lg:hidden sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(24px, env(safe-area-inset-top)) + 76px);">
+    <div class="lg:hidden sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(28px, env(safe-area-inset-top)) + 68px);">
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
         <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="syncSearch(this.value); render()"
@@ -465,18 +498,15 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="detailView" class="detail-view hidden"></div>
 <div id="detailViewContent" class="detail-view-content hidden">
   <div class="max-w-[900px] mx-auto">
-    <div class="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-700 px-4 py-3 flex items-center gap-3">
-      <button onclick="closeDetailView()" class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0">
+    <div class="dv-header sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-700 px-4 flex items-center gap-3">
+      <button onclick="closeDetailView()" class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0" aria-label="กลับ">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </button>
       <div class="flex-1 min-w-0">
         <p id="dvProject" class="text-[11px] text-slate-400 font-medium truncate"></p>
         <h2 id="dvRoom" class="text-base font-bold text-ink truncate"></h2>
       </div>
-      <button onclick="dvEdit()" class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0" title="แก้ไข">
-        <i data-lucide="pencil" class="w-4 h-4"></i>
-      </button>
-      <button onclick="dvDelete()" class="w-9 h-9 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 flex items-center justify-center active:scale-95 shrink-0" title="ลบ">
+      <button onclick="dvDelete()" class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 flex items-center justify-center active:scale-95 shrink-0" title="ลบ">
         <i data-lucide="trash-2" class="w-4 h-4"></i>
       </button>
     </div>
@@ -739,6 +769,94 @@ function closeAllSheets(except = null) {
   });
 }
 
+// ============= ⭐ INLINE EDIT =============
+function startInlineEdit(el, field, type = 'text') {
+  if (el.querySelector('input, select, textarea')) return;
+  const u = units.find(x => x.id === detailUnitId);
+  if (!u) return;
+  
+  const currentValue = u[field] ?? '';
+  const originalHTML = el.innerHTML;
+  el.classList.add('editing');
+  el.dataset.originalHTML = originalHTML;
+  
+  let editor;
+  if (type === 'textarea') {
+    editor = document.createElement('textarea');
+    editor.rows = 3;
+    editor.value = currentValue;
+    editor.className = 'inline-textarea';
+    editor.style.resize = 'vertical';
+  } else if (type === 'select') {
+    editor = document.createElement('select');
+    editor.className = 'inline-select';
+    const options = field === 'status' 
+      ? [['AVAILABLE','ว่าง'],['OCCUPIED','มีผู้เช่า'],['RESERVED','จอง'],['PENDING','รอตรวจ']]
+      : field === 'type'
+      ? [['Studio','Studio'],['1 Bed','1 Bed'],['2 Bed','2 Bed'],['3 Bed','3 Bed'],['Duplex','Duplex']]
+      : field === 'bath'
+      ? [['1','1 Bath'],['2','2 Bath'],['3','3 Bath'],['4','4 Bath']]
+      : [];
+    options.forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      if (String(currentValue) === String(val)) opt.selected = true;
+      editor.appendChild(opt);
+    });
+    editor.className = 'inline-select';
+  } else {
+    editor = document.createElement('input');
+    editor.type = type;
+    editor.value = currentValue;
+    editor.className = 'inline-input';
+    if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; }
+  }
+  
+  el.innerHTML = '';
+  el.appendChild(editor);
+  editor.focus();
+  if (editor.select) editor.select();
+  
+  let saved = false;
+  const save = () => {
+    if (saved) return;
+    saved = true;
+    let newValue = editor.value;
+    if (type === 'number') newValue = newValue === '' ? '' : Number(newValue);
+    // ถ้าค่าเดิม ไม่ทำอะไร
+    if (String(newValue) === String(currentValue)) {
+      // restore
+      el.classList.remove('editing');
+      el.innerHTML = originalHTML;
+      lucide.createIcons();
+      return;
+    }
+    u[field] = newValue;
+    persist();
+    toast('✓ บันทึกแล้ว');
+    renderDetailView();
+    render();
+    setTimeout(() => { if (detailUnitId === u.id) loadDetailCover(u.id); }, 50);
+  };
+  const cancel = () => {
+    if (saved) return;
+    saved = true;
+    el.classList.remove('editing');
+    el.innerHTML = originalHTML;
+    lucide.createIcons();
+  };
+  
+  editor.addEventListener('blur', save);
+  editor.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  });
+  if (type === 'select') {
+    editor.addEventListener('change', () => { editor.blur(); });
+  }
+}
+
 // ============= DETAIL VIEW =============
 function openDetailView(unitId) {
   const u = units.find(x => x.id === unitId);
@@ -767,14 +885,10 @@ function closeDetailView() {
   const dvc = document.getElementById('detailViewContent');
   dv.classList.remove('show');
   dvc.classList.remove('show');
-  setTimeout(() => {
-    dv.classList.add('hidden');
-    dvc.classList.add('hidden');
-  }, 300);
+  setTimeout(() => { dv.classList.add('hidden'); dvc.classList.add('hidden'); }, 300);
   document.body.style.overflow = '';
 }
-function dvEdit() { if (detailUnitId) openSheet('edit', detailUnitId); }
-function dvDelete() { if (detailUnitId) { document.getElementById('f_id').value = detailUnitId; deleteUnit(); closeDetailView(); } }
+function dvDelete() { if (detailUnitId) { document.getElementById('f_id').value = detailUnitId; deleteUnit(); } }
 
 async function loadDetailCover(unitId) {
   if (!db) return;
@@ -811,17 +925,19 @@ function renderDetailView() {
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
-      <div class="flex justify-between items-start mb-3">
-        <div>
-          <h2 class="text-2xl font-bold text-ink">ห้อง ${esc(u.room)}</h2>
-          <p class="text-sm text-slate-500">${esc(u.project || '')}</p>
+      <div class="flex justify-between items-start mb-3 gap-2">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')" title="แตะเพื่อแก้ไข">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
+          <h2 class="text-2xl font-bold text-ink">
+            ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')" title="แตะเพื่อแก้ไข">${esc(u.room || '-')}</span>
+          </h2>
         </div>
-        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5" title="กดเพื่อเปลี่ยนสถานะ">
+        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0" title="กดเพื่อเปลี่ยนสถานะ">
           <span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}
         </button>
       </div>
       <div class="flex items-baseline gap-2 mb-4">
-        <span class="text-3xl font-bold text-brick-600">${baht(u.rent)}</span>
+        <span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')" title="แตะเพื่อแก้ไข">${baht(u.rent)}</span>
         <span class="text-sm text-slate-400">/เดือน</span>
       </div>
 
@@ -837,47 +953,42 @@ function renderDetailView() {
       </div>
 
       ${(hasPhone || hasLine || hasUrl) ? `<div class="grid gap-2" style="grid-template-columns: repeat(${(hasPhone?1:0)+(hasLine?1:0)+(hasUrl?1:0)}, minmax(0, 1fr));">
-        ${hasPhone ? `<button onclick="contactOwner('${u.id}')" class="owner-action phone">
-          <i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรเจ้าของ
-        </button>` : ''}
-        ${hasLine ? `<button onclick="openOwnerLine('${u.id}')" class="owner-action line">
-          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE
-        </button>` : ''}
-        ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="owner-action source">
-          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิดลิงก์
-        </button>` : ''}
+        ${hasPhone ? `<button onclick="contactOwner('${u.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรเจ้าของ</button>` : ''}
+        ${hasLine ? `<button onclick="openOwnerLine('${u.id}')" class="owner-action line"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
+        ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="owner-action source"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิดลิงก์</button>` : ''}
       </div>` : ''}
+      <p class="text-[10px] text-slate-400 mt-2 text-center">💡 แตะข้อความสีเทาเพื่อแก้ไขได้ทันที</p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p>
-        <p class="text-base font-bold text-ink">${esc(u.type || '-')}</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')" title="แตะเพื่อแก้ไข">${esc(u.type || '-')}</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p>
-        <p class="text-base font-bold text-ink">${esc(u.bath || '-')} Bath</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')" title="แตะเพื่อแก้ไข">${esc(u.bath || '-')} Bath</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p>
-        <p class="text-base font-bold text-ink">${esc(u.size || '-')} ตร.ม.</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')" title="แตะเพื่อแก้ไข">${esc(u.size || '-')} ตร.ม.</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p>
-        <p class="text-base font-bold text-ink">${esc(u.floor || '-')}</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')" title="แตะเพื่อแก้ไข">${esc(u.floor || '-')}</p>
       </div>
     </div>
 
-    ${u.view ? `<div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
       <i data-lucide="eye" class="w-4 h-4 text-brick-600"></i>
       <span class="text-sm text-slate-500">วิว:</span>
-      <span class="text-sm font-semibold text-ink">${esc(u.view)}</span>
-    </div>` : ''}
+      <span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')" title="แตะเพื่อแก้ไข">${esc(u.view || 'แตะเพื่อใส่')}</span>
+    </div>
 
-    ${u.salePrice ? `<div class="bg-brick-500/8 border border-brick-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
-      <span class="text-sm text-slate-500">ราคาขาย</span>
-      <span class="text-base font-bold text-brick-600">${baht(u.salePrice)}</span>
-    </div>` : ''}
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
+      <span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span>
+      <span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')" title="แตะเพื่อแก้ไข">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span>
+    </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
       <div>
@@ -892,27 +1003,44 @@ function renderDetailView() {
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
         <div class="flex-1 min-w-0">
           <p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p>
-          <p class="text-base font-semibold text-ink truncate">${esc(u.owner || '-')}</p>
+          <p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')" title="แตะเพื่อแก้ไข">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p>
         </div>
       </div>
-      ${u.ownerPhone ? `<div class="flex items-center gap-2 text-sm text-slate-500 mb-1"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>${esc(u.ownerPhone)}</div>` : ''}
-      ${u.ownerLine ? `<div class="flex items-center gap-2 text-sm text-slate-500"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i>${esc(u.ownerLine)}</div>` : ''}
+      <div class="flex items-center gap-2 text-sm text-slate-500 mb-1">
+        <i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>
+        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')" title="แตะเพื่อแก้ไข">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-500">
+        <i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i>
+        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')" title="แตะเพื่อแก้ไข">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span>
+      </div>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex justify-between items-center mb-3">
         <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}
       </div>
-      <div class="text-sm text-slate-500 space-y-1">
-        <p>เริ่ม: <span class="text-ink font-medium">${fmtDate(u.start)}</span></p>
-        <p>สิ้นสุด: <span class="text-ink font-medium">${fmtDate(u.end)}</span></p>
+      <div class="text-sm text-slate-500 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="w-16">เริ่ม:</span>
+          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')" title="แตะเพื่อแก้ไข">${fmtDate(u.start)}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-16">สิ้นสุด:</span>
+          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')" title="แตะเพื่อแก้ไข">${fmtDate(u.end)}</span>
+        </div>
       </div>
     </div>
 
-    ${u.notes ? `<div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p>
-      <p class="text-sm text-ink whitespace-pre-line leading-relaxed">${esc(u.notes)}</p>
-    </div>` : ''}
+      <p class="text-sm text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')" title="แตะเพื่อแก้ไข">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</p>
+    </div>
+
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+      <p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p>
+      <p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')" title="แตะเพื่อแก้ไข">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p>
+    </div>
 
     <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
       <div class="flex items-center gap-3">
@@ -924,17 +1052,6 @@ function renderDetailView() {
       </div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
-
-    ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="w-full bg-sky-500/8 border border-sky-500/20 rounded-2xl p-5 flex items-center justify-between hover:bg-sky-500/15 transition-all">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center"><i data-lucide="external-link" class="w-5 h-5 text-sky-600"></i></div>
-        <div class="text-left min-w-0">
-          <p class="text-sm font-semibold text-sky-700">ลิงก์ต้นทางโพสต์</p>
-          <p class="text-xs text-sky-600 truncate">${esc(u.sourceUrl)}</p>
-        </div>
-      </div>
-      <i data-lucide="chevron-right" class="w-5 h-5 text-sky-500"></i>
-    </button>` : ''}
   `;
   lucide.createIcons();
 }
@@ -1165,7 +1282,6 @@ function render() {
   list.forEach(x => { if (photoCount[x.id]) loadMiniCardPhoto(x.id); });
 }
 
-// ⭐ Card row — ปุ่มโทร + LINE + ต้นทาง (ทั้งแถวใต้ mini photo)
 function cardRowHTML(x) {
   const m = statusOf(x);
   const ps = postedState(x);
@@ -1214,15 +1330,9 @@ function cardRowHTML(x) {
       </div>
 
       ${ownerBtnCount > 0 ? `<div class="grid gap-1.5" style="grid-template-columns: repeat(${ownerBtnCount}, minmax(0, 1fr));" onclick="event.stopPropagation()">
-        ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone" title="${esc(x.ownerPhone)}">
-          <i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร
-        </button>` : ''}
-        ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="owner-action line" title="LINE: ${esc(x.ownerLine)}">
-          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE
-        </button>` : ''}
-        ${hasUrl ? `<button onclick="openSourceUrl('${x.id}')" class="owner-action source" title="เปิดลิงก์ต้นทาง">
-          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>ต้นทาง
-        </button>` : ''}
+        ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone" title="${esc(x.ownerPhone)}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
+        ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="owner-action line" title="LINE: ${esc(x.ownerLine)}"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
+        ${hasUrl ? `<button onclick="openSourceUrl('${x.id}')" class="owner-action source" title="เปิดลิงก์ต้นทาง"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>ต้นทาง</button>` : ''}
       </div>` : ''}
     </div>
   </div>`;
@@ -1247,7 +1357,7 @@ function listRowHTML(x) {
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0">
         <span class="text-sm font-bold text-brick-600">${baht(x.rent)}</span>
-        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="กดเพื่อเปลี่ยนสถานะ">${m.short ? m.short : m.label}</button>
+        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
       <div class="flex flex-col gap-1 shrink-0" onclick="event.stopPropagation()">
         <button onclick="quickCopy('${x.id}')" class="w-7 h-7 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95" title="คัดลอกรายละเอียด"><i data-lucide="copy" class="w-3 h-3"></i></button>
@@ -1435,7 +1545,7 @@ async function exportData() {
   const photos = [];
   if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, full:await blobToB64(p.full), thumb:await blobToB64(p.thumb) }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
   const cfg = getPostConfig();
-  const payload = { app:'staylow', version:20, exportedAt:new Date().toISOString(), units, photos, cfg };
+  const payload = { app:'staylow', version:21, exportedAt:new Date().toISOString(), units, photos, cfg };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
@@ -1765,7 +1875,7 @@ switchView(currentView);
 checkBackupReminder();
 
 // ============= UPDATE =============
-const APP_VERSION = '7.6';
+const APP_VERSION = '7.7';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
