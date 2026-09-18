@@ -117,16 +117,13 @@ tailwind.config = { theme: { extend: { colors: {
     }
     .detail-view-content.show { transform: translate(-50%, 0) scale(1); }
   }
-  /* ⭐ Safe area for iPhone 17 / Dynamic Island */
+  /* ⭐ Dynamic Island safe area */
   .dv-header {
-    padding-top: max(20px, env(safe-area-inset-top));
+    padding-top: max(60px, env(safe-area-inset-top));
     padding-bottom: 12px;
   }
   @media (min-width: 1024px) {
-    .dv-header {
-      padding-top: 12px;
-      padding-bottom: 12px;
-    }
+    .dv-header { padding-top: 16px; padding-bottom: 12px; }
   }
   /* ⭐ Inline edit styles */
   .inline-edit {
@@ -139,10 +136,7 @@ tailwind.config = { theme: { extend: { colors: {
     border: 1px dashed transparent;
     min-width: 30px;
   }
-  .inline-edit:hover {
-    background: rgba(184,92,56,.08);
-    border-color: rgba(184,92,56,.2);
-  }
+  .inline-edit:hover { background: rgba(184,92,56,.08); border-color: rgba(184,92,56,.2); }
   .inline-edit.editing {
     background: #fff;
     border: 1px solid #b85c38;
@@ -163,7 +157,54 @@ tailwind.config = { theme: { extend: { colors: {
     outline: none;
     box-shadow: 0 0 0 3px rgba(184,92,56,.15);
   }
-  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit { transition:none; } }
+  /* ⭐ Loading bar */
+  .loading-bar {
+    position: absolute;
+    bottom: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%);
+    width: 0%;
+    transition: width .3s ease, opacity .3s ease;
+    opacity: 0;
+  }
+  .loading-bar.active { opacity: 1; }
+  /* ⭐ Notes box ขยายใหญ่ 2 เท่า */
+  .notes-box {
+    min-height: 180px;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 16px 18px !important;
+    border-radius: 14px !important;
+    background: #fafafa;
+    border: 1px solid #e4dfd9;
+    transition: all .15s;
+  }
+  .notes-box:hover {
+    background: #fff;
+    border-color: #b85c38;
+    box-shadow: 0 2px 8px rgba(184,92,56,.08);
+  }
+  .notes-box.editing {
+    min-height: 220px;
+    background: #fff !important;
+    border-color: #b85c38 !important;
+    box-shadow: 0 0 0 3px rgba(184,92,56,.15) !important;
+  }
+  textarea.inline-textarea {
+    min-height: 180px;
+    padding: 16px 18px;
+    font-size: 15px;
+    line-height: 1.7;
+    resize: vertical;
+  }
+  /* ⭐ Textarea ในฟอร์มเพิ่ม/แก้ไข — ขยายใหญ่ 2 เท่า */
+  textarea.form-notes {
+    min-height: 320px;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 16px 18px;
+    resize: vertical;
+  }
+  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar { transition:none; } }
   @media (min-width: 1024px) {
     .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1600px; margin: 0 auto; }
     .sidebar { display: flex !important; }
@@ -250,16 +291,18 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2">v7.7 · <span id="totalUnitBadge">0</span> ห้อง</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2">v7.9 · <span id="totalUnitBadge">0</span> ห้อง</p>
     </div>
   </aside>
 
   <!-- Main -->
   <div class="flex flex-col min-h-screen bg-slate-950">
 
-    <header class="mobile-header p-4 pt-[max(28px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700">
+    <!-- Mobile header -->
+    <header class="mobile-header p-4 pt-[max(60px,env(safe-area-inset-top))] bg-white/85 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center border-b border-slate-700 relative">
+      <div class="loading-bar" id="mobileLoadingBar"></div>
       <div>
-        <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v7.7</span></span></span>
+        <span class="text-xs font-semibold tracking-widest text-brick-600 uppercase">MAX Agent <span class="text-slate-500 normal-case tracking-normal font-normal"><span id="verLabel">v7.9</span></span></span>
         <h1 class="text-lg font-bold text-ink tracking-tight">Property Manager</h1>
       </div>
       <div class="flex items-center gap-1.5">
@@ -272,7 +315,8 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 sticky top-0 z-30">
+    <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 sticky top-0 z-30 relative">
+      <div class="loading-bar" id="desktopLoadingBar"></div>
       <div class="flex items-center gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
@@ -292,7 +336,7 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <div class="lg:hidden sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(28px, env(safe-area-inset-top)) + 68px);">
+    <div class="lg:hidden sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(60px, env(safe-area-inset-top)) + 68px);">
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
         <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="syncSearch(this.value); render()"
@@ -498,7 +542,8 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="detailView" class="detail-view hidden"></div>
 <div id="detailViewContent" class="detail-view-content hidden">
   <div class="max-w-[900px] mx-auto">
-    <div class="dv-header sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-700 px-4 flex items-center gap-3">
+    <div class="dv-header sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-700 px-4 flex items-center gap-3 relative">
+      <div class="loading-bar" id="detailLoadingBar"></div>
       <button onclick="closeDetailView()" class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0" aria-label="กลับ">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </button>
@@ -506,9 +551,6 @@ tailwind.config = { theme: { extend: { colors: {
         <p id="dvProject" class="text-[11px] text-slate-400 font-medium truncate"></p>
         <h2 id="dvRoom" class="text-base font-bold text-ink truncate"></h2>
       </div>
-      <button onclick="dvDelete()" class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 flex items-center justify-center active:scale-95 shrink-0" title="ลบ">
-        <i data-lucide="trash-2" class="w-4 h-4"></i>
-      </button>
     </div>
 
     <div id="detailContent" class="p-4 lg:p-6 space-y-4"></div>
@@ -581,7 +623,7 @@ tailwind.config = { theme: { extend: { colors: {
       <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
       <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp"></label>
     </div>
-    <label>รายละเอียดห้อง<textarea id="f_notes" rows="6" class="inp" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์"></textarea></label>
+    <label>รายละเอียดห้อง<textarea id="f_notes" rows="12" class="inp form-notes" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์ — ใส่จุดเด่นของห้อง ทำเล ใกล้ BTS/MRT ฯลฯ"></textarea></label>
   </div>
   <div class="flex gap-2 mt-5">
     <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
@@ -769,95 +811,120 @@ function closeAllSheets(except = null) {
   });
 }
 
-// ============= ⭐ INLINE EDIT =============
+// Loading bar
+let loadingTimers = {};
+function showLoadingBar(id, duration = 400) {
+  const bar = document.getElementById(id);
+  if (!bar) return;
+  clearTimeout(loadingTimers[id]);
+  bar.classList.add('active');
+  bar.style.width = '0%';
+  requestAnimationFrame(() => { bar.style.width = '70%'; });
+  loadingTimers[id] = setTimeout(() => {
+    bar.style.width = '100%';
+    setTimeout(() => { bar.classList.remove('active'); bar.style.width = '0%'; }, 200);
+  }, duration);
+}
+
+// Edge Swipe
+let edgeSwipe = { active: false, startX: 0, startY: 0 };
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  if (t.clientX < 24 && !edgeSwipe.active) {
+    edgeSwipe.active = true;
+    edgeSwipe.startX = t.clientX;
+    edgeSwipe.startY = t.clientY;
+  }
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!edgeSwipe.active) return;
+  const t = e.touches[0];
+  const dx = t.clientX - edgeSwipe.startX;
+  const dy = Math.abs(t.clientY - edgeSwipe.startY);
+  if (dy > 60) { edgeSwipe.active = false; return; }
+  if (dx > 0) {
+    const dvc = document.getElementById('detailViewContent');
+    if (dvc && detailUnitId) {
+      dvc.style.transform = `translateX(${Math.min(dx * 0.6, 120)}px)`;
+      dvc.style.opacity = String(Math.max(1 - dx / 300, 0.5));
+    }
+  }
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!edgeSwipe.active) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - edgeSwipe.startX;
+  const dvc = document.getElementById('detailViewContent');
+  if (dvc) { dvc.style.transform = ''; dvc.style.opacity = ''; }
+  if (dx > 100 && detailUnitId) closeDetailView();
+  edgeSwipe.active = false;
+}, { passive: true });
+
+// Inline Edit
 function startInlineEdit(el, field, type = 'text') {
   if (el.querySelector('input, select, textarea')) return;
   const u = units.find(x => x.id === detailUnitId);
   if (!u) return;
-  
   const currentValue = u[field] ?? '';
   const originalHTML = el.innerHTML;
   el.classList.add('editing');
   el.dataset.originalHTML = originalHTML;
-  
+
   let editor;
   if (type === 'textarea') {
     editor = document.createElement('textarea');
-    editor.rows = 3;
-    editor.value = currentValue;
+    editor.rows = 12; editor.value = currentValue;
     editor.className = 'inline-textarea';
-    editor.style.resize = 'vertical';
   } else if (type === 'select') {
     editor = document.createElement('select');
     editor.className = 'inline-select';
-    const options = field === 'status' 
+    const options = field === 'status'
       ? [['AVAILABLE','ว่าง'],['OCCUPIED','มีผู้เช่า'],['RESERVED','จอง'],['PENDING','รอตรวจ']]
-      : field === 'type'
-      ? [['Studio','Studio'],['1 Bed','1 Bed'],['2 Bed','2 Bed'],['3 Bed','3 Bed'],['Duplex','Duplex']]
-      : field === 'bath'
-      ? [['1','1 Bath'],['2','2 Bath'],['3','3 Bath'],['4','4 Bath']]
+      : field === 'type' ? [['Studio','Studio'],['1 Bed','1 Bed'],['2 Bed','2 Bed'],['3 Bed','3 Bed'],['Duplex','Duplex']]
+      : field === 'bath' ? [['1','1 Bath'],['2','2 Bath'],['3','3 Bath'],['4','4 Bath']]
       : [];
     options.forEach(([val, label]) => {
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = label;
+      const opt = document.createElement('option'); opt.value = val; opt.textContent = label;
       if (String(currentValue) === String(val)) opt.selected = true;
       editor.appendChild(opt);
     });
-    editor.className = 'inline-select';
   } else {
-    editor = document.createElement('input');
-    editor.type = type;
-    editor.value = currentValue;
+    editor = document.createElement('input'); editor.type = type; editor.value = currentValue;
     editor.className = 'inline-input';
     if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; }
   }
-  
+
   el.innerHTML = '';
   el.appendChild(editor);
   editor.focus();
   if (editor.select) editor.select();
-  
+
   let saved = false;
   const save = () => {
-    if (saved) return;
-    saved = true;
+    if (saved) return; saved = true;
     let newValue = editor.value;
     if (type === 'number') newValue = newValue === '' ? '' : Number(newValue);
-    // ถ้าค่าเดิม ไม่ทำอะไร
     if (String(newValue) === String(currentValue)) {
-      // restore
-      el.classList.remove('editing');
-      el.innerHTML = originalHTML;
-      lucide.createIcons();
-      return;
+      el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); return;
     }
-    u[field] = newValue;
-    persist();
+    u[field] = newValue; persist();
     toast('✓ บันทึกแล้ว');
-    renderDetailView();
-    render();
+    renderDetailView(); render();
     setTimeout(() => { if (detailUnitId === u.id) loadDetailCover(u.id); }, 50);
   };
   const cancel = () => {
-    if (saved) return;
-    saved = true;
-    el.classList.remove('editing');
-    el.innerHTML = originalHTML;
-    lucide.createIcons();
+    if (saved) return; saved = true;
+    el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons();
   };
-  
   editor.addEventListener('blur', save);
   editor.addEventListener('keydown', e => {
     if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); }
     if (e.key === 'Escape') { e.preventDefault(); cancel(); }
   });
-  if (type === 'select') {
-    editor.addEventListener('change', () => { editor.blur(); });
-  }
+  if (type === 'select') editor.addEventListener('change', () => editor.blur());
 }
 
-// ============= DETAIL VIEW =============
+// DETAIL VIEW
 function openDetailView(unitId) {
   const u = units.find(x => x.id === unitId);
   if (!u) return;
@@ -866,25 +933,19 @@ function openDetailView(unitId) {
   document.getElementById('dvRoom').textContent = 'ห้อง ' + (u.room || '-');
   const dv = document.getElementById('detailView');
   const dvc = document.getElementById('detailViewContent');
-  dv.classList.remove('hidden');
-  dvc.classList.remove('hidden');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      dv.classList.add('show');
-      dvc.classList.add('show');
-    });
-  });
+  dv.classList.remove('hidden'); dvc.classList.remove('hidden');
+  requestAnimationFrame(() => { requestAnimationFrame(() => { dv.classList.add('show'); dvc.classList.add('show'); }); });
   document.body.style.overflow = 'hidden';
   renderDetailView();
   dvc.scrollTop = 0;
+  showLoadingBar('detailLoadingBar', 500);
   setTimeout(() => loadDetailCover(unitId), 50);
 }
 function closeDetailView() {
   detailUnitId = null;
   const dv = document.getElementById('detailView');
   const dvc = document.getElementById('detailViewContent');
-  dv.classList.remove('show');
-  dvc.classList.remove('show');
+  dv.classList.remove('show'); dvc.classList.remove('show');
   setTimeout(() => { dv.classList.add('hidden'); dvc.classList.add('hidden'); }, 300);
   document.body.style.overflow = '';
 }
@@ -927,17 +988,15 @@ function renderDetailView() {
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
-          <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')" title="แตะเพื่อแก้ไข">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
-          <h2 class="text-2xl font-bold text-ink">
-            ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')" title="แตะเพื่อแก้ไข">${esc(u.room || '-')}</span>
-          </h2>
+          <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
+          <h2 class="text-2xl font-bold text-ink">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
         </div>
-        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0" title="กดเพื่อเปลี่ยนสถานะ">
+        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0">
           <span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}
         </button>
       </div>
       <div class="flex items-baseline gap-2 mb-4">
-        <span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')" title="แตะเพื่อแก้ไข">${baht(u.rent)}</span>
+        <span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span>
         <span class="text-sm text-slate-400">/เดือน</span>
       </div>
 
@@ -957,37 +1016,37 @@ function renderDetailView() {
         ${hasLine ? `<button onclick="openOwnerLine('${u.id}')" class="owner-action line"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
         ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="owner-action source"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิดลิงก์</button>` : ''}
       </div>` : ''}
-      <p class="text-[10px] text-slate-400 mt-2 text-center">💡 แตะข้อความสีเทาเพื่อแก้ไขได้ทันที</p>
+      <p class="text-[10px] text-slate-400 mt-2 text-center">💡 แตะข้อความสีเทาเพื่อแก้ไข · ปัดจากขอบซ้ายเพื่อปิด</p>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')" title="แตะเพื่อแก้ไข">${esc(u.type || '-')}</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')" title="แตะเพื่อแก้ไข">${esc(u.bath || '-')} Bath</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')" title="แตะเพื่อแก้ไข">${esc(u.size || '-')} ตร.ม.</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p>
       </div>
       <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
         <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')" title="แตะเพื่อแก้ไข">${esc(u.floor || '-')}</p>
+        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p>
       </div>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
       <i data-lucide="eye" class="w-4 h-4 text-brick-600"></i>
       <span class="text-sm text-slate-500">วิว:</span>
-      <span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')" title="แตะเพื่อแก้ไข">${esc(u.view || 'แตะเพื่อใส่')}</span>
+      <span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
       <span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span>
-      <span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')" title="แตะเพื่อแก้ไข">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span>
+      <span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
@@ -1003,16 +1062,16 @@ function renderDetailView() {
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
         <div class="flex-1 min-w-0">
           <p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p>
-          <p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')" title="แตะเพื่อแก้ไข">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p>
+          <p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p>
         </div>
       </div>
       <div class="flex items-center gap-2 text-sm text-slate-500 mb-1">
         <i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>
-        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')" title="แตะเพื่อแก้ไข">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span>
+        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span>
       </div>
       <div class="flex items-center gap-2 text-sm text-slate-500">
         <i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i>
-        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')" title="แตะเพื่อแก้ไข">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span>
+        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span>
       </div>
     </div>
 
@@ -1023,23 +1082,27 @@ function renderDetailView() {
       <div class="text-sm text-slate-500 space-y-2">
         <div class="flex items-center gap-2">
           <span class="w-16">เริ่ม:</span>
-          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')" title="แตะเพื่อแก้ไข">${fmtDate(u.start)}</span>
+          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-16">สิ้นสุด:</span>
-          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')" title="แตะเพื่อแก้ไข">${fmtDate(u.end)}</span>
+          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')">${fmtDate(u.end)}</span>
         </div>
       </div>
     </div>
 
+    <!-- ⭐ Notes box ขยายใหญ่ 2 เท่า -->
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
-      <p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p>
-      <p class="text-sm text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')" title="แตะเพื่อแก้ไข">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</p>
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p>
+        <span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span>
+      </div>
+      <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง — จุดเด่น, ทำเล, ใกล้ BTS/MRT, เฟอร์นิเจอร์, เงื่อนไขพิเศษ ฯลฯ')}</div>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p>
-      <p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')" title="แตะเพื่อแก้ไข">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p>
+      <p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p>
     </div>
 
     <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
@@ -1052,6 +1115,20 @@ function renderDetailView() {
       </div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
+
+    <!-- ⭐ ปุ่มลบย้ายมาอยู่ด้านล่าง -->
+    <button onclick="dvDelete()" class="w-full bg-white border border-rose-500/30 rounded-2xl p-5 flex items-center justify-between hover:border-rose-500 hover:bg-rose-500/5 transition-all active:scale-[0.98]">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+          <i data-lucide="trash-2" class="w-5 h-5 text-rose-600"></i>
+        </div>
+        <div class="text-left">
+          <p class="text-sm font-semibold text-rose-600">ลบห้องนี้</p>
+          <p class="text-xs text-slate-400">ข้อมูลและรูปทั้งหมดจะถูกลบถาวร</p>
+        </div>
+      </div>
+      <i data-lucide="chevron-right" class="w-5 h-5 text-rose-400"></i>
+    </button>
   `;
   lucide.createIcons();
 }
@@ -1062,7 +1139,7 @@ function dvCycleStatus() {
   setTimeout(() => loadDetailCover(detailUnitId), 50);
 }
 
-// ============= POST CONFIG =============
+// POST CONFIG
 const DEFAULT_CFG = { agentName:'MAX', phone:'062-242-3154', lineId:'max.kmc', hashtags:'#คอนโดให้เช่า #คอนโดกรุงเทพ #ห้องเช่า', showContact:true, autoBackupReminder:true };
 function getPostConfig() { try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; } catch (e) { return { ...DEFAULT_CFG }; } }
 function savePostConfig(cfg) { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
@@ -1091,7 +1168,7 @@ function saveSettings() {
   savePostConfig(cfg); closeSettings(); toast('บันทึกการตั้งค่าแล้ว'); render();
 }
 
-// ============= STATUS / UTILS =============
+// STATUS
 const statusMeta = {
   AVAILABLE: { label:'ว่าง', cls:'bg-brick-500/10 text-brick-600 border-brick-500/20', dot:'bg-brick-500', color:'#b85c38' },
   OCCUPIED:  { label:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-600 border-rose-500/20', dot:'bg-rose-500', color:'#e11d48' },
@@ -1134,7 +1211,7 @@ function postedState(u) {
   return { level:'stale', label:`⚠ โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-amber-600 font-semibold' };
 }
 
-// ============= URL HELPERS =============
+// URL
 function isValidUrl(url) { if (!url) return false; try { const u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
 function normalizeUrl(url) { if (!url) return ''; const s = url.trim(); if (!s) return ''; if (!/^https?:\/\//i.test(s)) return 'https://' + s; return s; }
 function openUrl(url) {
@@ -1148,7 +1225,7 @@ function openSourceUrlFromInput() { const v = document.getElementById('f_sourceU
 function updateUrlBtn() { const btn = document.getElementById('urlOpenBtn'); if (!btn) return; const v = document.getElementById('f_sourceUrl').value.trim(); btn.disabled = !(v && isValidUrl(normalizeUrl(v))); }
 function openSourceUrl(unitId) { const u = units.find(x => x.id === unitId); if (!u || !u.sourceUrl) return toast('ไม่มีลิงก์'); openUrl(u.sourceUrl); }
 
-// ============= DASHBOARD =============
+// DASHBOARD
 function computeStats() {
   const cnt = s => units.filter(u => u.status === s).length;
   const available = cnt('AVAILABLE');
@@ -1242,7 +1319,7 @@ function renderDashboard() {
 }
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-// ============= RENDER =============
+// RENDER
 function render() {
   renderDashboard();
 
@@ -1306,7 +1383,7 @@ function cardRowHTML(x) {
             <span class="text-[10px] text-slate-400">/เดือน</span>
           </div>
         </div>
-        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap" title="กดเพื่อเปลี่ยนสถานะ">${m.short ? m.short : m.label}</button>
+        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
 
       <div class="flex items-center gap-3 text-[11px] text-slate-500 mb-2 flex-wrap">
@@ -1384,7 +1461,7 @@ async function loadMiniCardPhoto(unitId) {
   } catch (e) {}
 }
 
-// ============= ACTIONS =============
+// ACTIONS
 function setFilter(f) { filter = f; switchView('rooms'); render(); }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
@@ -1473,7 +1550,7 @@ async function renderFormPhotos() {
   } catch (e) { grid.innerHTML = ''; }
 }
 
-// ============= SHEET =============
+// SHEET
 const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
 function showProjectSuggest() {
@@ -1537,7 +1614,7 @@ function openBackup() {
 }
 function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); }
 
-// ============= BACKUP / RESTORE =============
+// BACKUP
 const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(b); });
 const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type }); };
 async function exportData() {
@@ -1545,7 +1622,7 @@ async function exportData() {
   const photos = [];
   if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, full:await blobToB64(p.full), thumb:await blobToB64(p.thumb) }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
   const cfg = getPostConfig();
-  const payload = { app:'staylow', version:21, exportedAt:new Date().toISOString(), units, photos, cfg };
+  const payload = { app:'staylow', version:23, exportedAt:new Date().toISOString(), units, photos, cfg };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
@@ -1587,7 +1664,7 @@ async function importData(file) {
   prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
 }
 
-// ============= EXCEL =============
+// EXCEL
 function excelCellToDate(v) { if (v == null || v === '') return ''; if (v instanceof Date) return v.toISOString().slice(0,10); const s = String(v).trim(); const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; return s; }
 const VALID_STATUS = ['AVAILABLE','OCCUPIED','RESERVED','PENDING'];
 async function importExcel(file) {
@@ -1629,7 +1706,7 @@ async function importExcel(file) {
   prog.classList.add('hidden'); document.getElementById('xlFile').value = '';
 }
 
-// ============= PHOTOS (IndexedDB) =============
+// PHOTOS
 const photoCount = {};
 let db;
 function openDB() {
@@ -1649,7 +1726,7 @@ async function refreshCounts() {
 }
 async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); await refreshCounts(); } catch (e) {} }
 
-// ============= WATERMARK =============
+// WATERMARK
 const WM_KEY = 'staylow_wm';
 let wmOn = (() => { try { return localStorage.getItem(WM_KEY) !== '0'; } catch (e) { return true; } })();
 let logoImg = null, logoTried = false;
@@ -1675,7 +1752,7 @@ async function processPhoto(file) {
   return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)];
 }
 
-// ============= COLLAGE =============
+// COLLAGE
 async function makeCollage(selectedPhotos) {
   const u = units.find(x => x.id === galleryUnitId); if (!u || !selectedPhotos.length) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
@@ -1721,7 +1798,7 @@ async function makeCollage(selectedPhotos) {
   } catch (e) { prog.classList.add('hidden'); toast('สร้างไม่สำเร็จ: ' + e.message); }
 }
 
-// ============= GALLERY =============
+// GALLERY
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
 const photoUrlCache = new Map();
 function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb); return e.thumbUrl; }
@@ -1788,7 +1865,7 @@ async function setCover() {
   toast('ตั้งเป็นหน้าปกแล้ว');
 }
 
-// ============= PHOTO PICKER =============
+// PHOTO PICKER
 let pickerMode = null, pickerSelected = [];
 function openPhotoPicker(mode) {
   closeAllSheets('pickSheet');
@@ -1839,7 +1916,7 @@ async function shareSelectedPhotos(photos) {
   else { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดแล้ว'); }
 }
 
-// ============= KEYBOARD =============
+// KEYBOARD
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); const s = document.getElementById('search') || document.getElementById('searchDesktop'); if (s) { s.focus(); s.select(); } return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); switchView('dashboard'); return; }
@@ -1847,13 +1924,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (detailUnitId) { closeDetailView(); return; } closeAllSheets(); closeLightbox(); }
 });
 
-// ============= OFFLINE =============
+// OFFLINE
 function updateOnlineStatus() { const b = document.getElementById('offlineBanner'); if (navigator.onLine) b.classList.remove('show'); else b.classList.add('show'); }
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// ============= BACKUP REMINDER =============
+// BACKUP REMINDER
 function checkBackupReminder() {
   const cfg = getPostConfig();
   if (!cfg.autoBackupReminder) return;
@@ -1865,7 +1942,7 @@ function checkBackupReminder() {
   } catch (e) {}
 }
 
-// ============= INIT =============
+// INIT
 let toastTimer;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); }
 
@@ -1874,8 +1951,8 @@ render();
 switchView(currentView);
 checkBackupReminder();
 
-// ============= UPDATE =============
-const APP_VERSION = '7.7';
+// UPDATE
+const APP_VERSION = '7.9';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
