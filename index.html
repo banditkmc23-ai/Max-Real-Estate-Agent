@@ -320,8 +320,12 @@ tailwind.config = { theme: { extend: { colors: {
       <div class="flex items-center gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
-          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, เจ้าของ... (⌘K)" oninput="syncSearch(this.value); render()"
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500">
+          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, เจ้าของ... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off"
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500">
+          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2 text-slate-400 p-0.5">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+          <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -339,8 +343,12 @@ tailwind.config = { theme: { extend: { colors: {
     <div class="lg:hidden sticky z-30 bg-slate-950/95 backdrop-blur-md px-4 pt-3 pb-3 border-b border-slate-800/60" style="top: calc(max(60px, env(safe-area-inset-top)) + 68px);">
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-        <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="syncSearch(this.value); render()"
-          class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
+        <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off"
+          class="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 transition-all">
+        <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-slate-400 p-0.5">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
       </div>
     </div>
 
@@ -784,6 +792,8 @@ function switchView(v) {
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// ============= SEARCH =============
 function syncSearch(v) {
   const s = document.getElementById('search'), d = document.getElementById('searchDesktop');
   if (s && s.value !== v) s.value = v;
@@ -793,6 +803,98 @@ function getSearchQuery() {
   const s = document.getElementById('search'), d = document.getElementById('searchDesktop');
   return ((s && s.value) || (d && d.value) || '').trim().toLowerCase();
 }
+
+let searchDebounce = null;
+
+function onSearchInput(value) {
+  syncSearch(value);
+  const clearBtn = document.getElementById('searchClear');
+  const clearBtnD = document.getElementById('searchDesktopClear');
+  const hasText = value.trim().length > 0;
+  if (clearBtn) clearBtn.classList.toggle('hidden', !hasText);
+  if (clearBtnD) clearBtnD.classList.toggle('hidden', !hasText);
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    renderSearchSuggest(value);
+    render();
+  }, 100);
+}
+
+function clearSearch() {
+  syncSearch('');
+  const clearBtn = document.getElementById('searchClear');
+  const clearBtnD = document.getElementById('searchDesktopClear');
+  if (clearBtn) clearBtn.classList.add('hidden');
+  if (clearBtnD) clearBtnD.classList.add('hidden');
+  hideSearchSuggest();
+  render();
+}
+
+function getUniqueProjects(query = '') {
+  const q = query.trim().toLowerCase();
+  const map = new Map();
+  units.forEach(u => {
+    const p = (u.project || '').trim();
+    if (!p) return;
+    if (q && !p.toLowerCase().includes(q)) return;
+    if (!map.has(p)) map.set(p, { name: p, count: 0, available: 0, occupied: 0 });
+    const item = map.get(p);
+    item.count++;
+    if (u.status === 'AVAILABLE') item.available++;
+    if (u.status === 'OCCUPIED') item.occupied++;
+  });
+  return [...map.values()].sort((a, b) => b.count - a.count);
+}
+
+function renderSearchSuggest(query) {
+  const q = query.trim();
+  const boxes = [
+    document.getElementById('searchSuggest'),
+    document.getElementById('searchSuggestDesktop'),
+  ].filter(Boolean);
+  if (!q) { boxes.forEach(b => b.classList.add('hidden')); return; }
+  const projects = getUniqueProjects(q);
+  if (!projects.length) { boxes.forEach(b => b.classList.add('hidden')); return; }
+  const html = projects.slice(0, 8).map(p => `
+    <button type="button" onmousedown="event.preventDefault()" onclick="selectProject('${p.name.replace(/'/g, "\\'")}')"
+      class="w-full text-left px-3 py-2.5 hover:bg-brick-500/10 border-b border-slate-800 last:border-0 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-brick-500/10 flex items-center justify-center shrink-0">
+        <i data-lucide="building-2" class="w-4 h-4 text-brick-600"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-ink truncate">${esc(p.name)}</p>
+        <p class="text-[10px] text-slate-400">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p>
+      </div>
+      <i data-lucide="corner-down-left" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+    </button>
+  `).join('');
+  boxes.forEach(b => { b.innerHTML = html; b.classList.remove('hidden'); });
+  lucide.createIcons();
+}
+
+function hideSearchSuggest() {
+  ['searchSuggest', 'searchSuggestDesktop'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+}
+
+function selectProject(name) {
+  syncSearch(name);
+  const clearBtn = document.getElementById('searchClear');
+  const clearBtnD = document.getElementById('searchDesktopClear');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+  if (clearBtnD) clearBtnD.classList.remove('hidden');
+  hideSearchSuggest();
+  render();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#search') && !e.target.closest('#searchSuggest') &&
+      !e.target.closest('#searchDesktop') && !e.target.closest('#searchSuggestDesktop')) {
+    hideSearchSuggest();
+  }
+});
 
 function closeAllSheets(except = null) {
   const sheets = [
@@ -1350,9 +1452,38 @@ function render() {
   ['vtList','vtListD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'list'); });
 
   const ul = document.getElementById('unitList');
-  if (ul) ul.innerHTML = list.length
-    ? (viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join(''))
-    : `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
+  if (ul) {
+    if (list.length === 0) {
+      ul.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
+    } else if (q) {
+      // ⭐ เมื่อกำลังค้นหา → แสดงเฉพาะชื่อคอนโดที่ตรงกัน
+      const projects = getUniqueProjects(q);
+      if (projects.length > 0) {
+        ul.innerHTML = `
+          <div class="col-span-full mb-2">
+            <p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p>
+          </div>
+          ${projects.map(p => `
+            <button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" 
+              class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left">
+              <div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0">
+                <i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p>
+              </div>
+              <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i>
+            </button>
+          `).join('')}
+        `;
+      } else {
+        ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
+      }
+    } else {
+      ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
+    }
+  }
 
   if (detailUnitId) renderDetailView();
   lucide.createIcons();
@@ -1921,7 +2052,11 @@ document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); const s = document.getElementById('search') || document.getElementById('searchDesktop'); if (s) { s.focus(); s.select(); } return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); switchView('dashboard'); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'r') { e.preventDefault(); switchView('rooms'); return; }
-  if (e.key === 'Escape') { if (detailUnitId) { closeDetailView(); return; } closeAllSheets(); closeLightbox(); }
+  if (e.key === 'Escape') { 
+    if (detailUnitId) { closeDetailView(); return; } 
+    hideSearchSuggest();
+    closeAllSheets(); closeLightbox(); 
+  }
 });
 
 // OFFLINE
