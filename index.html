@@ -773,6 +773,7 @@ units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.le
 
 let filter = 'all';
 let sortDir = 'new';
+let selectedProject = null;  // ⭐ โครงการที่เลือกไว้ (จาก dropdown หรือการ์ด)
 let currentView = (() => { try { return localStorage.getItem(NAV_KEY) || 'dashboard'; } catch (e) { return 'dashboard'; } })();
 let viewMode = (() => { try { return localStorage.getItem(VIEW_KEY) || 'card'; } catch (e) { return 'card'; } })();
 let detailUnitId = null;
@@ -807,6 +808,10 @@ function getSearchQuery() {
 let searchDebounce = null;
 
 function onSearchInput(value) {
+  // ⭐ ถ้าผู้ใช้แก้ข้อความเอง (ไม่ตรงกับ selectedProject เดิม) → reset
+  if (selectedProject && value.trim() !== selectedProject) {
+    selectedProject = null;
+  }
   syncSearch(value);
   const clearBtn = document.getElementById('searchClear');
   const clearBtnD = document.getElementById('searchDesktopClear');
@@ -821,6 +826,7 @@ function onSearchInput(value) {
 }
 
 function clearSearch() {
+  selectedProject = null;
   syncSearch('');
   const clearBtn = document.getElementById('searchClear');
   const clearBtnD = document.getElementById('searchDesktopClear');
@@ -879,13 +885,24 @@ function hideSearchSuggest() {
   });
 }
 
+// ⭐ เลือกโครงการ → กรองแสดงเฉพาะห้องในโครงการนั้น
 function selectProject(name) {
+  selectedProject = name;
   syncSearch(name);
   const clearBtn = document.getElementById('searchClear');
   const clearBtnD = document.getElementById('searchDesktopClear');
   if (clearBtn) clearBtn.classList.remove('hidden');
   if (clearBtnD) clearBtnD.classList.remove('hidden');
   hideSearchSuggest();
+  // ปิด keyboard
+  const active = document.activeElement;
+  if (active && (active.id === 'search' || active.id === 'searchDesktop')) active.blur();
+  render();
+}
+
+// ⭐ กลับไปรายชื่อโครงการ
+function backToProjectList() {
+  selectedProject = null;
   render();
 }
 
@@ -1440,20 +1457,50 @@ function render() {
   });
   if (filter === 'EXPIRING' && !q) list = list.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
-  if (q) {
+
+  // ⭐ ถ้าเลือกลงชื่อคอนโดแล้ว → กรองเฉพาะห้องในคอนโดนั้น
+  if (selectedProject) {
+    list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
+  } else if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
     const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
   }
 
-  const lt = document.getElementById('listTitle'); if (lt) lt.textContent = `ทั้งหมด ${list.length} ห้อง`;
+  const lt = document.getElementById('listTitle');
+  if (lt) {
+    if (selectedProject) lt.textContent = `${selectedProject} · ${list.length} ห้อง`;
+    else lt.textContent = `ทั้งหมด ${list.length} ห้อง`;
+  }
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
   ['vtCard','vtCardD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'card'); });
   ['vtList','vtListD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'list'); });
 
   const ul = document.getElementById('unitList');
   if (ul) {
-    if (list.length === 0) {
+    if (selectedProject && list.length === 0) {
+      // ⭐ เลือกคอนโดแล้ว แต่ไม่มีห้องตรงกับ filter
+      ul.innerHTML = `
+        <div class="col-span-full mb-2 flex items-center justify-between gap-2">
+          <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ
+          </button>
+          <p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)}</p>
+        </div>
+        <p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>
+      `;
+    } else if (selectedProject) {
+      // ⭐ เลือกคอนโดแล้ว → แสดงการ์ดห้องทั้งหมดในคอนโดนั้น + ปุ่มกลับ
+      ul.innerHTML = `
+        <div class="col-span-full mb-2 flex items-center justify-between gap-2">
+          <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ
+          </button>
+          <p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p>
+        </div>
+        ${viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('')}
+      `;
+    } else if (list.length === 0) {
       ul.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
     } else if (q) {
       // ⭐ เมื่อกำลังค้นหา → แสดงเฉพาะชื่อคอนโดที่ตรงกัน
