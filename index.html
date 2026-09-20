@@ -56,7 +56,7 @@ tailwind.config = { theme: { extend: { colors: {
   .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 3px rgba(184,92,56,.15); }
   .inp-check { width:18px; height:18px; accent-color:#b85c38; }
   label { color:#6b625a; font-size:12px; }
-  .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; white-space:nowrap; }
+  .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; white-space:nowrap; transition: all .15s; }
   .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; }
   .nav-link { transition: all .15s; color:#6b625a; }
   .nav-link:hover { background:#f1eeea; color:#a04d2c; }
@@ -77,8 +77,9 @@ tailwind.config = { theme: { extend: { colors: {
   .owner-action.phone { background:#f1eeea; color:#a04d2c; border-color:#e4dfd9; }
   .owner-action.line { background:rgba(6,199,85,.08); color:#06C755; border-color:rgba(6,199,85,.25); }
   .owner-action.source { background:rgba(14,165,233,.08); color:#0284c7; border-color:rgba(14,165,233,.25); }
-  .kpi { background:#fff; border:1px solid #e4dfd9; border-radius:16px; padding:16px; position:relative; overflow:hidden; transition: all .15s; }
-  .kpi:hover { border-color:#b85c38; }
+  .kpi { background:#fff; border:1px solid #e4dfd9; border-radius:16px; padding:16px; position:relative; overflow:hidden; transition: all .15s; text-align: left; }
+  .kpi:hover { border-color:#b85c38; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(184,92,56,.12); }
+  .kpi:active { transform: translateY(0) scale(.98); }
   .kpi .kpi-value { font-size:28px; font-weight:700; line-height:1; margin-bottom:4px; }
   .kpi .kpi-label { font-size:11px; color:#6b625a; font-weight:500; text-transform:uppercase; letter-spacing:.04em; }
   .kpi-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
@@ -117,7 +118,6 @@ tailwind.config = { theme: { extend: { colors: {
     }
     .detail-view-content.show { transform: translate(-50%, 0) scale(1); }
   }
-  /* ⭐ Dynamic Island safe area */
   .dv-header {
     padding-top: max(60px, env(safe-area-inset-top));
     padding-bottom: 12px;
@@ -125,7 +125,6 @@ tailwind.config = { theme: { extend: { colors: {
   @media (min-width: 1024px) {
     .dv-header { padding-top: 16px; padding-bottom: 12px; }
   }
-  /* ⭐ Inline edit styles */
   .inline-edit {
     display: inline-block;
     padding: 2px 6px;
@@ -157,7 +156,6 @@ tailwind.config = { theme: { extend: { colors: {
     outline: none;
     box-shadow: 0 0 0 3px rgba(184,92,56,.15);
   }
-  /* ⭐ Loading bar */
   .loading-bar {
     position: absolute;
     bottom: 0; left: 0; height: 3px;
@@ -167,7 +165,6 @@ tailwind.config = { theme: { extend: { colors: {
     opacity: 0;
   }
   .loading-bar.active { opacity: 1; }
-  /* ⭐ Notes box ขยายใหญ่ 2 เท่า */
   .notes-box {
     min-height: 180px;
     font-size: 15px;
@@ -196,7 +193,6 @@ tailwind.config = { theme: { extend: { colors: {
     line-height: 1.7;
     resize: vertical;
   }
-  /* ⭐ Textarea ในฟอร์มเพิ่ม/แก้ไข — ขยายใหญ่ 2 เท่า */
   textarea.form-notes {
     min-height: 320px;
     font-size: 15px;
@@ -204,7 +200,7 @@ tailwind.config = { theme: { extend: { colors: {
     padding: 16px 18px;
     resize: vertical;
   }
-  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar { transition:none; } }
+  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi { transition:none; } }
   @media (min-width: 1024px) {
     .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1600px; margin: 0 auto; }
     .sidebar { display: flex !important; }
@@ -253,29 +249,33 @@ tailwind.config = { theme: { extend: { colors: {
       </button>
 
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-4 pb-1.5">สถานะ</p>
-      <button onclick="switchView('rooms'); setFilter('AVAILABLE')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('AVAILABLE')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="circle-dot" class="w-4 h-4 text-brick-500"></i>ว่าง
         <span id="navAvail" class="ml-auto text-xs font-semibold">0</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('OCCUPIED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('OCCUPIED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="circle-dot" class="w-4 h-4 text-rose-500"></i>มีผู้เช่า
         <span id="navOcc" class="ml-auto text-xs font-semibold">0</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('RESERVED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('RESERVED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="circle-dot" class="w-4 h-4 text-sky-500"></i>จอง
         <span id="navReserved" class="ml-auto text-xs font-semibold">0</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('PENDING')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('PENDING')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="circle-dot" class="w-4 h-4 text-slate-400"></i>รอตรวจ
         <span id="navPend" class="ml-auto text-xs font-semibold">0</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('EXPIRING')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('EXPIRING')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>ใกล้หมดสัญญา
         <span id="navExp" class="ml-auto text-xs font-semibold">0</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('UNPOSTED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoFilter('UNPOSTED')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="megaphone-off" class="w-4 h-4 text-amber-600"></i>ยังไม่โพสต์
         <span id="navUnposted" class="ml-auto text-xs font-semibold">0</span>
+      </button>
+      <button onclick="gotoFilter('NO_NOTES')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+        <i data-lucide="file-question" class="w-4 h-4 text-slate-400"></i>ไม่มีรายละเอียด
+        <span id="navNoNotes" class="ml-auto text-xs font-semibold">0</span>
       </button>
 
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-4 pb-1.5">จัดการ</p>
@@ -362,34 +362,38 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="kpi-grid grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-5">
-          <div class="kpi">
+          <button onclick="gotoFilter('AVAILABLE')" class="kpi">
             <div class="flex items-start justify-between mb-2">
               <div class="kpi-icon bg-brick-500/10"><i data-lucide="home" class="w-4 h-4 text-brick-600"></i></div>
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-300"></i>
             </div>
             <p class="kpi-value text-brick-600" id="kpiAvailable">0</p>
             <p class="kpi-label">ห้องว่าง</p>
-          </div>
-          <div class="kpi">
+          </button>
+          <button onclick="gotoFilter('OCCUPIED')" class="kpi">
             <div class="flex items-start justify-between mb-2">
               <div class="kpi-icon bg-rose-500/10"><i data-lucide="key" class="w-4 h-4 text-rose-600"></i></div>
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-300"></i>
             </div>
             <p class="kpi-value text-rose-600" id="kpiOccupied">0</p>
             <p class="kpi-label">มีผู้เช่า</p>
-          </div>
-          <div class="kpi">
+          </button>
+          <button onclick="gotoFilter('RESERVED')" class="kpi">
             <div class="flex items-start justify-between mb-2">
               <div class="kpi-icon bg-sky-500/10"><i data-lucide="handshake" class="w-4 h-4 text-sky-600"></i></div>
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-300"></i>
             </div>
             <p class="kpi-value text-sky-600" id="kpiReserved">0</p>
             <p class="kpi-label">จอง</p>
-          </div>
-          <div class="kpi">
+          </button>
+          <button onclick="gotoFilter('PENDING')" class="kpi">
             <div class="flex items-start justify-between mb-2">
               <div class="kpi-icon bg-slate-500/10"><i data-lucide="clock" class="w-4 h-4 text-slate-500"></i></div>
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-slate-300"></i>
             </div>
             <p class="kpi-value text-slate-500" id="kpiPending">0</p>
             <p class="kpi-label">รอตรวจสอบ</p>
-          </div>
+          </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4 mb-5">
@@ -406,14 +410,14 @@ tailwind.config = { theme: { extend: { colors: {
               <div class="bar-fill" id="occupancyBar" style="width:0%"></div>
             </div>
             <div class="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-3 text-xs">
-              <div>
+              <button onclick="gotoFilter('OCCUPIED')" class="text-left hover:opacity-80">
                 <p class="text-slate-400 mb-0.5">เช่าแล้ว</p>
                 <p class="font-bold text-rose-600" id="revenueFromRented">฿0</p>
-              </div>
-              <div>
+              </button>
+              <button onclick="gotoFilter('AVAILABLE')" class="text-left hover:opacity-80">
                 <p class="text-slate-400 mb-0.5">ว่าง (คาดหวัง)</p>
                 <p class="font-bold text-brick-600" id="revenueFromVacant">฿0</p>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -426,48 +430,48 @@ tailwind.config = { theme: { extend: { colors: {
               <p class="text-xs font-semibold text-brick-300 uppercase tracking-wider mb-1">รายได้รวมต่อเดือน</p>
               <p class="text-3xl lg:text-4xl font-bold mb-3" id="totalRevenue">฿0</p>
               <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
+                <button onclick="gotoFilter('OCCUPIED')" class="text-left hover:opacity-80">
                   <p class="text-brick-200 text-xs">จากห้องที่มีผู้เช่า</p>
                   <p class="font-semibold text-white mt-0.5" id="revenueRented">฿0</p>
-                </div>
-                <div>
+                </button>
+                <button onclick="gotoFilter('EXPIRING')" class="text-left hover:opacity-80">
                   <p class="text-brick-200 text-xs">หักสัญญาใกล้หมด</p>
                   <p class="font-semibold text-white mt-0.5" id="revenueAtRisk">฿0</p>
-                </div>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-5">
-          <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+          <button onclick="gotoFilter('POSTED_TODAY')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
             <div class="kpi-icon bg-emerald-500/10 shrink-0"><i data-lucide="megaphone" class="w-4 h-4 text-emerald-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">โพสต์วันนี้</p>
               <p class="text-lg font-bold text-emerald-600" id="postedToday">0</p>
             </div>
-          </div>
-          <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+          </button>
+          <button onclick="gotoFilter('UNPOSTED')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
             <div class="kpi-icon bg-amber-500/10 shrink-0"><i data-lucide="megaphone-off" class="w-4 h-4 text-amber-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ยังไม่โพสต์</p>
               <p class="text-lg font-bold text-amber-600" id="notPosted">0</p>
             </div>
-          </div>
-          <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
+          </button>
+          <button onclick="gotoFilter('EXPIRING')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
             <div class="kpi-icon bg-amber-500/10 shrink-0"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">สัญญาใกล้หมด</p>
               <p class="text-lg font-bold text-amber-500" id="expiringCount">0</p>
             </div>
-          </div>
-          <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
-            <div class="kpi-icon bg-brick-500/10 shrink-0"><i data-lucide="image" class="w-4 h-4 text-brick-600"></i></div>
+          </button>
+          <button onclick="gotoFilter('NO_NOTES')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+            <div class="kpi-icon bg-rose-500/10 shrink-0"><i data-lucide="file-question" class="w-4 h-4 text-rose-600"></i></div>
             <div class="min-w-0">
-              <p class="text-xs text-slate-400">รูปทั้งหมด</p>
-              <p class="text-lg font-bold text-brick-600" id="totalPhotos">0</p>
+              <p class="text-xs text-slate-400">ไม่มีรายละเอียด</p>
+              <p class="text-lg font-bold text-rose-600" id="noNotesCount">0</p>
             </div>
-          </div>
+          </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-5">
@@ -482,7 +486,7 @@ tailwind.config = { theme: { extend: { colors: {
           <div class="bg-white border border-slate-700 rounded-2xl p-5">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-semibold text-ink">สัญญาใกล้หมดอายุ</h3>
-              <button onclick="switchView('rooms'); setFilter('EXPIRING')" class="text-[11px] text-brick-600 font-semibold hover:underline">ดูทั้งหมด</button>
+              <button onclick="gotoFilter('EXPIRING')" class="text-[11px] text-brick-600 font-semibold hover:underline">ดูทั้งหมด</button>
             </div>
             <div id="expiringList" class="space-y-2"></div>
           </div>
@@ -511,16 +515,38 @@ tailwind.config = { theme: { extend: { colors: {
           </div>
         </div>
 
-        <div class="flex gap-1.5 text-[11px] mb-4 overflow-x-auto hide-scrollbar pb-1">
-          <button onclick="setFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
-          <button onclick="setFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
-          <button onclick="setFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีผู้เช่า</button>
-          <button onclick="setFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
-          <button onclick="setFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">รอตรวจ</button>
-          <button onclick="setFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ขาย</button>
-          <button onclick="setFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใกล้หมดสัญญา</button>
-          <button onclick="setFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่โพสต์</button>
-          <button onclick="setFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">โพสต์เกิน 7 วัน</button>
+        <!-- Filter bar -->
+        <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
+          <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
+          <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
+          <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีผู้เช่า</button>
+          <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
+          <button onclick="toggleFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">รอตรวจ</button>
+          <button onclick="toggleFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ขาย</button>
+          <button onclick="toggleFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใกล้หมดสัญญา</button>
+          <button onclick="toggleFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่โพสต์</button>
+          <button onclick="toggleFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">โพสต์เกิน 7 วัน</button>
+          <button onclick="toggleFilter('NO_NOTES')" data-f="NO_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรายละเอียด</button>
+          <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรายละเอียด</button>
+        </div>
+
+        <!-- ⭐ ช่วงราคา -->
+        <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
+          <span class="text-slate-500 whitespace-nowrap font-medium">ช่วงราคา:</span>
+          <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" 
+            oninput="onPriceInput()"
+            class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
+          <span class="text-slate-400">—</span>
+          <input id="priceMax" type="number" inputmode="numeric" placeholder="สูงสุด" 
+            oninput="onPriceInput()"
+            class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
+          <button onclick="clearPriceRange()" id="priceClearBtn" class="hidden text-brick-600 font-semibold hover:underline whitespace-nowrap">ล้าง</button>
+        </div>
+
+        <div id="filterSummary" class="hidden mb-3 flex items-center gap-2 text-[11px]">
+          <span class="text-slate-400">กรอง:</span>
+          <span id="filterChips" class="flex flex-wrap gap-1"></span>
+          <button onclick="clearAllFilters()" class="text-brick-600 font-semibold hover:underline ml-auto">ล้างทั้งหมด</button>
         </div>
 
         <div id="unitList" class="room-grid grid grid-cols-1 gap-3"></div>
@@ -536,7 +562,7 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="switchView('rooms')" data-nav="rooms" class="nav-link flex flex-col items-center gap-1 p-1.5 rounded-lg">
         <i data-lucide="building-2" class="w-5 h-5"></i><span class="text-[10px] font-medium">ห้องพัก</span>
       </button>
-      <button onclick="switchView('rooms'); setFilter('AVAILABLE')" class="nav-link flex flex-col items-center gap-1 p-1.5 rounded-lg">
+      <button onclick="gotoFilter('AVAILABLE')" class="nav-link flex flex-col items-center gap-1 p-1.5 rounded-lg">
         <i data-lucide="circle-dot" class="w-5 h-5"></i><span class="text-[10px] font-medium">ว่าง</span>
       </button>
       <button onclick="openBackup()" class="nav-link flex flex-col items-center gap-1 p-1.5 rounded-lg">
@@ -572,6 +598,7 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
   <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
   <input type="hidden" id="f_id">
+  <input type="hidden" id="f_isTemp" value="">
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
       <label class="col-span-2 relative">โครงการ<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
@@ -592,6 +619,7 @@ tailwind.config = { theme: { extend: { colors: {
       <label id="salePriceWrap" class="hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
     </div>
 
+    <!-- ⭐ รูปห้อง: เพิ่มได้เลยไม่ต้องกดบันทึก -->
     <div class="border-t border-slate-800 pt-3">
       <div class="flex items-center justify-between mb-2">
         <label class="!text-slate-300 font-semibold text-xs">📷 รูปห้อง</label>
@@ -609,7 +637,7 @@ tailwind.config = { theme: { extend: { colors: {
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
       <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
       <p id="formPhotoProgress" class="text-[10px] text-brick-600 mt-2 hidden"></p>
-      <p class="text-[10px] text-slate-500 mt-2">💡 รูปที่เพิ่มจะถูกบันทึกทันที ไม่ต้องรอกด "บันทึก"</p>
+      <p class="text-[10px] text-slate-500 mt-2">💡 เพิ่มรูปได้เลยทันที ไม่ต้องกด "บันทึก" ก่อน</p>
     </div>
 
     <div class="border-t border-slate-800 pt-3">
@@ -771,12 +799,29 @@ let units = load().map((u, i) => ({
 }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
 
-let filter = 'all';
+let activeFilters = new Set(['all']);
 let sortDir = 'new';
-let selectedProject = null;  // ⭐ โครงการที่เลือกไว้ (จาก dropdown หรือการ์ด)
+let selectedProject = null;
+let priceMin = null;
+let priceMax = null;
 let currentView = (() => { try { return localStorage.getItem(NAV_KEY) || 'dashboard'; } catch (e) { return 'dashboard'; } })();
 let viewMode = (() => { try { return localStorage.getItem(VIEW_KEY) || 'card'; } catch (e) { return 'card'; } })();
 let detailUnitId = null;
+
+const FILTER_LABELS = {
+  'all': 'ทั้งหมด',
+  'AVAILABLE': 'ว่าง',
+  'OCCUPIED': 'มีผู้เช่า',
+  'RESERVED': 'จอง',
+  'PENDING': 'รอตรวจ',
+  'FOR_SALE': 'ขาย',
+  'EXPIRING': 'ใกล้หมดสัญญา',
+  'UNPOSTED': 'ยังไม่โพสต์',
+  'STALE': 'โพสต์เกิน 7 วัน',
+  'NO_NOTES': 'ไม่มีรายละเอียด',
+  'HAS_NOTES': 'มีรายละเอียด',
+  'POSTED_TODAY': 'โพสต์วันนี้'
+};
 
 function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
 function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {} render(); }
@@ -794,6 +839,73 @@ function switchView(v) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function gotoFilter(filterName) {
+  activeFilters = new Set([filterName]);
+  selectedProject = null;
+  clearPriceRangeSilent();
+  syncSearch('');
+  const clearBtn = document.getElementById('searchClear');
+  const clearBtnD = document.getElementById('searchDesktopClear');
+  if (clearBtn) clearBtn.classList.add('hidden');
+  if (clearBtnD) clearBtnD.classList.add('hidden');
+  hideSearchSuggest();
+  switchView('rooms');
+  render();
+}
+
+function gotoProject(projectName) {
+  selectedProject = projectName;
+  syncSearch(projectName);
+  const clearBtn = document.getElementById('searchClear');
+  const clearBtnD = document.getElementById('searchDesktopClear');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+  if (clearBtnD) clearBtnD.classList.remove('hidden');
+  switchView('rooms');
+  render();
+}
+
+function clearFilters() {
+  activeFilters = new Set(['all']);
+  render();
+}
+
+function clearAllFilters() {
+  activeFilters = new Set(['all']);
+  clearPriceRange();
+}
+
+// ============= PRICE RANGE =============
+function onPriceInput() {
+  const minEl = document.getElementById('priceMin');
+  const maxEl = document.getElementById('priceMax');
+  priceMin = minEl && minEl.value ? Number(minEl.value) : null;
+  priceMax = maxEl && maxEl.value ? Number(maxEl.value) : null;
+  const clearBtn = document.getElementById('priceClearBtn');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !priceMin && !priceMax);
+  render();
+}
+function clearPriceRange() {
+  const minEl = document.getElementById('priceMin');
+  const maxEl = document.getElementById('priceMax');
+  if (minEl) minEl.value = '';
+  if (maxEl) maxEl.value = '';
+  priceMin = null;
+  priceMax = null;
+  const clearBtn = document.getElementById('priceClearBtn');
+  if (clearBtn) clearBtn.classList.add('hidden');
+  render();
+}
+function clearPriceRangeSilent() {
+  const minEl = document.getElementById('priceMin');
+  const maxEl = document.getElementById('priceMax');
+  if (minEl) minEl.value = '';
+  if (maxEl) maxEl.value = '';
+  priceMin = null;
+  priceMax = null;
+  const clearBtn = document.getElementById('priceClearBtn');
+  if (clearBtn) clearBtn.classList.add('hidden');
+}
+
 // ============= SEARCH =============
 function syncSearch(v) {
   const s = document.getElementById('search'), d = document.getElementById('searchDesktop');
@@ -808,7 +920,6 @@ function getSearchQuery() {
 let searchDebounce = null;
 
 function onSearchInput(value) {
-  // ⭐ ถ้าผู้ใช้แก้ข้อความเอง (ไม่ตรงกับ selectedProject เดิม) → reset
   if (selectedProject && value.trim() !== selectedProject) {
     selectedProject = null;
   }
@@ -885,7 +996,6 @@ function hideSearchSuggest() {
   });
 }
 
-// ⭐ เลือกโครงการ → กรองแสดงเฉพาะห้องในโครงการนั้น
 function selectProject(name) {
   selectedProject = name;
   syncSearch(name);
@@ -894,13 +1004,11 @@ function selectProject(name) {
   if (clearBtn) clearBtn.classList.remove('hidden');
   if (clearBtnD) clearBtnD.classList.remove('hidden');
   hideSearchSuggest();
-  // ปิด keyboard
   const active = document.activeElement;
   if (active && (active.id === 'search' || active.id === 'searchDesktop')) active.blur();
   render();
 }
 
-// ⭐ กลับไปรายชื่อโครงการ
 function backToProjectList() {
   selectedProject = null;
   render();
@@ -930,7 +1038,6 @@ function closeAllSheets(except = null) {
   });
 }
 
-// Loading bar
 let loadingTimers = {};
 function showLoadingBar(id, duration = 400) {
   const bar = document.getElementById(id);
@@ -945,7 +1052,6 @@ function showLoadingBar(id, duration = 400) {
   }, duration);
 }
 
-// Edge Swipe
 let edgeSwipe = { active: false, startX: 0, startY: 0 };
 document.addEventListener('touchstart', e => {
   const t = e.touches[0];
@@ -1210,7 +1316,6 @@ function renderDetailView() {
       </div>
     </div>
 
-    <!-- ⭐ Notes box ขยายใหญ่ 2 เท่า -->
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-3">
         <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p>
@@ -1235,7 +1340,6 @@ function renderDetailView() {
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
 
-    <!-- ⭐ ปุ่มลบย้ายมาอยู่ด้านล่าง -->
     <button onclick="dvDelete()" class="w-full bg-white border border-rose-500/30 rounded-2xl p-5 flex items-center justify-between hover:border-rose-500 hover:bg-rose-500/5 transition-all active:scale-[0.98]">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
@@ -1367,8 +1471,9 @@ function computeStats() {
     return p.getTime() === today.getTime();
   }).length;
   const unposted = units.filter(u => !u.lastPosted).length;
+  const noNotes = units.filter(u => !(u.notes || '').trim()).length;
   const totalPhotos = Object.values(photoCount).reduce((s, n) => s + n, 0);
-  return { available, occupied, reserved, pending, total, occupancy, totalRevenue, vacantRevenue, atRisk, expiring, postedToday, unposted, totalPhotos };
+  return { available, occupied, reserved, pending, total, occupancy, totalRevenue, vacantRevenue, atRisk, expiring, postedToday, unposted, noNotes, totalPhotos };
 }
 
 function renderDashboard() {
@@ -1388,11 +1493,12 @@ function renderDashboard() {
   setText('postedToday', s.postedToday);
   setText('notPosted', s.unposted);
   setText('expiringCount', s.expiring.length);
-  setText('totalPhotos', s.totalPhotos);
+  setText('noNotesCount', s.noNotes);
   setText('navAvail', s.available); setText('navOcc', s.occupied);
   setText('navReserved', s.reserved);
   setText('navPend', s.pending);
   setText('navExp', s.expiring.length); setText('navUnposted', s.unposted);
+  setText('navNoNotes', s.noNotes);
   setText('totalUnitBadge', s.total);
 
   const byProject = {};
@@ -1406,14 +1512,14 @@ function renderDashboard() {
   const maxRevenue = Math.max(...projects.map(p => p[1].revenue), 1);
   const pb = document.getElementById('projectBreakdown');
   if (pb) pb.innerHTML = projects.length ? projects.slice(0, 6).map(([name, d]) => `
-    <div>
+    <button onclick="gotoProject('${name.replace(/'/g, "\\'")}')" class="w-full text-left group">
       <div class="flex justify-between items-baseline mb-1.5 gap-2">
-        <span class="text-xs font-medium text-ink truncate">${esc(name)}</span>
+        <span class="text-xs font-medium text-ink truncate group-hover:text-brick-600 transition-colors">${esc(name)}</span>
         <span class="text-xs font-bold text-brick-600 shrink-0">${baht(d.revenue)}</span>
       </div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((d.revenue / maxRevenue) * 100)}%"></div></div>
       <p class="text-[10px] text-slate-400 mt-1">${d.occupied}/${d.count} ห้องมีผู้เช่า</p>
-    </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีข้อมูล</p>';
+    </button>`).join('') : '<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีข้อมูล</p>';
 
   const expiringSorted = s.expiring.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   const el = document.getElementById('expiringList');
@@ -1438,27 +1544,59 @@ function renderDashboard() {
 }
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
+// Toggle filter (multi-select)
+function toggleFilter(f) {
+  if (f === 'all') {
+    activeFilters = new Set(['all']);
+  } else {
+    activeFilters.delete('all');
+    if (activeFilters.has(f)) activeFilters.delete(f);
+    else activeFilters.add(f);
+    if (activeFilters.size === 0) activeFilters.add('all');
+  }
+  render();
+}
+
 // RENDER
 function render() {
   renderDashboard();
 
   const q = getSearchQuery();
   const isExpiring = u => { const d = daysLeft(u.end); return u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS; };
-  const isUnposted = u => !u.lastPosted;
   const isStale = u => u.lastPosted && (Date.now() - u.lastPosted) / 86400000 >= STALE_DAYS;
+  const isPostedToday = u => {
+    if (!u.lastPosted) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const p = new Date(u.lastPosted); p.setHours(0,0,0,0);
+    return p.getTime() === today.getTime();
+  };
 
-  let list = units.filter(u => {
-    if (filter === 'all') return true;
-    if (filter === 'FOR_SALE') return !!u.salePrice;
-    if (filter === 'EXPIRING') return isExpiring(u);
-    if (filter === 'UNPOSTED') return isUnposted(u);
-    if (filter === 'STALE') return isStale(u);
-    return u.status === filter;
-  });
-  if (filter === 'EXPIRING' && !q) list = list.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
-  list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
+  const matchesFilter = (u) => {
+    // ⭐ Price range filter
+    if (priceMin !== null && Number(u.rent || 0) < priceMin) return false;
+    if (priceMax !== null && Number(u.rent || 0) > priceMax) return false;
 
-  // ⭐ ถ้าเลือกลงชื่อคอนโดแล้ว → กรองเฉพาะห้องในคอนโดนั้น
+    if (activeFilters.has('all')) return true;
+    const checks = [];
+    if (activeFilters.has('AVAILABLE')) checks.push(u.status === 'AVAILABLE');
+    if (activeFilters.has('OCCUPIED')) checks.push(u.status === 'OCCUPIED');
+    if (activeFilters.has('RESERVED')) checks.push(u.status === 'RESERVED');
+    if (activeFilters.has('PENDING')) checks.push(u.status === 'PENDING');
+    if (activeFilters.has('FOR_SALE')) checks.push(!!u.salePrice);
+    if (activeFilters.has('EXPIRING')) checks.push(isExpiring(u));
+    if (activeFilters.has('UNPOSTED')) checks.push(!u.lastPosted);
+    if (activeFilters.has('STALE')) checks.push(isStale(u));
+    if (activeFilters.has('NO_NOTES')) checks.push(!(u.notes || '').trim());
+    if (activeFilters.has('HAS_NOTES')) checks.push(!!(u.notes || '').trim());
+    if (activeFilters.has('POSTED_TODAY')) checks.push(isPostedToday(u));
+    return checks.some(Boolean);
+  };
+
+  let list = units.filter(matchesFilter);
+
+  if (activeFilters.has('EXPIRING') && !q && !selectedProject) list = list.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
+  else list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
+
   if (selectedProject) {
     list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
   } else if (q) {
@@ -1472,14 +1610,42 @@ function render() {
     if (selectedProject) lt.textContent = `${selectedProject} · ${list.length} ห้อง`;
     else lt.textContent = `ทั้งหมด ${list.length} ห้อง`;
   }
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
+
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', activeFilters.has(b.dataset.f)));
+
+  const summary = document.getElementById('filterSummary');
+  const chips = document.getElementById('filterChips');
+  if (summary && chips) {
+    const active = [...activeFilters].filter(f => f !== 'all');
+    const priceChips = [];
+    if (priceMin !== null) priceChips.push(`฿${fmtNum(priceMin)}+`);
+    if (priceMax !== null) priceChips.push(`≤฿${fmtNum(priceMax)}`);
+    const hasAny = active.length > 0 || priceChips.length > 0;
+    if (hasAny) {
+      summary.classList.remove('hidden');
+      chips.innerHTML = active.map(f => `
+        <span class="inline-flex items-center gap-1 bg-brick-500/10 text-brick-700 px-2 py-0.5 rounded-full font-medium">
+          ${FILTER_LABELS[f] || f}
+          <button onclick="event.stopPropagation(); toggleFilter('${f}')" class="hover:bg-brick-500/20 rounded-full p-0.5">
+            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </span>
+      `).join('') + (priceChips.length ? `
+        <span class="inline-flex items-center gap-1 bg-sky-500/10 text-sky-700 px-2 py-0.5 rounded-full font-medium">
+          <i data-lucide="tag" class="w-2.5 h-2.5"></i>${priceChips.join(' - ')}
+        </span>
+      ` : '');
+    } else {
+      summary.classList.add('hidden');
+    }
+  }
+
   ['vtCard','vtCardD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'card'); });
   ['vtList','vtListD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'list'); });
 
   const ul = document.getElementById('unitList');
   if (ul) {
     if (selectedProject && list.length === 0) {
-      // ⭐ เลือกคอนโดแล้ว แต่ไม่มีห้องตรงกับ filter
       ul.innerHTML = `
         <div class="col-span-full mb-2 flex items-center justify-between gap-2">
           <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
@@ -1490,7 +1656,6 @@ function render() {
         <p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>
       `;
     } else if (selectedProject) {
-      // ⭐ เลือกคอนโดแล้ว → แสดงการ์ดห้องทั้งหมดในคอนโดนั้น + ปุ่มกลับ
       ul.innerHTML = `
         <div class="col-span-full mb-2 flex items-center justify-between gap-2">
           <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
@@ -1503,7 +1668,6 @@ function render() {
     } else if (list.length === 0) {
       ul.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
     } else if (q) {
-      // ⭐ เมื่อกำลังค้นหา → แสดงเฉพาะชื่อคอนโดที่ตรงกัน
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
         ul.innerHTML = `
@@ -1640,7 +1804,6 @@ async function loadMiniCardPhoto(unitId) {
 }
 
 // ACTIONS
-function setFilter(f) { filter = f; switchView('rooms'); render(); }
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
   const order = ['AVAILABLE', 'RESERVED', 'PENDING', 'OCCUPIED'];
@@ -1688,10 +1851,11 @@ function contactOwner(id) {
   else toast(`ยังไม่มีเบอร์ของ ${u.owner || 'เจ้าของ'}`);
 }
 
+// ⭐ ฟอร์มเพิ่มรูป — ใช้ temp ID ถ้ายังไม่บันทึก
 let currentFormUnitId = null;
 function pickFormPhotos(src) {
   const id = document.getElementById('f_id').value;
-  if (!id) { toast('กรุณากรอกข้อมูลห้องและกด "บันทึก" ก่อน แล้วจึงเพิ่มรูป'); return; }
+  if (!id) { toast('ไม่พบ ID ห้อง กรุณาลองใหม่'); return; }
   currentFormUnitId = id;
   document.getElementById(src === 'camera' ? 'formFileCamera' : 'formFileAlbum').click();
 }
@@ -1721,11 +1885,22 @@ async function renderFormPhotos() {
     const photos = await getUnitPhotos(id);
     if (cnt) cnt.textContent = `${photos.length} รูป`;
     if (!photos.length) { grid.innerHTML = ''; return; }
-    grid.innerHTML = photos.map((p, i) => `<div class="mini-photo" onclick="openGallery('${id}')">
+    grid.innerHTML = photos.map((p, i) => `<div class="mini-photo" onclick="event.stopPropagation(); deleteFormPhoto('${p.id}')">
       <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover" alt="">
       ${i === 0 ? '<span class="absolute bottom-0 left-0 bg-brick-500 text-white text-[8px] font-bold px-1 rounded-tr">ปก</span>' : ''}
+      <span class="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5">
+        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </span>
     </div>`).join('');
   } catch (e) { grid.innerHTML = ''; }
+}
+async function deleteFormPhoto(photoId) {
+  if (!confirm('ลบรูปนี้?')) return;
+  try {
+    await req(tx('readwrite').delete(photoId));
+    await refreshCounts(); await renderFormPhotos(); render();
+    toast('ลบรูปแล้ว');
+  } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
 
 // SHEET
@@ -1747,8 +1922,19 @@ function openSheet(mode, id) {
   closeAllSheets('sheet');
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
-  document.getElementById('f_id').value = u ? u.id : '';
-  currentFormUnitId = u ? u.id : null;
+
+  // ⭐ สร้าง temp ID สำหรับโหมด add
+  let unitId;
+  if (u) {
+    unitId = u.id;
+    document.getElementById('f_isTemp').value = '';
+  } else {
+    unitId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    document.getElementById('f_isTemp').value = '1';
+  }
+  document.getElementById('f_id').value = unitId;
+  currentFormUnitId = unitId;
+
   hideProjectSuggest();
   F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
   document.getElementById('deleteBtn').classList.toggle('hidden', !u);
@@ -1762,18 +1948,66 @@ function openSheet(mode, id) {
   const sheetEl = document.getElementById('sheet'); sheetEl.scrollTop = 0;
   requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
 }
-function closeSheet() { document.getElementById('overlay').classList.add('hidden'); document.getElementById('sheet').classList.remove('open'); hideProjectSuggest(); currentFormUnitId = null; }
+
+function closeSheet() {
+  // ⭐ ถ้าเป็น temp และมีรูปที่เพิ่มไว้ → ถามก่อนปิด
+  const isTemp = document.getElementById('f_isTemp').value === '1';
+  const id = document.getElementById('f_id').value;
+  if (isTemp && id && id.startsWith('temp_')) {
+    const photos = photoCount[id] || 0;
+    if (photos > 0) {
+      if (!confirm(`มีรูป ${photos} รูปที่เพิ่มไว้ ต้องการลบทิ้งหรือไม่?\n\nกด "ยกเลิก" เพื่อกลับไปกรอกข้อมูลต่อ`)) {
+        return;
+      }
+      deleteUnitPhotos(id);
+    }
+  }
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('sheet').classList.remove('open');
+  hideProjectSuggest();
+  currentFormUnitId = null;
+  document.getElementById('f_isTemp').value = '';
+}
+
 function toggleSalePrice(on) { document.getElementById('salePriceWrap').classList.toggle('hidden', !on); if (!on) document.getElementById('f_salePrice').value = ''; }
+
 function saveUnit() {
   const id = document.getElementById('f_id').value;
+  const isTemp = document.getElementById('f_isTemp').value === '1';
   const data = {}; F.forEach(k => data[k] = document.getElementById('f_' + k).value.trim());
   if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้อง');
   data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
   data.salePrice = data.salePrice ? Number(data.salePrice) : '';
-  if (id) { const t = units.find(x => x.id === id); Object.assign(t, data); toast('บันทึกแล้ว'); }
-  else { data.id = 'u' + Date.now(); data.createdAt = Date.now(); data.lastPosted = null; data.postCount = 0; units.unshift(data); currentFormUnitId = data.id; toast('เพิ่มห้องแล้ว — เพิ่มรูปได้เลย'); }
-  persist(); closeSheet(); render();
+
+  if (id && !isTemp) {
+    // แก้ไขห้องเดิม
+    const t = units.find(x => x.id === id);
+    Object.assign(t, data);
+    toast('บันทึกแล้ว');
+  } else {
+    // ⭐ เพิ่มห้องใหม่ — ใช้ temp ID เดิมถ้ามี (รูpHที่เพิ่มไว้จะยังอยู่)
+    if (isTemp && id) {
+      data.id = id;
+    } else {
+      data.id = 'u' + Date.now();
+    }
+    data.createdAt = Date.now();
+    data.lastPosted = null;
+    data.postCount = 0;
+    units.unshift(data);
+    currentFormUnitId = data.id;
+    miniPhotoCache.delete(data.id);
+    toast('เพิ่มห้องแล้ว');
+  }
+  persist();
+  document.getElementById('f_isTemp').value = '';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('sheet').classList.remove('open');
+  hideProjectSuggest();
+  currentFormUnitId = null;
+  render();
 }
+
 function deleteUnit() {
   const id = document.getElementById('f_id').value;
   const u = units.find(x => x.id === id);
@@ -1782,7 +2016,11 @@ function deleteUnit() {
   if (detailUnitId === id) closeDetailView();
   miniPhotoCache.delete(id);
   deleteUnitPhotos(id);
-  persist(); closeSheet(); render(); toast('ลบแล้ว');
+  persist();
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('sheet').classList.remove('open');
+  currentFormUnitId = null;
+  render(); toast('ลบแล้ว');
 }
 function openBackup() {
   closeAllSheets('backup');
