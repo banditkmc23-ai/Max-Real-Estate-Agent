@@ -515,7 +515,6 @@ tailwind.config = { theme: { extend: { colors: {
           </div>
         </div>
 
-        <!-- Filter bar -->
         <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
           <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
           <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
@@ -530,7 +529,6 @@ tailwind.config = { theme: { extend: { colors: {
           <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรายละเอียด</button>
         </div>
 
-        <!-- ⭐ ช่วงราคา -->
         <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
           <span class="text-slate-500 whitespace-nowrap font-medium">ช่วงราคา:</span>
           <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" 
@@ -619,7 +617,6 @@ tailwind.config = { theme: { extend: { colors: {
       <label id="salePriceWrap" class="hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
     </div>
 
-    <!-- ⭐ รูปห้อง: เพิ่มได้เลยไม่ต้องกดบันทึก -->
     <div class="border-t border-slate-800 pt-3">
       <div class="flex items-center justify-between mb-2">
         <label class="!text-slate-300 font-semibold text-xs">📷 รูปห้อง</label>
@@ -822,6 +819,9 @@ const FILTER_LABELS = {
   'HAS_NOTES': 'มีรายละเอียด',
   'POSTED_TODAY': 'โพสต์วันนี้'
 };
+
+// ⭐ Status filters — เลือกได้ทีละ 1 เท่านั้น
+const STATUS_FILTERS = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'];
 
 function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
 function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {} render(); }
@@ -1544,14 +1544,21 @@ function renderDashboard() {
 }
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-// Toggle filter (multi-select)
+// ⭐ Toggle filter (multi-select) — AND logic, status เลือกได้ทีละ 1
 function toggleFilter(f) {
   if (f === 'all') {
     activeFilters = new Set(['all']);
   } else {
     activeFilters.delete('all');
+    
+    // ⭐ Status filter — เลือกได้ทีละ 1
+    if (STATUS_FILTERS.includes(f)) {
+      STATUS_FILTERS.forEach(s => activeFilters.delete(s));
+    }
+    
     if (activeFilters.has(f)) activeFilters.delete(f);
     else activeFilters.add(f);
+    
     if (activeFilters.size === 0) activeFilters.add('all');
   }
   render();
@@ -1589,7 +1596,7 @@ function render() {
     if (activeFilters.has('NO_NOTES')) checks.push(!(u.notes || '').trim());
     if (activeFilters.has('HAS_NOTES')) checks.push(!!(u.notes || '').trim());
     if (activeFilters.has('POSTED_TODAY')) checks.push(isPostedToday(u));
-    return checks.some(Boolean);
+    return checks.every(Boolean);  // ⭐ AND logic — ต้องตรงทุกเงื่อนไข
   };
 
   let list = units.filter(matchesFilter);
@@ -1851,7 +1858,6 @@ function contactOwner(id) {
   else toast(`ยังไม่มีเบอร์ของ ${u.owner || 'เจ้าของ'}`);
 }
 
-// ⭐ ฟอร์มเพิ่มรูป — ใช้ temp ID ถ้ายังไม่บันทึก
 let currentFormUnitId = null;
 function pickFormPhotos(src) {
   const id = document.getElementById('f_id').value;
@@ -1923,7 +1929,6 @@ function openSheet(mode, id) {
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
 
-  // ⭐ สร้าง temp ID สำหรับโหมด add
   let unitId;
   if (u) {
     unitId = u.id;
@@ -1950,7 +1955,6 @@ function openSheet(mode, id) {
 }
 
 function closeSheet() {
-  // ⭐ ถ้าเป็น temp และมีรูปที่เพิ่มไว้ → ถามก่อนปิด
   const isTemp = document.getElementById('f_isTemp').value === '1';
   const id = document.getElementById('f_id').value;
   if (isTemp && id && id.startsWith('temp_')) {
@@ -1980,12 +1984,10 @@ function saveUnit() {
   data.salePrice = data.salePrice ? Number(data.salePrice) : '';
 
   if (id && !isTemp) {
-    // แก้ไขห้องเดิม
     const t = units.find(x => x.id === id);
     Object.assign(t, data);
     toast('บันทึกแล้ว');
   } else {
-    // ⭐ เพิ่มห้องใหม่ — ใช้ temp ID เดิมถ้ามี (รูpHที่เพิ่มไว้จะยังอยู่)
     if (isTemp && id) {
       data.id = id;
     } else {
