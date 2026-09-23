@@ -143,7 +143,7 @@ tailwind.config = { theme: { extend: { colors: {
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
 
-  /* ⭐⭐⭐ Mobile: header fixed + main padding */
+  /* ⭐ Mobile: header fixed + main padding (ลดช่องว่าง) */
   @media (max-width: 1023px) {
     .mobile-header {
       position: fixed;
@@ -151,12 +151,12 @@ tailwind.config = { theme: { extend: { colors: {
       z-index: 40;
     }
     .main-wrapper {
-      padding-top: calc(max(60px, env(safe-area-inset-top)) + 200px);
+      padding-top: calc(max(60px, env(safe-area-inset-top)) + 100px);
       padding-bottom: 130px;
     }
   }
 
-  /* ⭐⭐⭐ PC: flexbox layout + fixed sidebar + fixed header + sticky filter */
+  /* ⭐ PC: flexbox layout */
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
     .app-shell {
@@ -262,7 +262,7 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2">v8.5 · <span id="totalUnitBadge">0</span> ห้อง</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2">v8.6 · <span id="totalUnitBadge">0</span> ห้อง</p>
     </div>
   </aside>
 
@@ -302,7 +302,6 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <!-- ⭐ Desktop Header — flex-shrink-0 (fix เพราะ main-wrapper scroll) -->
     <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 flex-shrink-0 z-40">
       <div class="loading-bar" id="desktopLoadingBar"></div>
       <div class="flex items-center gap-3 flex-1 max-w-xl">
@@ -483,7 +482,6 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
 
       <div id="viewRooms" class="pt-4 lg:pt-6 hidden">
-        <!-- ⭐ Sticky filter section — ใช้ top-0 เพราะ header อยู่นอก scroll -->
         <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-800/60">
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -585,7 +583,7 @@ tailwind.config = { theme: { extend: { colors: {
     <div class="border-t border-slate-200 my-3"></div>
     <button onclick="closeProfile();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><i data-lucide="info" class="w-5 h-5 text-slate-500"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">เกี่ยวกับ</p><p class="text-[11px] text-slate-400">Staylow v8.5</p></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">เกี่ยวกับ</p><p class="text-[11px] text-slate-400">Staylow v8.6</p></div>
     </button>
   </div>
 </div>
@@ -2110,7 +2108,7 @@ render();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '8.5';
+const APP_VERSION = '8.6';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { document.getElementById('newVer').textContent = 'v' + m[1]; document.getElementById('updateBar').classList.remove('hidden'); } } catch (e) {}
 }
