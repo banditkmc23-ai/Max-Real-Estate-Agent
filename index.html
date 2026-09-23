@@ -27,18 +27,31 @@ tailwind.config = { theme: { extend: { colors: {
   .hide-scrollbar::-webkit-scrollbar { display:none; } .hide-scrollbar { scrollbar-width:none; }
   .toast { position:fixed; box-shadow:0 10px 30px rgba(0,0,0,.15); left:50%; bottom:110px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; z-index:100; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .sheet { transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
-  .sheet.open { transform:translateY(0); }
-  .sheet:not(.open) { visibility: hidden; pointer-events: none; }
+  .sheet { transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s linear .28s; visibility: hidden; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+  .sheet.open { transform:translateY(0); visibility: visible; transition:transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s; overflow-y: auto; overscroll-behavior: contain; }
   @media (min-width: 1024px) {
-    #sheet, #cfgSheet, #gallery, #pickSheet, #backup, #notifSheet, #profileSheet, #advFilterSheet, #custSheet, #custDetail, #custLinkSheet, #advCustFilterSheet {
+    #sheet, #cfgSheet, #gallery, #pickSheet, #backup, #notifSheet, #profileSheet, #advFilterSheet, #custSheet, #custLinkSheet, #custNoteSheet {
       left: 50% !important; right: auto !important;
       top: 50% !important; bottom: auto !important;
       transform: translate(-50%, -50%) scale(1) !important;
       margin: 0 !important; opacity: 1 !important; visibility: visible !important;
     }
-    #sheet:not(.open), #cfgSheet:not(.open), #gallery:not(.open), #pickSheet:not(.open), #backup:not(.open), #notifSheet:not(.open), #profileSheet:not(.open), #advFilterSheet:not(.open), #custSheet:not(.open), #custDetail:not(.open), #custLinkSheet:not(.open), #advCustFilterSheet:not(.open) {
+    #sheet:not(.open), #cfgSheet:not(.open), #gallery:not(.open), #pickSheet:not(.open), #backup:not(.open), #notifSheet:not(.open), #profileSheet:not(.open), #advFilterSheet:not(.open), #custSheet:not(.open), #custLinkSheet:not(.open), #custNoteSheet:not(.open) {
       transform: translate(-50%, 20px) scale(.98) !important;
+      opacity: 0 !important; visibility: hidden !important; pointer-events: none;
+    }
+    #custDetail {
+      left: 50% !important; right: auto !important;
+      top: 0 !important; bottom: 0 !important;
+      transform: translateX(-50%) !important;
+      margin: 0 !important; opacity: 1 !important; visibility: visible !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: 0 24px 60px -12px rgba(0,0,0,.25);
+    }
+    #custDetail:not(.open) {
+      transform: translateX(-50%) translateY(20px) scale(.98) !important;
       opacity: 0 !important; visibility: hidden !important; pointer-events: none;
     }
   }
@@ -101,17 +114,17 @@ tailwind.config = { theme: { extend: { colors: {
   .h-card-title { font-size: 13px; font-weight: 700; color: #1c1917; line-height: 1.3; margin-bottom: 2px; }
   .h-card-sub { font-size: 10px; color: #8a8078; margin-bottom: 6px; }
   .h-card-price { font-size: 14px; font-weight: 700; color: #b85c38; }
-  .fab-btn { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 45; cursor: pointer; border: none; }
+  .fab-btn { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); width: 58px; height: 58px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 42; cursor: pointer; border: none; }
   .fab-btn:hover { background: #a04d2c; }
   .fab-btn:active { transform: translateX(-50%) scale(.92); }
   .fab-btn svg { width: 28px; height: 28px; }
-  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 12px max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; align-items: flex-end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
-  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; }
+  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; align-items: flex-end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
+  .bottom-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; min-width: 0; }
   .bottom-nav-item:hover { color: #a04d2c; background: #f1eeea; }
   .bottom-nav-item.active { color: #b85c38; }
   .bottom-nav-item.active svg { color: #b85c38; }
   .bottom-nav-item svg { width: 22px; height: 22px; }
-  .bottom-nav-spacer { flex: 1; max-width: 70px; }
+  .bottom-nav-spacer { flex: 1.5 1 0; max-width: 80px; }
   .app-header { background: #f4f2ef; padding: max(60px, env(safe-area-inset-top)) 20px 16px; }
   @media (min-width: 1024px) { .app-header { padding: 20px 24px 16px; } }
   .bar-track { background:#f1eeea; border-radius:6px; height:6px; overflow:hidden; }
@@ -145,12 +158,11 @@ tailwind.config = { theme: { extend: { colors: {
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
 
-  /* ⭐ CRM: Customer Card */
+  #overlay, #cfgOverlay, #galOverlay, #pickOverlay, #bkOverlay, #advFilterOverlay, #custOverlay, #custDetailOverlay, #custLinkOverlay, #custNoteOverlay, #notifOverlay, #profileOverlay { touch-action: manipulation; cursor: pointer; }
+
   .cust-card { background:#fff; border:1px solid #e4dfd9; border-radius:18px; padding:16px; transition:border-color .15s, transform .15s, box-shadow .15s; cursor:pointer; }
   .cust-card:hover { border-color:#b85c38; transform:translateY(-1px); box-shadow:0 4px 12px rgba(184,92,56,.1); }
   .cust-card:active { transform:translateY(0) scale(.99); }
-
-  /* ⭐ CRM: Pipeline Status */
   .pipe-status { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid; white-space:nowrap; }
   .pipe-new { background:rgba(107,98,90,.1); color:#6b625a; border-color:rgba(107,98,90,.25); }
   .pipe-talking { background:rgba(14,165,233,.1); color:#0284c7; border-color:rgba(14,165,233,.3); }
@@ -158,22 +170,15 @@ tailwind.config = { theme: { extend: { colors: {
   .pipe-reserved { background:rgba(234,179,8,.1); color:#ca8a04; border-color:rgba(234,179,8,.35); }
   .pipe-won { background:rgba(6,199,85,.1); color:#059669; border-color:rgba(6,199,85,.3); }
   .pipe-lost { background:rgba(220,38,38,.1); color:#dc2626; border-color:rgba(220,38,38,.3); }
-
-  /* ⭐ CRM: Timeline */
   .timeline-item { position:relative; padding-left:26px; padding-bottom:14px; }
   .timeline-item::before { content:''; position:absolute; left:9px; top:18px; bottom:0; width:2px; background:#e4dfd9; }
   .timeline-item:last-child::before { display:none; }
   .timeline-dot { position:absolute; left:3px; top:6px; width:14px; height:14px; border-radius:50%; background:#b85c38; border:3px solid #fff; box-shadow:0 0 0 1px #e4dfd9; }
-
-  /* ⭐ CRM: Kanban column */
-  .kanban-col { flex-shrink:0; width:280px; background:#fafafa; border:1px solid #e4dfd9; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; max-height:70vh; }
+  .kanban-col { flex-shrink:0; width:270px; background:#fafafa; border:1px solid #e4dfd9; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; max-height:70vh; }
   .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid #e4dfd9; margin-bottom:4px; }
   .kanban-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-
-  /* ⭐ CRM: Link badge */
   .link-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:600; background:rgba(184,92,56,.1); color:#a04d2c; }
 
-  /* ⭐ Mobile */
   @media (max-width: 1023px) {
     .mobile-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
     .main-wrapper { padding-top: calc(max(60px, env(safe-area-inset-top)) + 150px); padding-bottom: 130px; }
@@ -257,7 +262,7 @@ tailwind.config = { theme: { extend: { colors: {
         <span id="navUnposted" class="ml-auto text-xs font-semibold">0</span>
       </button>
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-4 pb-1.5">CRM</p>
-      <button onclick="gotoCustFilter('all')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="gotoCustFilter('NEW')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="user-plus" class="w-4 h-4 text-brick-500"></i>ลูกค้าใหม่
         <span id="navCustNew" class="ml-auto text-xs font-semibold">0</span>
       </button>
@@ -301,7 +306,7 @@ tailwind.config = { theme: { extend: { colors: {
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500"></span>
           </button>
-          <button onclick="openProfile()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-sm active:scale-95 transition-transform">
+          <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-sm active:scale-95 transition-transform">
             M
           </button>
         </div>
@@ -403,6 +408,13 @@ tailwind.config = { theme: { extend: { colors: {
               <p class="kpi-value text-slate-500" id="kpiPending">0</p>
               <p class="kpi-label">รอตรวจสอบ</p>
             </div>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-ink">CRM ลูกค้า</h3>
+          <button onclick="switchView('customers')" class="text-xs text-brick-600 font-semibold flex items-center gap-1 hover:underline">
+            ดูทั้งหมด <i data-lucide="chevron-right" class="w-3 h-3"></i>
           </button>
         </div>
 
@@ -641,18 +653,17 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </main>
 
-    <nav class="bottom-nav-new lg:hidden">
+     <nav class="bottom-nav-new lg:hidden">
       <button onclick="switchView('dashboard')" data-nav="dashboard" class="bottom-nav-item"><i data-lucide="home"></i><span>ภาพรวม</span></button>
       <button onclick="switchView('rooms')" data-nav="rooms" class="bottom-nav-item"><i data-lucide="building-2"></i><span>ห้องพัก</span></button>
-      <button onclick="switchView('customers')" data-nav="customers" class="bottom-nav-item"><i data-lucide="users"></i><span>ลูกค้า</span></button>
-      <div class="bottom-nav-spacer"></div>
-      <button onclick="openSettings()" class="bottom-nav-item"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
       <button onclick="openSheet('add')" class="fab-btn" aria-label="เพิ่มห้องใหม่"><i data-lucide="plus"></i></button>
+      <button onclick="switchView('customers')" data-nav="customers" class="bottom-nav-item"><i data-lucide="users"></i><span>ลูกค้า</span></button>
+      <button onclick="openSettings()" class="bottom-nav-item"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
     </nav>
   </div>
 </div>
-<div id="notifOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeNotifications()"></div>
-<div id="notifSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+<div id="notifOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeNotifications()" ontouchstart="event.preventDefault(); closeNotifications();" style="touch-action: manipulation;"></div>
+<div id="notifSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-4">
     <div class="flex items-center gap-2">
@@ -664,44 +675,9 @@ tailwind.config = { theme: { extend: { colors: {
   <div id="notifList" class="space-y-2"></div>
 </div>
 
-<div id="profileOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeProfile()"></div>
-<div id="profileSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200">
-    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shadow-md">M</div>
-    <div class="flex-1 min-w-0">
-      <p class="text-base font-bold text-ink">MAX</p>
-      <p class="text-xs text-slate-500">Staylow Agent</p>
-      <p class="text-[11px] text-slate-400 mt-0.5" id="profileLineId">LINE: max.kmc</p>
-    </div>
-  </div>
-  <div class="space-y-1">
-    <button onclick="closeProfile(); openSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
-      <div class="w-10 h-10 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="settings" class="w-5 h-5 text-brick-600"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">ตั้งค่าการโพสต์</p><p class="text-[11px] text-slate-400">ชื่อเอเจ้น, เบอร์, Hashtag</p></div>
-      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-    </button>
-    <button onclick="closeProfile(); openBackup();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
-      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0"><i data-lucide="database" class="w-5 h-5 text-emerald-600"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">สำรอง / กู้คืนข้อมูล</p><p class="text-[11px] text-slate-400">ไฟล์ JSON, นำเข้า Excel</p></div>
-      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-    </button>
-    <button onclick="closeProfile(); switchView('rooms');" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
-      <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการห้องพัก</p><p class="text-[11px] text-slate-400">ดูทั้งหมด / ค้นหา / กรอง</p></div>
-      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-    </button>
-    <div class="border-t border-slate-200 my-3"></div>
-    <button onclick="closeProfile();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
-      <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><i data-lucide="info" class="w-5 h-5 text-slate-500"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">เกี่ยวกับ</p><p class="text-[11px] text-slate-400">Staylow v9.0 (CRM)</p></div>
-    </button>
-  </div>
-</div>
-
-<!-- ====== ADVANCED FILTER SHEET (ROOM) ====== -->
-<div id="advFilterOverlay" class="fixed inset-0 bg-black/40 z-[80] hidden" onclick="closeAdvancedFilter()"></div>
-<div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+<!-- ====== ADVANCED FILTER ====== -->
+<div id="advFilterOverlay" class="fixed inset-0 bg-black/40 z-[80] hidden" onclick="closeAdvancedFilter()" ontouchstart="event.preventDefault(); closeAdvancedFilter();" style="touch-action: manipulation;"></div>
+<div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-4">
     <div class="flex items-center gap-2">
@@ -788,9 +764,9 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== CUSTOMER SHEET (ADD/EDIT) ====== -->
-<div id="custOverlay" class="fixed inset-0 bg-black/40 z-[82] hidden" onclick="closeCustSheet()"></div>
-<div id="custSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[520px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[83] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+<!-- ====== CUSTOMER SHEET ====== -->
+<div id="custOverlay" class="fixed inset-0 bg-black/40 z-[82] hidden" onclick="closeCustSheet()" ontouchstart="event.preventDefault(); closeCustSheet();" style="touch-action: manipulation;"></div>
+<div id="custSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[83] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-4">
     <div class="flex items-center gap-2">
@@ -813,6 +789,7 @@ tailwind.config = { theme: { extend: { colors: {
       <label class="flex items-center gap-2 mb-2 text-slate-600 text-xs"><i data-lucide="search" class="w-3.5 h-3.5 text-brick-600"></i><span class="font-semibold">ความสนใจ</span></label>
       <div class="grid grid-cols-2 gap-3">
         <label>โครงการที่สนใจ<input id="cf_interestProject" class="inp" placeholder="เช่น The Excel"></label>
+        <label>อาคาร<input id="cf_interestBuilding" class="inp" placeholder="เช่น Tower A"></label>
         <label>ประเภทห้อง<select id="cf_interestType" class="inp">
           <option value="">ไม่ระบุ</option>
           <option>Studio</option>
@@ -860,18 +837,18 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== CUSTOMER DETAIL VIEW ====== -->
-<div id="custDetailOverlay" class="fixed inset-0 bg-black/40 z-[84] hidden" onclick="closeCustDetail()"></div>
-<div id="custDetail" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[560px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[85] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+<!-- ====== CUSTOMER DETAIL ====== -->
+<div id="custDetailOverlay" class="fixed inset-0 bg-black/40 z-[84] hidden" onclick="closeCustDetail()" ontouchstart="event.preventDefault(); closeCustDetail();" style="touch-action: manipulation;"></div>
+<div id="custDetail" class="sheet fixed bottom-0 lg:top-0 lg:bottom-0 left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 max-w-[calc(100vw-24px)] lg:max-w-[900px] w-full mx-auto bg-white lg:rounded-none border-t lg:border-0 rounded-t-3xl z-[85] p-4 lg:p-6 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] lg:max-h-full overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div id="custDetailContent"></div>
 </div>
 
-<!-- ====== CUSTOMER LINK UNIT SHEET ====== -->
-<div id="custLinkOverlay" class="fixed inset-0 bg-black/40 z-[86] hidden" onclick="closeCustLink()"></div>
-<div id="custLinkSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[87] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+<!-- ====== CUSTOMER LINK UNIT ====== -->
+<div id="custLinkOverlay" class="fixed inset-0 bg-black/40 z-[86] hidden" onclick="closeCustLink()" ontouchstart="event.preventDefault(); closeCustLink();" style="touch-action: manipulation;"></div>
+<div id="custLinkSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[87] p-4 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <div class="flex justify-between items-center mb-4">
+  <div class="flex justify-between items-center mb-3">
     <div class="flex items-center gap-2">
       <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div>
       <div><h2 class="text-base font-bold text-ink">ผูกห้องที่สนใจ</h2><p class="text-[11px] text-slate-400">เลือกห้องให้ลูกค้ารายนี้</p></div>
@@ -879,15 +856,15 @@ tailwind.config = { theme: { extend: { colors: {
     <button onclick="closeCustLink()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
   </div>
   <div class="mb-3">
-    <input id="custLinkSearch" type="text" placeholder="ค้นหาโครงการ/เลขห้อง..." oninput="renderCustLinkList()" class="inp !mt-0">
+    <input id="custLinkSearch" type="text" placeholder="ค้นหาโครงการ/อาคาร/เลขห้อง..." oninput="renderCustLinkList()" class="inp !mt-0">
   </div>
   <div id="custLinkList" class="space-y-2 max-h-[55vh] overflow-y-auto hide-scrollbar"></div>
   <button onclick="closeCustLink()" class="w-full mt-4 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ปิด</button>
 </div>
 
-<!-- ====== CUSTOMER TIMELINE ADD ====== -->
-<div id="custNoteOverlay" class="fixed inset-0 bg-black/40 z-[88] hidden" onclick="closeCustNote()"></div>
-<div id="custNoteSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[89] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()">
+<!-- ====== CUSTOMER NOTE ====== -->
+<div id="custNoteOverlay" class="fixed inset-0 bg-black/40 z-[88] hidden" onclick="closeCustNote()" ontouchstart="event.preventDefault(); closeCustNote();" style="touch-action: manipulation;"></div>
+<div id="custNoteSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[440px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[89] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <h2 class="text-base font-bold text-ink mb-4">บันทึกประวัติคุย</h2>
   <div class="space-y-3">
@@ -941,60 +918,67 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()"></div>
-<div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
+<!-- ====== ROOM SHEET (มีฟิลด์อาคาร เรียงตามความสำคัญ) ====== -->
+<div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()" ontouchstart="event.preventDefault(); closeSheet();" style="touch-action: manipulation;"></div>
+<div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-16px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
   <input type="hidden" id="f_id">
   <input type="hidden" id="f_isTemp" value="">
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
-      <label class="col-span-2 relative">โครงการ<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
+      <!-- ⭐ 1. ข้อมูลระบุตัวตน -->
+      <label class="col-span-2 relative">โครงการ *<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
         <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto hide-scrollbar"></div>
       </label>
-      <label>เลขห้อง<input id="f_room" class="inp" placeholder="1203"></label>
+      <label>เลขห้อง *<input id="f_room" class="inp" placeholder="1203"></label>
       <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
-      <label>ค่าเช่า (บาท/เดือน)<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
+      <label class="col-span-2">อาคาร<input id="f_building" class="inp" placeholder="เช่น Tower A / อาคาร 1 / Building B"></label>
+
+      <!-- ⭐ 2. ราคา/ขนาด -->
+      <label>ราคา/ค่าเช่า (บาท/เดือน) *<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
       <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
+
+      <!-- ⭐ 3. ข้อมูลพื้นฐานห้อง -->
       <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
       <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
       <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
       <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option><option value="PENDING">รอตรวจสอบ (PENDING)</option></select></label>
     </div>
-    <div class="border-t border-slate-800 pt-3 space-y-2">
-      <label class="col-span-2 flex items-center gap-2 text-slate-300"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="inp-check"><span>ห้องนี้ปล่อยขายด้วย</span></label>
+    <div class="border-t border-slate-200 pt-3 space-y-2">
+      <label class="col-span-2 flex items-center gap-2 text-slate-600"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="inp-check"><span>ห้องนี้ปล่อยขายด้วย</span></label>
       <label id="salePriceWrap" class="hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
     </div>
-    <div class="border-t border-slate-800 pt-3">
-      <div class="flex items-center justify-between mb-2"><label class="!text-slate-300 font-semibold text-xs">📷 รูปห้อง</label><span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span></div>
+    <div class="border-t border-slate-200 pt-3">
+      <div class="flex items-center justify-between mb-2"><label class="!text-slate-600 font-semibold text-xs">📷 รูปห้อง</label><span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span></div>
       <div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5 mb-2"></div>
       <div class="grid grid-cols-2 gap-2">
         <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป</button>
-        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
+        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
       </div>
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
       <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
       <p id="formPhotoProgress" class="text-[10px] text-brick-600 mt-2 hidden"></p>
       <p class="text-[10px] text-slate-500 mt-2">💡 เพิ่มรูปได้เลยทันที ไม่ต้องกด "บันทึก" ก่อน</p>
     </div>
-    <div class="border-t border-slate-800 pt-3">
+    <div class="border-t border-slate-200 pt-3">
       <label>🔗 ลิงก์ต้นทางโพสต์</label>
       <div class="url-row">
         <input id="f_sourceUrl" type="url" class="inp" placeholder="https://..." oninput="updateUrlBtn()">
         <button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="url-open-btn" disabled><i data-lucide="external-link" class="w-4 h-4"></i><span>เปิด</span></button>
       </div>
     </div>
-    <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
+    <div class="border-t border-slate-200 pt-3 grid grid-cols-2 gap-3">
       <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
       <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
       <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88"></label>
     </div>
-    <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
+    <div class="border-t border-slate-200 pt-3 grid grid-cols-2 gap-3">
       <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
       <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp" onchange="onEndDateChange()"></label>
     </div>
     <label>รายละเอียดห้อง<textarea id="f_notes" rows="12" class="inp form-notes" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์ — ใส่จุดเด่นของห้อง ทำเล ใกล้ BTS/MRT ฯลฯ"></textarea></label>
-    <div class="border-t border-slate-800 pt-3">
+    <div class="border-t border-slate-200 pt-3">
       <div class="flex items-center gap-2 mb-1"><i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-600"></i><label class="!text-amber-700 font-semibold text-xs">📝 โน้ต (ภายใน)</label></div>
       <p class="text-[10px] text-slate-500 mb-2">💡 โน้ตนี้เห็นเฉพาะในหน้ารายละเอียด ไม่แสดงในการ์ดหรือในข้อความที่แชร์</p>
       <textarea id="f_internalNote" rows="6" class="inp form-internal-note" placeholder="เช่น ลูกค้าถามแล้วรอตอบ, ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea>
@@ -1002,77 +986,115 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
   <div class="flex gap-2 mt-5">
     <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
-    <button onclick="closeSheet()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
+    <button onclick="closeSheet()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
     <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
   </div>
 </div>
 
-<div id="cfgOverlay" class="fixed inset-0 bg-black/30 z-[52] hidden" onclick="closeSettings()"></div>
-<div id="cfgSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[53] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <h2 class="text-base font-bold text-ink mb-4">ตั้งค่าการโพสต์</h2>
-  <div class="space-y-3 text-sm">
-    <label>ชื่อเอเจ้น<input id="cfg_agentName" class="inp" placeholder="MAX"></label>
-    <label>เบอร์โทร<input id="cfg_phone" type="tel" class="inp" placeholder="062-242-3154"></label>
-    <label>LINE ID<input id="cfg_lineId" class="inp" placeholder="max.kmc"></label>
-    <label>Hashtag<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ"></textarea></label>
-    <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_showContact" class="inp-check"><span>ใส่ข้อมูลติดต่อในข้อความที่แชร์</span></label>
-    <div class="border-t border-slate-800 pt-3"><label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_autoBackupReminder" class="inp-check"><span>เตือนสำรองข้อมูลทุก 7 วัน</span></label></div>
-    <div class="border-t border-slate-800 pt-3"><label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_custFollowDays" class="inp-check"><span>เตือนลูกค้าที่ไม่ได้ติดต่อเกิน 7 วัน</span></label></div>
+<!-- ====== SETTINGS ====== -->
+<div id="cfgOverlay" class="fixed inset-0 bg-black/30 z-[52] hidden" onclick="closeSettings()" ontouchstart="event.preventDefault(); closeSettings();" style="touch-action: manipulation;"></div>
+<div id="cfgSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[53] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
+
+  <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200">
+    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shadow-md">M</div>
+    <div class="flex-1 min-w-0">
+      <p class="text-base font-bold text-ink">MAX</p>
+      <p class="text-xs text-slate-500">Staylow Agent</p>
+      <p class="text-[11px] text-slate-400 mt-0.5" id="cfgProfileLine">LINE: max.kmc</p>
+    </div>
+    <button onclick="closeSettings()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
   </div>
+
+  <div class="space-y-1 mb-4">
+    <button onclick="switchView('rooms'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการห้องพัก</p><p class="text-[11px] text-slate-400">ดูทั้งหมด / ค้นหา / กรอง</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="switchView('customers'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5 text-brick-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการลูกค้า</p><p class="text-[11px] text-slate-400">CRM / pipeline / ประวัติ</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="openBackup(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0"><i data-lucide="database" class="w-5 h-5 text-emerald-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">สำรอง / กู้คืนข้อมูล</p><p class="text-[11px] text-slate-400">ไฟล์ JSON, นำเข้า Excel</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+  </div>
+
+  <div class="border-t border-slate-200 pt-4">
+    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="settings" class="w-3.5 h-3.5"></i>ตั้งค่าการโพสต์</h3>
+    <div class="space-y-3 text-sm">
+      <label>ชื่อเอเจ้น<input id="cfg_agentName" class="inp" placeholder="MAX"></label>
+      <label>เบอร์โทร<input id="cfg_phone" type="tel" class="inp" placeholder="062-242-3154"></label>
+      <label>LINE ID<input id="cfg_lineId" class="inp" placeholder="max.kmc"></label>
+      <label>Hashtag<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ"></textarea></label>
+      <label class="flex items-center gap-2 text-slate-600 text-sm"><input type="checkbox" id="cfg_showContact" class="inp-check"><span>ใส่ข้อมูลติดต่อในข้อความที่แชร์</span></label>
+      <div class="border-t border-slate-100 pt-3"><label class="flex items-center gap-2 text-slate-600 text-sm"><input type="checkbox" id="cfg_autoBackupReminder" class="inp-check"><span>เตือนสำรองข้อมูลทุก 7 วัน</span></label></div>
+      <div class="border-t border-slate-100 pt-3"><label class="flex items-center gap-2 text-slate-600 text-sm"><input type="checkbox" id="cfg_custFollowDays" class="inp-check"><span>เตือนลูกค้าที่ไม่ได้ติดต่อเกิน 7 วัน</span></label></div>
+    </div>
+  </div>
+
   <div class="flex gap-2 mt-5">
-    <button onclick="closeSettings()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
+    <button onclick="closeSettings()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ปิด</button>
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
   </div>
+
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.0 (CRM)</p>
 </div>
 
-<div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()"></div>
-<div id="gallery" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[520px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[55] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
+<!-- ====== GALLERY ====== -->
+<div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
+<div id="gallery" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[520px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[55] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-4"><h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2><button onclick="closeGallery()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <div class="grid grid-cols-2 gap-2 mb-4">
     <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
-    <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
+    <button onclick="pickPhotos('camera')" class="bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
   </div>
-  <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]"></label>
+  <label class="flex items-center justify-between text-xs text-slate-600 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]"></label>
   <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
   <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
   <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
   <p class="text-[11px] text-slate-500 mb-2">กดค้างที่รูปแล้วลากเพื่อจัดลำดับ · รูปแรกเป็นหน้าปก</p>
   <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
-  <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-700 rounded-2xl">ยังไม่มีรูปห้องนี้</div>
+  <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-300 rounded-2xl">ยังไม่มีรูปห้องนี้</div>
   <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
-    <button onclick="openPhotoPicker('share')" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปที่เลือก</button>
-    <button onclick="openPhotoPicker('collage')" class="bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
+    <button onclick="openPhotoPicker('share')" class="bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4 text-brick-600"></i>ส่งรูปที่เลือก</button>
+    <button onclick="openPhotoPicker('collage')" class="bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-brick-600"></i>สร้างภาพรวม</button>
   </div>
 </div>
 
-<div id="pickOverlay" class="fixed inset-0 bg-black/40 z-[56] hidden" onclick="closePhotoPicker()"></div>
-<div id="pickSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[57] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
+<!-- ====== PHOTO PICKER ====== -->
+<div id="pickOverlay" class="fixed inset-0 bg-black/40 z-[56] hidden" onclick="closePhotoPicker()" ontouchstart="event.preventDefault(); closePhotoPicker();" style="touch-action: manipulation;"></div>
+<div id="pickSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[57] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-1"><h2 id="pickTitle" class="text-base font-bold text-ink">เลือกรูป</h2><button onclick="closePhotoPicker()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <p id="pickHint" class="text-xs text-slate-400 mb-4">แตะเพื่อเลือก/ยกเลิก</p>
   <div class="flex gap-2 mb-3">
-    <button onclick="pickAll()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold py-2 rounded-full">เลือกทั้งหมด</button>
-    <button onclick="pickNone()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold py-2 rounded-full">ล้างที่เลือก</button>
+    <button onclick="pickAll()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold py-2 rounded-full">เลือกทั้งหมด</button>
+    <button onclick="pickNone()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold py-2 rounded-full">ล้างที่เลือก</button>
   </div>
   <div id="pickGrid" class="grid grid-cols-3 gap-1.5 mb-3"></div>
   <p id="pickCount" class="text-xs text-slate-400 text-center mb-3">เลือกแล้ว 0 รูป</p>
   <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span></button>
 </div>
 
-<div id="bkOverlay" class="fixed inset-0 bg-black/30 z-[58] hidden" onclick="closeBackup()"></div>
-<div id="backup" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[59] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
+<!-- ====== BACKUP ====== -->
+<div id="bkOverlay" class="fixed inset-0 bg-black/30 z-[58] hidden" onclick="closeBackup()" ontouchstart="event.preventDefault(); closeBackup();" style="touch-action: manipulation;"></div>
+<div id="backup" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[59] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <h2 class="text-base font-bold text-ink mb-1">สำรอง / กู้คืนข้อมูล</h2>
   <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้อง ลูกค้า และรูปทั้งหมด</p>
   <div class="space-y-2">
     <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล</button>
-    <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์</button>
+    <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์</button>
     <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
   </div>
-  <div class="border-t border-slate-800 mt-4 pt-4">
-    <button onclick="document.getElementById('xlFile').click()" class="w-full bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-brick-600"></i>นำเข้าห้องจาก Excel</button>
+  <div class="border-t border-slate-200 mt-4 pt-4">
+    <button onclick="document.getElementById('xlFile').click()" class="w-full bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-brick-600"></i>นำเข้าห้องจาก Excel</button>
     <input type="file" id="xlFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(this.files[0])">
   </div>
   <p id="bkProgress" class="text-xs text-brick-600 mt-3 hidden"></p>
@@ -1109,28 +1131,28 @@ const NAV_KEY = 'staylow_nav_view';
 const CUST_VIEW_KEY = 'staylow_cust_view';
 
 const seed = [
-  { id:'u1', project:'The Excel Sukhumvit 50', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' },
-  { id:'u2', project:'The Base Park West', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', sourceUrl:'', start:'2025-10-01', end:'2026-09-30', notes:'' },
-  { id:'u3', project:'Rhythm Sukhumvit 42', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' },
-  { id:'u4', project:'The Excel Sukhumvit 50', room:'1508', floor:'15', rent:14000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'2025-01-01', end:'2026-01-15', notes:'' },
-  { id:'u5', project:'Life Asoke', room:'2301', floor:'23', rent:18000, size:28, type:'Studio', bath:'1', view:'City', status:'AVAILABLE', owner:'คุณปรีชา', ownerPhone:'086-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' }
+  { id:'u1', project:'The Excel Sukhumvit 50', building:'Tower A', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' },
+  { id:'u2', project:'The Base Park West', building:'Building B', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', sourceUrl:'', start:'2025-10-01', end:'2026-09-30', notes:'' },
+  { id:'u3', project:'Rhythm Sukhumvit 42', building:'Tower 1', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' },
+  { id:'u4', project:'The Excel Sukhumvit 50', building:'Tower A', room:'1508', floor:'15', rent:14000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'2025-01-01', end:'2026-01-15', notes:'' },
+  { id:'u5', project:'Life Asoke', building:'Tower C', room:'2301', floor:'23', rent:18000, size:28, type:'Studio', bath:'1', view:'City', status:'AVAILABLE', owner:'คุณปรีชา', ownerPhone:'086-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' }
 ];
 
 const custSeed = [
-  { id:'c1', name:'คุณสมชาย ใจดี', phone:'081-234-5678', line:'somchai88', email:'', interestProject:'The Excel', interestType:'1 Bed', budgetMin:12000, budgetMax:18000, status:'TALKING', source:'Facebook', nextFollow:new Date(Date.now()+86400000).toISOString().slice(0,10), note:'สนใจชั้นสูง วิวเมือง', linkedUnits:['u1'], timeline:[{ ts:Date.now()-172800000, type:'call', text:'โทรสอบถามรายละเอียดครั้งแรก' }], createdAt: Date.now()-172800000 },
-  { id:'c2', name:'คุณวิภา รักดี', phone:'089-876-5432', line:'', email:'', interestProject:'', interestType:'Studio', budgetMin:10000, budgetMax:15000, status:'NEW', source:'LINE', nextFollow:new Date().toISOString().slice(0,10), note:'', linkedUnits:[], timeline:[], createdAt: Date.now()-86400000 },
-  { id:'c3', name:'คุณเกียรติ มั่นคง', phone:'062-345-6789', line:'kiat_m', email:'kiat@example.com', interestProject:'Rhythm', interestType:'1 Bed', budgetMin:20000, budgetMax:25000, status:'RESERVED', source:'Referral', nextFollow:'', note:'จองห้อง 2108 แล้ว รอสัญญา', linkedUnits:['u3'], timeline:[{ ts:Date.now()-604800000, type:'viewing', text:'นัดดูห้อง 2108 ลูกค้าชอบมาก' }], createdAt: Date.now()-604800000 }
+  { id:'c1', name:'คุณสมชาย ใจดี', phone:'081-234-5678', line:'somchai88', email:'', interestProject:'The Excel', interestBuilding:'Tower A', interestType:'1 Bed', budgetMin:12000, budgetMax:18000, status:'TALKING', source:'Facebook', nextFollow:new Date(Date.now()+86400000).toISOString().slice(0,10), note:'สนใจชั้นสูง วิวเมือง', linkedUnits:['u1'], timeline:[{ ts:Date.now()-172800000, type:'call', text:'โทรสอบถามรายละเอียดครั้งแรก' }], createdAt: Date.now()-172800000 },
+  { id:'c2', name:'คุณวิภา รักดี', phone:'089-876-5432', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'Studio', budgetMin:10000, budgetMax:15000, status:'NEW', source:'LINE', nextFollow:new Date().toISOString().slice(0,10), note:'', linkedUnits:[], timeline:[], createdAt: Date.now()-86400000 },
+  { id:'c3', name:'คุณเกียรติ มั่นคง', phone:'062-345-6789', line:'kiat_m', email:'kiat@example.com', interestProject:'Rhythm', interestBuilding:'Tower 1', interestType:'1 Bed', budgetMin:20000, budgetMax:25000, status:'RESERVED', source:'Referral', nextFollow:'', note:'จองห้อง 2108 แล้ว รอสัญญา', linkedUnits:['u3'], timeline:[{ ts:Date.now()-604800000, type:'viewing', text:'นัดดูห้อง 2108 ลูกค้าชอบมาก' }], createdAt: Date.now()-604800000 }
 ];
 
 let units = load(KEY, seed).map((u, i) => ({
-  bath: '1', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
+  bath: '1', building: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
   lastPosted: null, postCount: 0, expiredNotified: false,
   createdAt: Date.now() - (9999 - i) * 1000, ...u
 }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
 
 let customers = load(CUST_KEY, custSeed).map(c => ({
-  name:'', phone:'', line:'', email:'', interestProject:'', interestType:'',
+  name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'',
   budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'',
   linkedUnits:[], timeline:[], createdAt: Date.now(), ...c
 }));
@@ -1149,7 +1171,6 @@ let detailCustId = null;
 let expiryQueue = [];
 let currentExpiryUnitId = null;
 
-// ⭐ ADVANCED FILTER STATE
 let advFilter = {
   priceMin: null, priceMax: null,
   sizeMin: null, sizeMax: null,
@@ -1174,11 +1195,6 @@ const CUST_STATUS_META = {
   WON:       { label:'ปิดการขาย',   cls:'pipe-won',      dot:'bg-emerald-500',icon:'trophy' },
   LOST:      { label:'ปิดไม่สำเร็จ',cls:'pipe-lost',     dot:'bg-rose-500',   icon:'x-circle' }
 };
-const CUST_FILTER_LABELS = {
-  'all':'ทั้งหมด','NEW':'ใหม่','TALKING':'กำลังคุย','VIEWING':'นัดดู',
-  'RESERVED':'จอง','WON':'ปิดการขาย','LOST':'ปิดไม่สำเร็จ',
-  'NEED_FOLLOW':'ต้องติดตาม','HAS_UNIT':'สนใจห้องแล้ว','NO_UNIT':'ยังไม่ผูกห้อง'
-};
 
 function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {} render(); }
 function setCustView(mode) { custViewMode = mode; try { localStorage.setItem(CUST_VIEW_KEY, mode); } catch (e) {} renderCustomers(); }
@@ -1186,7 +1202,7 @@ function load(key, fallback) { try { const s = localStorage.getItem(key); if (s)
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 function persistCust() { try { localStorage.setItem(CUST_KEY, JSON.stringify(customers)); } catch (e) {} }
 
-// ============= ADVANCED FILTER (ROOM) =============
+// ============= ADVANCED FILTER =============
 function openAdvancedFilter() {
   document.getElementById('advPriceMin').value = advFilter.priceMin ?? '';
   document.getElementById('advPriceMax').value = advFilter.priceMax ?? '';
@@ -1198,12 +1214,16 @@ function openAdvancedFilter() {
   document.querySelectorAll('.adv-post').forEach(cb => cb.checked = advFilter.post.includes(cb.value));
   document.querySelectorAll('.adv-misc').forEach(cb => cb.checked = advFilter.misc.includes(cb.value));
   document.getElementById('advFilterOverlay').classList.remove('hidden');
-  document.getElementById('advFilterSheet').classList.add('open');
+  const sheetEl = document.getElementById('advFilterSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
 function closeAdvancedFilter() {
   document.getElementById('advFilterOverlay').classList.add('hidden');
   document.getElementById('advFilterSheet').classList.remove('open');
+  document.body.style.overflow = '';
 }
 function applyAdvancedFilter() {
   advFilter.priceMin = document.getElementById('advPriceMin').value ? Number(document.getElementById('advPriceMin').value) : null;
@@ -1227,14 +1247,14 @@ function applyAdvancedFilter() {
 function clearAdvancedFilter() {
   advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], statuses: [], post: [], misc: [] };
   document.querySelectorAll('.adv-type, .adv-bath, .adv-status, .adv-post, .adv-misc').forEach(cb => cb.checked = false);
-  ['advPriceMin','advPriceMax','advSizeMin','advSizeMax'].forEach(id => document.getElementById(id).value = '');
+  ['advPriceMin','advPriceMax','advSizeMin','advSizeMax'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['advFilterDot','advFilterDotDesktop'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.add('hidden');
   });
   render();
 }
 
-// ============= MAIN: SWITCH VIEW =============
+// ============= SWITCH VIEW =============
 function switchView(v) {
   currentView = v;
   try { localStorage.setItem(NAV_KEY, v); } catch (e) {}
@@ -1275,7 +1295,7 @@ function onPriceInput() {
   render();
 }
 function clearPriceRange() {
-  ['priceMin','priceMax'].forEach(id => document.getElementById(id).value = '');
+  ['priceMin','priceMax'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   priceMin = null; priceMax = null;
   const clearBtn = document.getElementById('priceClearBtn'); if (clearBtn) clearBtn.classList.add('hidden');
   render();
@@ -1366,7 +1386,7 @@ function renderSearchSuggest(query) {
   if (!projects.length) { boxes.forEach(b => b.classList.add('hidden')); return; }
   const html = projects.slice(0, 8).map(p => `
     <button type="button" onmousedown="event.preventDefault()" onclick="selectProject('${p.name.replace(/'/g, "\\'")}')"
-      class="w-full text-left px-3 py-2.5 hover:bg-brick-500/10 border-b border-slate-800 last:border-0 flex items-center gap-3">
+      class="w-full text-left px-3 py-2.5 hover:bg-brick-500/10 border-b border-slate-100 last:border-0 flex items-center gap-3">
       <div class="w-8 h-8 rounded-lg bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-4 h-4 text-brick-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink truncate">${esc(p.name)}</p><p class="text-[10px] text-slate-400">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div>
       <i data-lucide="corner-down-left" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
@@ -1401,6 +1421,7 @@ function closeAllSheets(except = null) {
     { id: 'backup', overlay: 'bkOverlay' }, { id: 'advFilterSheet', overlay: 'advFilterOverlay' },
     { id: 'custSheet', overlay: 'custOverlay' }, { id: 'custDetail', overlay: 'custDetailOverlay' },
     { id: 'custLinkSheet', overlay: 'custLinkOverlay' }, { id: 'custNoteSheet', overlay: 'custNoteOverlay' },
+    { id: 'notifSheet', overlay: 'notifOverlay' },
   ];
   sheets.forEach(s => {
     if (s.id === except) return;
@@ -1408,6 +1429,7 @@ function closeAllSheets(except = null) {
     if (sheetEl) sheetEl.classList.remove('open');
     if (overlayEl) overlayEl.classList.add('hidden');
   });
+  if (!except) document.body.style.overflow = '';
 }
 
 // ============= UTILS =============
@@ -1423,9 +1445,7 @@ const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
 const fmtNum = n => Number(n || 0).toLocaleString('th-TH');
 const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
 const fmtDateTime = ts => { if (!ts) return '-'; const d = new Date(ts); return d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' }) + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' }); };
-const fmtDateShort = ts => { if (!ts) return '-'; const d = new Date(ts); return d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' }); };
 function daysLeft(end) { if (!end) return null; const ms = new Date(end + 'T00:00:00') - new Date(new Date().toDateString()); return Math.ceil(ms / 86400000); }
-function daysSince(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 86400000); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
@@ -1468,7 +1488,7 @@ function updateUrlBtn() { const btn = document.getElementById('urlOpenBtn'); if 
 function openSourceUrl(unitId) { const u = units.find(x => x.id === unitId); if (!u || !u.sourceUrl) return toast('ไม่มีลิงก์'); openUrl(u.sourceUrl); }
 function lineUrlOf(v) { v = (v || '').trim(); if (!v) return ''; if (/^https?:\/\//i.test(v)) return v; if (/line\.me\//i.test(v)) return 'https://' + v.replace(/^\/+/, ''); return 'https://line.me/ti/p/~' + encodeURIComponent(v.replace(/^@/, '')); }
 
-// ============= NOTIFICATIONS (room) =============
+// ============= NOTIFICATIONS =============
 function checkExpiredContracts() {
   const expired = units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) < 0 && !u.expiredNotified);
   if (!expired.length) return;
@@ -1510,27 +1530,30 @@ function dismissExpiry() {
 function updateBellDot() {
   const dot = document.getElementById('bellDot'); if (!dot) return;
   const hasUrgent = units.some(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) <= EXPIRY_DAYS) ||
-                    customers.some(c => c.nextFollow && isNeedFollow(c));
+                    customers.some(c => isNeedFollow(c));
   dot.classList.toggle('hidden', !hasUrgent);
 }
 function openNotifications() {
   renderNotifications();
   document.getElementById('notifOverlay').classList.remove('hidden');
-  requestAnimationFrame(() => document.getElementById('notifSheet').classList.add('open'));
+  const sheetEl = document.getElementById('notifSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
 function closeNotifications() {
   document.getElementById('notifSheet').classList.remove('open');
-  setTimeout(() => document.getElementById('notifOverlay').classList.add('hidden'), 280);
+  setTimeout(() => { document.getElementById('notifOverlay').classList.add('hidden'); document.body.style.overflow = ''; }, 280);
 }
 function getNotifications() {
   const items = [];
   units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) < 0).forEach(u => {
-    items.push({ type:'expired', priority:0, unit:u, days:daysLeft(u.end), title:`ห้อง ${u.room} หมดสัญญาแล้ว`, sub:`${u.project} · หมดมา ${-daysLeft(u.end)} วัน`, link:`openDetailView('${u.id}')` });
+    items.push({ type:'expired', priority:0, unit:u, days:daysLeft(u.end), title:`ห้อง ${u.room} หมดสัญญาแล้ว`, sub:`${u.project} · หมดมา ${-daysLeft(u.end)} วัน`, link:`closeNotifications(); openDetailView('${u.id}')` });
   });
   units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) >= 0 && daysLeft(u.end) <= EXPIRY_DAYS).forEach(u => {
     const d = daysLeft(u.end);
-    items.push({ type:'expiring', priority: d <= 7 ? 1 : 2, unit:u, days:d, title:`ห้อง ${u.room} สัญญาใกล้หมด`, sub:`${u.project} · เหลือ ${d} วัน`, link:`openDetailView('${u.id}')` });
+    items.push({ type:'expiring', priority: d <= 7 ? 1 : 2, unit:u, days:d, title:`ห้อง ${u.room} สัญญาใกล้หมด`, sub:`${u.project} · เหลือ ${d} วัน`, link:`closeNotifications(); openDetailView('${u.id}')` });
   });
   customers.filter(c => isNeedFollow(c)).forEach(c => {
     const overdue = c.nextFollow && new Date(c.nextFollow) < new Date(new Date().toDateString());
@@ -1568,7 +1591,7 @@ function renderNotifications() {
   lucide.createIcons();
 }
 
-// ============= PROFILE / SETTINGS =============
+// ============= SETTINGS =============
 const DEFAULT_CFG = { agentName:'MAX', phone:'062-242-3154', lineId:'max.kmc', hashtags:'#คอนโดให้เช่า #คอนโดกรุงเทพ #ห้องเช่า', showContact:true, autoBackupReminder:true, custFollowDays:true };
 function getPostConfig() { try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; } catch (e) { return { ...DEFAULT_CFG }; } }
 function savePostConfig(cfg) { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
@@ -1582,10 +1605,21 @@ function openSettings() {
   document.getElementById('cfg_showContact').checked = c.showContact;
   document.getElementById('cfg_autoBackupReminder').checked = c.autoBackupReminder;
   document.getElementById('cfg_custFollowDays').checked = c.custFollowDays;
+  const lineEl = document.getElementById('cfgProfileLine');
+  if (lineEl) lineEl.textContent = 'LINE: ' + c.lineId;
   document.getElementById('cfgOverlay').classList.remove('hidden');
-  document.getElementById('cfgSheet').classList.add('open');
+  const sheetEl = document.getElementById('cfgSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  sheetEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
 }
-function closeSettings() { document.getElementById('cfgOverlay').classList.add('hidden'); document.getElementById('cfgSheet').classList.remove('open'); }
+function closeSettings() {
+  document.getElementById('cfgOverlay').classList.add('hidden');
+  document.getElementById('cfgSheet').classList.remove('open');
+  document.body.style.overflow = '';
+}
 function saveSettings() {
   const cfg = {
     agentName: document.getElementById('cfg_agentName').value.trim() || DEFAULT_CFG.agentName,
@@ -1598,19 +1632,8 @@ function saveSettings() {
   };
   savePostConfig(cfg); closeSettings(); toast('บันทึกการตั้งค่าแล้ว'); render();
 }
-function openProfile() {
-  const cfg = getPostConfig();
-  document.getElementById('profileLineId').textContent = 'LINE: ' + cfg.lineId;
-  document.getElementById('profileOverlay').classList.remove('hidden');
-  requestAnimationFrame(() => document.getElementById('profileSheet').classList.add('open'));
-  lucide.createIcons();
-}
-function closeProfile() {
-  document.getElementById('profileSheet').classList.remove('open');
-  setTimeout(() => document.getElementById('profileOverlay').classList.add('hidden'), 280);
-}
 
-// ============= ROOM DETAIL (with linked customers) =============
+// ============= ROOM DETAIL =============
 function openDetailView(unitId) {
   const u = units.find(x => x.id === unitId); if (!u) return;
   detailUnitId = unitId;
@@ -1658,10 +1681,11 @@ function renderDetailView() {
 
   document.getElementById('detailContent').innerHTML = `
     <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;"><img id="dvCoverImg" class="w-full h-full object-cover" alt=""></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
+          <p class="text-xs text-slate-400 mb-1 inline-edit" onclick="startInlineEdit(this, 'building')">${u.building ? '🏬 ' + esc(u.building) : 'แตะเพื่อใส่อาคาร'}</p>
           <h2 class="text-2xl font-bold text-ink">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
         </div>
         <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
@@ -1679,29 +1703,28 @@ function renderDetailView() {
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
       <div><p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p><p class="text-sm font-semibold ${ps.cls}">${ps.label}</p></div>
       <button onclick="markAsPosted('${u.id}')" class="bg-[#06C755]/10 hover:bg-[#06C755]/20 text-[#06C755] font-semibold text-xs px-3 py-2 rounded-full border border-[#06C755]/25 active:scale-95">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
 
-    <!-- ===== ลูกค้าที่สนใจห้องนี้ ===== -->
     <div class="bg-brick-50 border border-brick-200 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-brick-800">ลูกค้าที่สนใจห้องนี้ (${linkedCusts.length})</p></div>
-        <button onclick="openCustLinkFromUnit('${u.id}')" class="text-[11px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95">+ เพิ่ม</button>
+        <button onclick="openCustLinkPicker('${u.id}')" class="text-[11px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95 hover:bg-brick-600"><i data-lucide="plus" class="w-3 h-3 inline"></i> เพิ่ม</button>
       </div>
       ${linkedCusts.length ? linkedCusts.map(c => {
         const cm = CUST_STATUS_META[c.status];
-        return `<button onclick="closeDetailView(); openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-white transition-colors mb-1.5">
+        return `<button onclick="closeDetailView(); openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-white transition-colors mb-1.5 border border-brick-100">
           <div class="w-9 h-9 rounded-full bg-brick-500/10 flex items-center justify-center text-brick-700 font-bold text-xs shrink-0">${esc((c.name||'?').slice(0,1))}</div>
           <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink truncate">${esc(c.name)}</p><p class="text-[11px] text-slate-500 truncate">${esc(c.phone || '-')} · ${esc(c.line || 'ไม่มี LINE')}</p></div>
           <span class="pipe-status ${cm.cls}">${cm.label}</span>
@@ -1709,7 +1732,7 @@ function renderDetailView() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีลูกค้าที่สนใจห้องนี้</p>'}
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-3">
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
         <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
@@ -1723,7 +1746,7 @@ function renderDetailView() {
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน')}</div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5">
       <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}</div>
       <div class="text-sm text-slate-500 space-y-2">
         <div class="flex items-center gap-2"><span class="w-16">เริ่ม:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span></div>
@@ -1731,14 +1754,14 @@ function renderDetailView() {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-3"><p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
       <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
 
-    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
+    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
       <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p><p class="text-xs text-slate-400">${pic} รูป</p></div></div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
@@ -1751,7 +1774,6 @@ function renderDetailView() {
   lucide.createIcons();
 }
 function dvCycleStatus() { if (!detailUnitId) return; cycleStatus(detailUnitId); renderDetailView(); setTimeout(() => loadDetailCover(detailUnitId), 50); }
-function openCustLinkFromUnit(unitId) { openCustLinkPicker(unitId); }
 
 // ============= INLINE EDIT =============
 function startInlineEdit(el, field, type = 'text') {
@@ -1840,15 +1862,14 @@ async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
   try { await req(tx('readwrite').delete(photoId)); await refreshCounts(); await renderFormPhotos(); render(); toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
-
-const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
+const F = ['project','room','floor','building','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
 function showProjectSuggest() {
   const input = document.getElementById('f_project'), box = document.getElementById('projectSuggest');
   const q = input.value.trim().toLowerCase();
   const names = allProjectNames().filter(n => !q || n.toLowerCase().includes(q));
   if (!names.length) { box.classList.add('hidden'); return; }
-  box.innerHTML = names.map(n => `<button type="button" onmousedown="event.preventDefault()" onclick="pickProject('${n.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2.5 text-sm text-slate-200 hover:bg-brick-500/10 border-b border-slate-800 last:border-0">${esc(n)}</button>`).join('');
+  box.innerHTML = names.map(n => `<button type="button" onmousedown="event.preventDefault()" onclick="pickProject('${n.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2.5 text-sm text-slate-700 hover:bg-brick-500/10 border-b border-slate-100 last:border-0">${esc(n)}</button>`).join('');
   box.classList.remove('hidden');
 }
 function pickProject(name) { document.getElementById('f_project').value = name; document.getElementById('projectSuggest').classList.add('hidden'); }
@@ -1873,8 +1894,11 @@ function openSheet(mode, id) {
   updateUrlBtn();
   renderFormPhotos();
   document.getElementById('overlay').classList.remove('hidden');
-  document.getElementById('sheet').classList.add('open');
-  const sheetEl = document.getElementById('sheet'); sheetEl.scrollTop = 0;
+  const sheetEl = document.getElementById('sheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  sheetEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
 }
 function closeSheet() {
@@ -1892,9 +1916,9 @@ function closeSheet() {
   hideProjectSuggest();
   currentFormUnitId = null;
   document.getElementById('f_isTemp').value = '';
+  document.body.style.overflow = '';
 }
 function toggleSalePrice(on) { document.getElementById('salePriceWrap').classList.toggle('hidden', !on); if (!on) document.getElementById('f_salePrice').value = ''; }
-
 function saveUnit() {
   const id = document.getElementById('f_id').value;
   const isTemp = document.getElementById('f_isTemp').value === '1';
@@ -1926,6 +1950,7 @@ function saveUnit() {
   document.getElementById('sheet').classList.remove('open');
   hideProjectSuggest();
   currentFormUnitId = null;
+  document.body.style.overflow = '';
   render();
 }
 function deleteUnit() {
@@ -1942,6 +1967,7 @@ function deleteUnit() {
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('sheet').classList.remove('open');
   currentFormUnitId = null;
+  document.body.style.overflow = '';
   render(); toast('ลบแล้ว');
 }
 function cycleStatus(id) {
@@ -1985,7 +2011,7 @@ function contactOwner(id) {
   else toast(`ยังไม่มีเบอร์ของ ${u.owner || 'เจ้าของ'}`);
 }
 
-// ============= RENDER: ROOM LIST =============
+// ============= DASHBOARD =============
 function computeStats() {
   const cnt = s => units.filter(u => u.status === s).length;
   const available = cnt('AVAILABLE'), occupied = cnt('OCCUPIED'), reserved = cnt('RESERVED'), pending = cnt('PENDING');
@@ -2011,7 +2037,6 @@ function renderDashboard() {
   setText('navAvail', s.available); setText('navOcc', s.occupied); setText('navReserved', s.reserved); setText('navPend', s.pending);
   setText('navExp', s.expiring.length); setText('navUnposted', s.unposted); setText('totalUnitBadge', s.total);
 
-  // CRM counters
   setText('navCustomers', customers.length);
   setText('totalCustBadge', customers.length);
   setText('navCustNew', customers.filter(c => c.status === 'NEW').length);
@@ -2044,14 +2069,13 @@ function renderDashboard() {
   if (el) el.innerHTML = expiringSorted.length ? expiringSorted.slice(0, 5).map(u => {
     const d = daysLeft(u.end);
     const cls = d < 0 ? 'text-rose-600' : d <= 7 ? 'text-rose-500' : 'text-amber-600';
-    return `<button onclick="openDetailView('${u.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-950 transition-colors">
+    return `<button onclick="openDetailView('${u.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
       <div class="shrink-0 w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4 text-amber-600"></i></div>
-      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)} · ${esc(u.room)}</p><p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p></div>
+      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p><p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p></div>
       <span class="text-xs font-bold ${cls} shrink-0">${d < 0 ? 'หมดแล้ว' : d + ' วัน'}</span>
     </button>`;
   }).join('') : '<p class="text-xs text-slate-400 text-center py-6">ไม่มีสัญญาใกล้หมด 🎉</p>';
 
-  // Dashboard: ต้องติดตามวันนี้
   const followList = document.getElementById('dashFollowList');
   if (followList) {
     const follow = customers.filter(c => isNeedFollow(c)).sort((a, b) => (a.nextFollow || '9999') < (b.nextFollow || '9999') ? -1 : 1).slice(0, 5);
@@ -2059,7 +2083,7 @@ function renderDashboard() {
       followList.innerHTML = follow.map(c => {
         const cm = CUST_STATUS_META[c.status];
         const overdue = c.nextFollow && new Date(c.nextFollow) < new Date(new Date().toDateString());
-        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-700 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98]">
+        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98]">
           <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center text-brick-700 font-bold text-sm shrink-0">${esc((c.name||'?').slice(0,1))}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}</p>
@@ -2086,7 +2110,7 @@ function renderAvailableScroll() {
     const pic = photoCount[u.id] || 0;
     return `<div class="h-card" onclick="openDetailView('${u.id}')">
       <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${pic} รูป</span>` : ''}</div>
-      <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p></div>
+      <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">${u.building ? esc(u.building) + ' · ' : ''}ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p></div>
     </div>`;
   }).join('');
   lucide.createIcons();
@@ -2097,13 +2121,13 @@ async function loadHScrollPhoto(unitId) {
   try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; img.src = URL.createObjectURL(ps[0].thumb); img.classList.add('w-full','h-full','object-cover'); } catch (e) {}
 }
 
+// ============= ROOM RENDER =============
 function render() {
   renderDashboard();
   const q = getSearchQuery();
   const isExpiring = u => { const d = daysLeft(u.end); return u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS && d >= 0; };
   const isStale = u => u.lastPosted && (Date.now() - u.lastPosted) / 86400000 >= STALE_DAYS;
   const isPostedToday = u => { if (!u.lastPosted) return false; const today = new Date(); today.setHours(0,0,0,0); const p = new Date(u.lastPosted); p.setHours(0,0,0,0); return p.getTime() === today.getTime(); };
-
   const matchesFilter = (u) => {
     if (priceMin !== null && Number(u.rent || 0) < priceMin) return false;
     if (priceMax !== null && Number(u.rent || 0) > priceMax) return false;
@@ -2144,14 +2168,13 @@ function render() {
     if (activeFilters.has('POSTED_TODAY')) checks.push(isPostedToday(u));
     return checks.every(Boolean);
   };
-
   let list = units.filter(matchesFilter);
   if (activeFilters.has('EXPIRING') && !q && !selectedProject) list.sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   else list.sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
   if (selectedProject) list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
   else if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
-    const hay = u => [u.project, u.room, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
+    const hay = u => [u.project, u.building, u.room, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
   }
   const lt = document.getElementById('listTitle');
@@ -2186,7 +2209,7 @@ function render() {
     } else if (q) {
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
-        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
+        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
       } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
     } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
   }
@@ -2204,7 +2227,7 @@ function cardRowHTML(x) {
   const ownerBtnCount = (hasPhone ? 1 : 0) + (hasLine ? 1 : 0) + (hasUrl ? 1 : 0);
   const hasNote = !!(x.internalNote || '').trim();
   const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
-  return `<div class="unit-card bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
+  return `<div class="unit-card bg-white border border-slate-200 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="p-4">
       <div class="flex items-start gap-3 mb-2">
         <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
@@ -2213,6 +2236,7 @@ function cardRowHTML(x) {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
+          ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}
           <h3 class="text-base font-bold text-ink truncate">ห้อง ${esc(x.room)}</h3>
           <div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>
         </div>
@@ -2245,13 +2269,13 @@ function listRowHTML(x) {
   const hasLine = !!x.ownerLine;
   const hasNote = !!(x.internalNote || '').trim();
   const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
-  return `<div class="unit-row bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
+  return `<div class="unit-row bg-white border border-slate-200 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="flex items-center gap-3 p-3">
       <div class="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
         ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
       </div>
       <div class="flex-1 text-left min-w-0">
-        <div class="flex items-center gap-1.5 flex-wrap"><p class="text-xs font-semibold text-ink truncate">${esc(x.project)} · ${esc(x.room)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
+        <div class="flex items-center gap-1.5 flex-wrap"><p class="text-xs font-semibold text-ink truncate">${esc(x.project)}${x.building ? ' · ' + esc(x.building) : ''} · ${esc(x.room)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
         <p class="text-[11px] text-slate-400 truncate">${esc(x.type)} ${esc(x.bath)}B${x.size ? ' · ' + esc(x.size) + ' ตร.ม.' : ''}${pic ? ' · 📷 ' + pic : ''}</p>
         <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p>
       </div>
@@ -2275,7 +2299,7 @@ async function loadMiniCardPhoto(unitId) {
   try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = URL.createObjectURL(ps[0].thumb); miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; } catch (e) {}
 }
 
-// ============== CRM: CUSTOMER CORE ==============
+// ============== CRM CORE ==============
 function isNeedFollow(c) {
   if (c.status === 'WON' || c.status === 'LOST') return false;
   if (c.nextFollow) {
@@ -2283,11 +2307,9 @@ function isNeedFollow(c) {
     const today = new Date(new Date().toDateString());
     return nd <= today;
   }
-  // ถ้าไม่มีวันติดตาม และไม่ได้ติดต่อเกิน 7 วัน
   const last = (c.timeline || []).length ? Math.max(...c.timeline.map(t => t.ts)) : c.createdAt;
   return last && (Date.now() - last) / 86400000 >= 7;
 }
-
 function getCustomerById(id) { return customers.find(c => c.id === id); }
 
 function openCustSheet(mode, id) {
@@ -2298,7 +2320,7 @@ function openCustSheet(mode, id) {
   if (c) { custId = c.id; document.getElementById('cf_isTemp').value = ''; }
   else { custId = 'c' + Date.now(); document.getElementById('cf_isTemp').value = '1'; }
   document.getElementById('cf_id').value = custId;
-  const fields = ['name','phone','line','email','interestProject','interestType','budgetMin','budgetMax','status','source','nextFollow','note'];
+  const fields = ['name','phone','line','email','interestProject','interestBuilding','interestType','budgetMin','budgetMax','status','source','nextFollow','note'];
   fields.forEach(k => {
     const el = document.getElementById('cf_' + k);
     if (!el) return;
@@ -2308,19 +2330,23 @@ function openCustSheet(mode, id) {
   });
   document.getElementById('custDeleteBtn').classList.toggle('hidden', !c);
   document.getElementById('custOverlay').classList.remove('hidden');
-  document.getElementById('custSheet').classList.add('open');
-  document.getElementById('custSheet').scrollTop = 0;
+  const sheetEl = document.getElementById('custSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  sheetEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
 function closeCustSheet() {
   document.getElementById('custOverlay').classList.add('hidden');
   document.getElementById('custSheet').classList.remove('open');
+  document.body.style.overflow = '';
 }
 function saveCustomer() {
   const id = document.getElementById('cf_id').value;
   const isTemp = document.getElementById('cf_isTemp').value === '1';
   const data = {};
-  ['name','phone','line','email','interestProject','interestType','status','source','nextFollow','note'].forEach(k => data[k] = document.getElementById('cf_' + k).value.trim());
+  ['name','phone','line','email','interestProject','interestBuilding','interestType','status','source','nextFollow','note'].forEach(k => data[k] = document.getElementById('cf_' + k).value.trim());
   data.budgetMin = Number(document.getElementById('cf_budgetMin').value) || '';
   data.budgetMax = Number(document.getElementById('cf_budgetMax').value) || '';
   if (!data.name) return toast('กรอกชื่อลูกค้า');
@@ -2329,9 +2355,7 @@ function saveCustomer() {
     Object.assign(c, data);
     toast('บันทึกแล้ว');
   } else {
-    customers.unshift({
-      id, ...data, linkedUnits: [], timeline: [], createdAt: Date.now()
-    });
+    customers.unshift({ id, ...data, linkedUnits: [], timeline: [], createdAt: Date.now() });
     toast('เพิ่มลูกค้าแล้ว');
   }
   persistCust();
@@ -2358,7 +2382,6 @@ function cycleCustStatus(id) {
   persistCust(); renderCustomers(); render();
   toast(`เปลี่ยนสถานะเป็น "${CUST_STATUS_META[c.status].label}"`);
 }
-
 function toggleCustLinkUnit(custId, unitId) {
   const c = getCustomerById(custId); if (!c) return;
   c.linkedUnits = c.linkedUnits || [];
@@ -2383,7 +2406,7 @@ function renderCustomers() {
   let list = customers.filter(matchesFilter);
   if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
-    const hay = c => [c.name, c.phone, c.line, c.email, c.interestProject, c.note].join(' ').toLowerCase();
+    const hay = c => [c.name, c.phone, c.line, c.email, c.interestProject, c.interestBuilding, c.note].join(' ').toLowerCase();
     list = list.filter(c => terms.every(t => hay(c).includes(t)));
   }
   list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -2392,16 +2415,15 @@ function renderCustomers() {
   if (lt) lt.textContent = `ทั้งหมด ${list.length} ราย · ต้องติดตาม ${list.filter(isNeedFollow).length} ราย`;
 
   document.querySelectorAll('.filter-btn[data-cf]').forEach(b => b.classList.toggle('on', activeCustFilters.has(b.dataset.cf)));
-  ['cvGrid','cvKanban'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', custViewMode === id === 'cvGrid' ? 'grid' : 'kanban'); });
+  ['cvGrid','cvKanban'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', custViewMode === (id === 'cvGrid' ? 'grid' : 'kanban')); });
 
   const grid = document.getElementById('custList'), kanban = document.getElementById('custKanban');
-
   if (custViewMode === 'kanban') {
     grid.classList.add('hidden'); kanban.classList.remove('hidden');
     renderKanban(list);
   } else {
     grid.classList.remove('hidden'); kanban.classList.add('hidden');
-    if (!list.length) { grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบลูกค้าที่ตรงกับเงื่อนไข</p>`; }
+    if (!list.length) grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบลูกค้าที่ตรงกับเงื่อนไข</p>`;
     else grid.innerHTML = list.map(custCardHTML).join('');
   }
   lucide.createIcons();
@@ -2417,16 +2439,13 @@ function custCardHTML(c) {
       <div class="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-base shadow-sm">${esc((c.name||'?').slice(0,1))}</div>
       <div class="flex-1 min-w-0">
         <h3 class="text-base font-bold text-ink truncate">${esc(c.name)}</h3>
-        <p class="text-[11px] text-slate-500 mt-0.5 truncate">
-          ${c.phone ? `<i data-lucide="phone" class="w-3 h-3 inline"></i> ${esc(c.phone)}` : ''}
-          ${c.phone && c.line ? ' · ' : ''}
-          ${c.line ? `<i data-lucide="message-circle" class="w-3 h-3 inline text-[#06C755]"></i> ${esc(c.line)}` : ''}
-        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5 truncate">${c.phone ? `📞 ${esc(c.phone)}` : ''}${c.phone && c.line ? ' · ' : ''}${c.line ? `💬 ${esc(c.line)}` : ''}</p>
       </div>
       <button onclick="event.stopPropagation(); cycleCustStatus('${c.id}')" class="pipe-status ${cm.cls} shrink-0">${cm.label}</button>
     </div>
-    ${(c.interestProject || c.interestType || c.budgetMin || c.budgetMax) ? `<div class="text-[11px] text-slate-500 mb-2 flex flex-wrap gap-1.5">
+    ${(c.interestProject || c.interestBuilding || c.interestType || c.budgetMin || c.budgetMax) ? `<div class="text-[11px] text-slate-500 mb-2 flex flex-wrap gap-1.5">
       ${c.interestProject ? `<span class="bg-slate-100 px-2 py-0.5 rounded-full">🏢 ${esc(c.interestProject)}</span>` : ''}
+      ${c.interestBuilding ? `<span class="bg-slate-100 px-2 py-0.5 rounded-full">🏬 ${esc(c.interestBuilding)}</span>` : ''}
       ${c.interestType ? `<span class="bg-slate-100 px-2 py-0.5 rounded-full">${esc(c.interestType)}</span>` : ''}
       ${(c.budgetMin || c.budgetMax) ? `<span class="bg-slate-100 px-2 py-0.5 rounded-full">฿${fmtNum(c.budgetMin || 0)}-${fmtNum(c.budgetMax || 0)}</span>` : ''}
     </div>` : ''}
@@ -2434,7 +2453,7 @@ function custCardHTML(c) {
     <div class="flex items-center justify-between gap-2 text-[10px] mt-2">
       <div class="flex items-center gap-2 flex-wrap">
         ${linked ? `<span class="link-badge"><i data-lucide="building-2" class="w-2.5 h-2.5"></i>${linked} ห้อง</span>` : ''}
-        ${c.timeline?.length ? `<span class="text-slate-400"><i data-lucide="history" class="w-2.5 h-2.5 inline"></i> ${c.timeline.length} ครั้ง</span>` : ''}
+        ${c.timeline?.length ? `<span class="text-slate-400">📝 ${c.timeline.length} ครั้ง</span>` : ''}
       </div>
       ${c.nextFollow ? `<span class="font-semibold ${overdue ? 'text-rose-600' : (follow ? 'text-amber-600' : 'text-slate-500')}">${overdue ? '⚠ เลยกำหนด' : 'ติดตาม ' + fmtDate(c.nextFollow)}</span>` : ''}
     </div>
@@ -2465,20 +2484,24 @@ function renderKanban(list) {
   }).join('');
 }
 
-// ============== CRM: CUSTOMER DETAIL ==============
+// ============== CUSTOMER DETAIL ==============
 function openCustDetail(id) {
   const c = getCustomerById(id); if (!c) return;
   detailCustId = id;
   renderCustDetail();
   document.getElementById('custDetailOverlay').classList.remove('hidden');
-  document.getElementById('custDetail').classList.add('open');
-  document.getElementById('custDetail').scrollTop = 0;
+  const sheetEl = document.getElementById('custDetail');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  sheetEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
 function closeCustDetail() {
   detailCustId = null;
   document.getElementById('custDetailOverlay').classList.add('hidden');
   document.getElementById('custDetail').classList.remove('open');
+  document.body.style.overflow = '';
 }
 function renderCustDetail() {
   const c = getCustomerById(detailCustId); if (!c) { closeCustDetail(); return; }
@@ -2488,93 +2511,100 @@ function renderCustDetail() {
   const linkedUnits = (c.linkedUnits || []).map(uid => units.find(u => u.id === uid)).filter(Boolean);
   const timeline = (c.timeline || []).slice().sort((a, b) => b.ts - a.ts);
   const timelineIcon = { note:'sticky-note', call:'phone', line:'message-circle', email:'mail', viewing:'eye', meeting:'handshake' };
-  const timelineColor = { note:'text-slate-500 bg-slate-100', call:'text-brick-600 bg-brick-500/10', line:'text-[#06C755] bg-[#06C755]/10', email:'text-purple-600 bg-purple-500/10', viewing:'text-sky-600 bg-sky-500/10', meeting:'text-emerald-600 bg-emerald-500/10' };
+  const timelineColor = {
+    note:'text-slate-500 bg-slate-100',
+    call:'text-brick-600 bg-brick-500/10',
+    line:'text-[#06C755] bg-[#06C755]/10',
+    email:'text-purple-600 bg-purple-500/10',
+    viewing:'text-sky-600 bg-sky-500/10',
+    meeting:'text-emerald-600 bg-emerald-500/10'
+  };
 
   document.getElementById('custDetailContent').innerHTML = `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-3">
       <h2 class="text-base font-bold text-ink">รายละเอียดลูกค้า</h2>
-      <button onclick="closeCustDetail()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <button onclick="closeCustDetail()" class="text-slate-400 p-1 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
-      <div class="flex items-start gap-3 mb-3">
-        <div class="shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-lg shadow-md">${esc((c.name||'?').slice(0,1))}</div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-base shadow-md">${esc((c.name||'?').slice(0,1))}</div>
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-bold text-ink truncate">${esc(c.name)}</h3>
+          <h3 class="text-base font-bold text-ink truncate">${esc(c.name)}</h3>
           <button onclick="cycleCustStatus('${c.id}')" class="pipe-status ${cm.cls} mt-1">${cm.label}</button>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2 mt-3">
-        ${c.phone ? `<button onclick="custCall('${c.id}')" class="owner-action phone !text-xs"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
-        ${c.line ? `<button onclick="custLine('${c.id}')" class="owner-action line !text-xs"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
-        ${c.email ? `<button onclick="custEmail('${c.id}')" class="owner-action email !text-xs"><i data-lucide="mail" class="w-3.5 h-3.5"></i>อีเมล</button>` : ''}
-        <button onclick="openCustNote('${c.id}')" class="owner-action source !text-xs"><i data-lucide="plus" class="w-3.5 h-3.5"></i>บันทึก</button>
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        ${c.phone ? `<button onclick="custCall('${c.id}')" class="owner-action phone !text-xs !py-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
+        ${c.line ? `<button onclick="custLine('${c.id}')" class="owner-action line !text-xs !py-2"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
+        ${c.email ? `<button onclick="custEmail('${c.id}')" class="owner-action email !text-xs !py-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i>อีเมล</button>` : ''}
+        <button onclick="openCustNote('${c.id}')" class="owner-action source !text-xs !py-2"><i data-lucide="plus" class="w-3.5 h-3.5"></i>บันทึก</button>
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-3 space-y-2 text-sm">
-      ${c.phone ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i><span class="text-ink font-medium">${esc(c.phone)}</span></div>` : ''}
-      ${c.line ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i><span class="text-ink font-medium">${esc(c.line)}</span></div>` : ''}
-      ${c.email ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="mail" class="w-4 h-4 text-purple-600"></i><span class="text-ink font-medium break-all">${esc(c.email)}</span></div>` : ''}
-      ${c.source ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="megaphone" class="w-4 h-4 text-sky-600"></i><span class="text-ink font-medium">มาจาก: ${esc(c.source)}</span></div>` : ''}
-      ${c.nextFollow ? `<div class="flex items-center gap-2 ${overdue ? 'text-rose-600' : 'text-slate-600'}"><i data-lucide="calendar-clock" class="w-4 h-4 ${overdue ? 'text-rose-600' : 'text-amber-600'}"></i><span class="font-medium">ติดตาม: ${fmtDate(c.nextFollow)} ${overdue ? '(เลยกำหนด)' : ''}</span></div>` : ''}
+    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3 space-y-2 text-sm">
+      ${c.phone ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="phone" class="w-4 h-4 text-brick-600 shrink-0"></i><span class="text-ink font-medium">${esc(c.phone)}</span></div>` : ''}
+      ${c.line ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755] shrink-0"></i><span class="text-ink font-medium">${esc(c.line)}</span></div>` : ''}
+      ${c.email ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="mail" class="w-4 h-4 text-purple-600 shrink-0"></i><span class="text-ink font-medium break-all">${esc(c.email)}</span></div>` : ''}
+      ${c.source ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="megaphone" class="w-4 h-4 text-sky-600 shrink-0"></i><span class="text-ink font-medium">มาจาก: ${esc(c.source)}</span></div>` : ''}
+      ${c.nextFollow ? `<div class="flex items-center gap-2 ${overdue ? 'text-rose-600' : 'text-slate-600'}"><i data-lucide="calendar-clock" class="w-4 h-4 ${overdue ? 'text-rose-600' : 'text-amber-600'} shrink-0"></i><span class="font-medium">ติดตาม: ${fmtDate(c.nextFollow)} ${overdue ? '(เลยกำหนด)' : ''}</span></div>` : ''}
     </div>
 
-    ${(c.interestProject || c.interestType || c.budgetMin || c.budgetMax || c.note) ? `<div class="bg-brick-50 border border-brick-200 rounded-2xl p-4 mb-3">
-      <p class="text-xs font-bold text-brick-800 mb-2 uppercase tracking-wider">ความสนใจ</p>
+    ${(c.interestProject || c.interestBuilding || c.interestType || c.budgetMin || c.budgetMax || c.note) ? `<div class="bg-brick-50 border border-brick-200 rounded-2xl p-3.5 mb-3">
+      <p class="text-[11px] font-bold text-brick-800 mb-2 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="search" class="w-3.5 h-3.5"></i>ความสนใจ</p>
       <div class="space-y-1.5 text-sm">
         ${c.interestProject ? `<p class="text-ink"><span class="text-slate-500">โครงการ:</span> <strong>${esc(c.interestProject)}</strong></p>` : ''}
+        ${c.interestBuilding ? `<p class="text-ink"><span class="text-slate-500">อาคาร:</span> <strong>${esc(c.interestBuilding)}</strong></p>` : ''}
         ${c.interestType ? `<p class="text-ink"><span class="text-slate-500">ประเภท:</span> <strong>${esc(c.interestType)}</strong></p>` : ''}
         ${(c.budgetMin || c.budgetMax) ? `<p class="text-ink"><span class="text-slate-500">งบ:</span> <strong>฿${fmtNum(c.budgetMin || 0)} - ฿${fmtNum(c.budgetMax || 0)}</strong></p>` : ''}
-        ${c.note ? `<p class="text-slate-700 mt-2 text-xs italic">"${esc(c.note)}"</p>` : ''}
+        ${c.note ? `<p class="text-slate-600 mt-2 text-xs italic border-t border-brick-200 pt-2">"${esc(c.note)}"</p>` : ''}
       </div>
     </div>` : ''}
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5 text-brick-600"></i>ห้องที่สนใจ (${linkedUnits.length})</p>
-        <button onclick="openCustLinkPicker(null, '${c.id}')" class="text-[11px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95">+ ผูกห้อง</button>
+    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5 text-brick-600"></i>ห้องที่สนใจ (${linkedUnits.length})</p>
+        <button onclick="openCustLinkPicker(null, '${c.id}')" class="text-[10px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95 hover:bg-brick-600"><i data-lucide="plus" class="w-3 h-3 inline"></i> ผูกห้อง</button>
       </div>
       ${linkedUnits.length ? linkedUnits.map(u => {
         const m = statusOf(u);
-        return `<button onclick="closeCustDetail(); openDetailView('${u.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors mb-1.5">
-          <div class="w-9 h-9 rounded-lg bg-brick-500/10 flex items-center justify-center text-brick-600 shrink-0"><i data-lucide="building-2" class="w-4 h-4"></i></div>
-          <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink truncate">${esc(u.project)} · ${esc(u.room)}</p><p class="text-[11px] text-slate-500">${esc(u.type)} · ${baht(u.rent)}/เดือน</p></div>
-          <span class="pipe-status ${m.cls.replace('bg-','bg-').replace('text-','text-')}" style="font-size:10px;">${m.short || m.label}</span>
+        return `<button onclick="closeCustDetail(); openDetailView('${u.id}')" class="w-full text-left flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors mb-1 border border-slate-100">
+          <div class="w-8 h-8 rounded-lg bg-brick-500/10 flex items-center justify-center text-brick-600 shrink-0"><i data-lucide="building-2" class="w-4 h-4"></i></div>
+          <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p><p class="text-[10px] text-slate-500">${esc(u.type)} · ${baht(u.rent)}/เดือน</p></div>
+          <span class="pipe-status ${m.cls}" style="font-size:9px; padding:2px 6px;">${m.short || m.label}</span>
         </button>`;
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่ได้ผูกห้อง</p>'}
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-      <p class="text-xs font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5 text-brick-600"></i>ประวัติติดต่อ (${timeline.length})</p>
+    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3">
+      <p class="text-[11px] font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5 text-brick-600"></i>ประวัติติดต่อ (${timeline.length})</p>
       ${timeline.length ? timeline.map(t => `
         <div class="timeline-item">
           <div class="timeline-dot"></div>
           <div class="flex items-start gap-2 mb-1">
             <div class="w-6 h-6 rounded-md ${timelineColor[t.type] || 'bg-slate-100 text-slate-500'} flex items-center justify-center shrink-0"><i data-lucide="${timelineIcon[t.type] || 'sticky-note'}" class="w-3 h-3"></i></div>
             <div class="flex-1 min-w-0">
-              <p class="text-xs text-slate-400">${fmtDateTime(t.ts)}</p>
-              <p class="text-sm text-ink mt-0.5 whitespace-pre-line">${esc(t.text)}</p>
+              <p class="text-[10px] text-slate-400">${fmtDateTime(t.ts)}</p>
+              <p class="text-xs text-ink mt-0.5 whitespace-pre-line">${esc(t.text)}</p>
             </div>
           </div>
         </div>`).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีประวัติ</p>'}
-      <button onclick="openCustNote('${c.id}')" class="w-full mt-2 bg-brick-500 text-white text-xs font-semibold py-2 rounded-full active:scale-95">+ เพิ่มบันทึก</button>
+      <button onclick="openCustNote('${c.id}')" class="w-full mt-2 bg-brick-500 hover:bg-brick-600 text-white text-xs font-semibold py-2 rounded-full active:scale-95 flex items-center justify-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i>เพิ่มบันทึก</button>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 mb-3">
-      <button onclick="closeCustDetail(); openCustSheet('edit','${c.id}')" class="bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>แก้ไข</button>
-      <button onclick="closeCustDetail(); document.getElementById('cf_id').value='${c.id}'; deleteCustomer();" class="bg-rose-500/10 text-rose-600 border border-rose-500/20 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>ลบ</button>
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <button onclick="closeCustDetail(); openCustSheet('edit','${c.id}')" class="bg-white text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 hover:border-brick-500 hover:text-brick-600 active:scale-95 transition-all"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>แก้ไข</button>
+      <button onclick="closeCustDetail(); document.getElementById('cf_id').value='${c.id}'; deleteCustomer();" class="bg-rose-500/10 text-rose-600 border border-rose-500/20 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-rose-500/20 active:scale-95 transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>ลบ</button>
     </div>
   `;
   lucide.createIcons();
 }
 
-// Contact actions for customer
 function custCall(id) { const c = getCustomerById(id); if (!c || !c.phone) return; const tel = c.phone.replace(/[^0-9+]/g, ''); if (tel) location.href = 'tel:' + tel; }
 function custLine(id) { const c = getCustomerById(id); if (!c || !c.line) return; const url = lineUrlOf(c.line); const w = window.open(url, '_blank'); if (!w) location.href = url; }
 function custEmail(id) { const c = getCustomerById(id); if (!c || !c.email) return; location.href = 'mailto:' + c.email; }
 
-// ============== CRM: TIMELINE NOTE ==============
+// ============== TIMELINE NOTE ==============
 let currentNoteCustId = null;
 function openCustNote(custId) {
   const c = getCustomerById(custId); if (!c) return;
@@ -2582,7 +2612,10 @@ function openCustNote(custId) {
   document.getElementById('cn_type').value = 'note';
   document.getElementById('cn_text').value = '';
   document.getElementById('custNoteOverlay').classList.remove('hidden');
-  document.getElementById('custNoteSheet').classList.add('open');
+  const sheetEl = document.getElementById('custNoteSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('cn_text').focus(), 300);
   lucide.createIcons();
 }
@@ -2590,6 +2623,7 @@ function closeCustNote() {
   document.getElementById('custNoteOverlay').classList.add('hidden');
   document.getElementById('custNoteSheet').classList.remove('open');
   currentNoteCustId = null;
+  document.body.style.overflow = detailCustId ? 'hidden' : '';
 }
 function saveCustNote() {
   const c = getCustomerById(currentNoteCustId); if (!c) return;
@@ -2600,43 +2634,42 @@ function saveCustNote() {
   c.timeline.push({ ts: Date.now(), type, text });
   persistCust();
   closeCustNote();
-  renderCustDetail();
+  if (detailCustId) renderCustDetail();
   renderCustomers();
   toast('บันทึกประวัติแล้ว');
 }
 
-// ============== CRM: LINK UNIT PICKER ==============
+// ============== LINK PICKER ==============
 let linkPickerUnitId = null, linkPickerCustId = null;
 function openCustLinkPicker(unitId, custId) {
   linkPickerUnitId = unitId || null;
   linkPickerCustId = custId || detailCustId || null;
   if (unitId) {
-    // เปิดจากหน้า Unit Detail → เลือกลูกค้า
     document.querySelector('#custLinkSheet h2').textContent = 'เลือกลูกค้าที่สนใจ';
-    document.querySelector('#custLinkSheet p.text-\\[11px\\]').textContent = 'เลือกได้หลายคน';
   } else {
     document.querySelector('#custLinkSheet h2').textContent = 'ผูกห้องที่สนใจ';
-    document.querySelector('#custLinkSheet p.text-\\[11px\\]').textContent = 'เลือกได้หลายห้อง';
   }
   document.getElementById('custLinkSearch').value = '';
   renderCustLinkList();
   document.getElementById('custLinkOverlay').classList.remove('hidden');
-  document.getElementById('custLinkSheet').classList.add('open');
+  const sheetEl = document.getElementById('custLinkSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
 function closeCustLink() {
   document.getElementById('custLinkOverlay').classList.add('hidden');
   document.getElementById('custLinkSheet').classList.remove('open');
   linkPickerUnitId = null; linkPickerCustId = null;
+  document.body.style.overflow = (detailUnitId || detailCustId) ? 'hidden' : '';
 }
 function renderCustLinkList() {
   const q = (document.getElementById('custLinkSearch').value || '').toLowerCase().trim();
   const list = document.getElementById('custLinkList');
-
   if (linkPickerUnitId) {
-    // เลือกลูกค้า
     let custList = customers;
-    if (q) custList = custList.filter(c => [c.name, c.phone, c.line, c.interestProject].join(' ').toLowerCase().includes(q));
+    if (q) custList = custList.filter(c => [c.name, c.phone, c.line, c.interestProject, c.interestBuilding].join(' ').toLowerCase().includes(q));
     list.innerHTML = custList.length ? custList.map(c => {
       const isLinked = (c.linkedUnits || []).includes(linkPickerUnitId);
       const cm = CUST_STATUS_META[c.status];
@@ -2651,17 +2684,16 @@ function renderCustLinkList() {
       </button>`;
     }).join('') : '<p class="text-xs text-slate-500 text-center py-6">ไม่พบลูกค้า</p>';
   } else if (linkPickerCustId) {
-    // เลือกห้อง
     const c = getCustomerById(linkPickerCustId);
     let unitList = units;
-    if (q) unitList = unitList.filter(u => [u.project, u.room, u.type].join(' ').toLowerCase().includes(q));
+    if (q) unitList = unitList.filter(u => [u.project, u.building, u.room, u.type].join(' ').toLowerCase().includes(q));
     list.innerHTML = unitList.length ? unitList.map(u => {
       const isLinked = (c.linkedUnits || []).includes(u.id);
       const m = statusOf(u);
       return `<button onclick="toggleCustLinkUnit('${c.id}', '${u.id}'); renderCustLinkList(); renderCustDetail();" class="w-full text-left flex items-center gap-3 p-3 rounded-xl border ${isLinked ? 'border-brick-500 bg-brick-50' : 'border-slate-200 bg-white'} hover:border-brick-500 transition-colors">
         <div class="w-10 h-10 rounded-lg bg-brick-500/10 flex items-center justify-center text-brick-600 shrink-0"><i data-lucide="building-2" class="w-5 h-5"></i></div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-ink truncate">${esc(u.project)} · ${esc(u.room)}</p>
+          <p class="text-sm font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p>
           <p class="text-[11px] text-slate-500 truncate">${esc(u.type)} · ${baht(u.rent)}/เดือน</p>
         </div>
         <span class="pipe-status ${m.cls}">${m.short || m.label}</span>
@@ -2672,9 +2704,9 @@ function renderCustLinkList() {
   lucide.createIcons();
 }
 
-// ============== BACKUP (rooms + customers) ==============
-function openBackup() { closeAllSheets('backup'); document.getElementById('bkOverlay').classList.remove('hidden'); document.getElementById('backup').classList.add('open'); lucide.createIcons(); }
-function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); }
+// ============== BACKUP ==============
+function openBackup() { closeAllSheets('backup'); document.getElementById('bkOverlay').classList.remove('hidden'); const sheetEl = document.getElementById('backup'); sheetEl.classList.add('open'); void sheetEl.offsetHeight; document.body.style.overflow = 'hidden'; lucide.createIcons(); }
+function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); document.body.style.overflow = ''; }
 const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(b); });
 const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type }); };
 async function exportData() {
@@ -2747,7 +2779,7 @@ async function importExcel(file) {
       let status = String(row[9] || 'AVAILABLE').trim().toUpperCase();
       if (!VALID_STATUS.includes(status)) status = 'AVAILABLE';
       const salePriceRaw = String(row[4] || '').replace(/[, ]/g, '');
-      const data = { project, room, floor:String(row[2]||'').trim(), rent, salePrice:salePriceRaw ? Number(salePriceRaw) : '', type:bed, bath, size:String(row[7]||'').trim(), view:String(row[8]||'').trim(), status, sourceUrl:String(row[10]||'').trim(), owner:String(row[11]||'').trim(), ownerPhone:String(row[12]||'').trim(), ownerLine:String(row[13]||'').trim(), start:excelCellToDate(row[14]), end:excelCellToDate(row[15]), notes:String(row[16]||'').trim(), expiredNotified: false };
+      const data = { project, building:String(row[17]||'').trim(), room, floor:String(row[2]||'').trim(), rent, salePrice:salePriceRaw ? Number(salePriceRaw) : '', type:bed, bath, size:String(row[7]||'').trim(), view:String(row[8]||'').trim(), status, sourceUrl:String(row[10]||'').trim(), owner:String(row[11]||'').trim(), ownerPhone:String(row[12]||'').trim(), ownerLine:String(row[13]||'').trim(), start:excelCellToDate(row[14]), end:excelCellToDate(row[15]), notes:String(row[16]||'').trim(), expiredNotified: false };
       if (data.end) { const d = daysLeft(data.end); if (d !== null && d >= 0) data.status = 'OCCUPIED'; }
       const i = units.findIndex(u => (u.project||'').trim().toLowerCase() === project.toLowerCase() && (u.room||'').trim().toLowerCase() === room.toLowerCase());
       if (i >= 0) { units[i] = { ...units[i], ...data }; updated++; }
@@ -2779,7 +2811,7 @@ async function refreshCounts() {
 }
 async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); await refreshCounts(); } catch (e) {} }
 
-// ============== WATERMARK + PHOTO PROCESS ==============
+// ============== WATERMARK ==============
 const WM_KEY = 'staylow_wm';
 let wmOn = (() => { try { return localStorage.getItem(WM_KEY) !== '0'; } catch (e) { return true; } })();
 let logoImg = null, logoTried = false;
@@ -2822,7 +2854,7 @@ async function makeCollage(selectedPhotos) {
     if (logoImg) { const lh = 150, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, W - pad - lw, 40, lw, lh); textMax = W - pad * 2 - lw - 30; }
     const fit = (text, font) => { ctx.font = font; while (ctx.measureText(text).width > textMax && text.length > 3) text = text.slice(0, -2).trimEnd() + '…'; return text; };
     ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${Fn}`;
-    ctx.fillText(fit(u.project, `bold 52px ${Fn}`), pad, 96);
+    ctx.fillText(fit(u.project + (u.building ? ' · ' + u.building : ''), `bold 52px ${Fn}`), pad, 96);
     const specs = [(u.type === 'Studio' ? 'สตูดิโอ' : u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
     ctx.fillStyle = '#6b6058'; ctx.font = `34px ${Fn}`;
     ctx.fillText(fit(specs, `34px ${Fn}`), pad, 152);
@@ -2878,9 +2910,12 @@ async function openGallery(unitId) {
   document.getElementById('wmToggle').checked = wmOn;
   await renderGallery();
   document.getElementById('galOverlay').classList.remove('hidden');
-  document.getElementById('gallery').classList.add('open');
+  const sheetEl = document.getElementById('gallery');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
 }
-function closeGallery() { document.getElementById('galOverlay').classList.add('hidden'); document.getElementById('gallery').classList.remove('open'); clearPhotoUrlCache(); }
+function closeGallery() { document.getElementById('galOverlay').classList.add('hidden'); document.getElementById('gallery').classList.remove('open'); clearPhotoUrlCache(); document.body.style.overflow = (detailUnitId ? 'hidden' : ''); }
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
@@ -2921,10 +2956,13 @@ function openPhotoPicker(mode) {
   document.getElementById('pickConfirmLabel').textContent = mode === 'collage' ? 'สร้างภาพรวม' : 'ส่งรูป';
   renderPicker();
   document.getElementById('pickOverlay').classList.remove('hidden');
-  document.getElementById('pickSheet').classList.add('open');
+  const sheetEl = document.getElementById('pickSheet');
+  sheetEl.classList.add('open');
+  void sheetEl.offsetHeight;
+  document.body.style.overflow = 'hidden';
   lucide.createIcons();
 }
-function closePhotoPicker() { document.getElementById('pickOverlay').classList.add('hidden'); document.getElementById('pickSheet').classList.remove('open'); pickerMode = null; pickerSelected = []; }
+function closePhotoPicker() { document.getElementById('pickOverlay').classList.add('hidden'); document.getElementById('pickSheet').classList.remove('open'); pickerMode = null; pickerSelected = []; document.body.style.overflow = (galleryUnitId ? 'hidden' : ''); }
 function renderPicker() {
   const grid = document.getElementById('pickGrid');
   grid.innerHTML = galleryPhotos.map(p => {
@@ -2972,7 +3010,6 @@ document.addEventListener('keydown', e => {
     if (document.getElementById('advFilterSheet').classList.contains('open')) { closeAdvancedFilter(); return; }
     if (document.getElementById('expiryModalOverlay').classList.contains('show')) { dismissExpiry(); return; }
     if (document.getElementById('notifOverlay') && !document.getElementById('notifOverlay').classList.contains('hidden')) { closeNotifications(); return; }
-    if (document.getElementById('profileOverlay') && !document.getElementById('profileOverlay').classList.contains('hidden')) { closeProfile(); return; }
     if (detailCustId) { closeCustDetail(); return; }
     if (detailUnitId) { closeDetailView(); return; }
     hideSearchSuggest();
@@ -2986,14 +3023,12 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// ============== BACKUP REMINDER ==============
 function checkBackupReminder() {
   const cfg = getPostConfig();
   if (!cfg.autoBackupReminder) return;
   try { const last = Number(localStorage.getItem(LAST_BK_KEY) || 0); if (!last) return; const days = (Date.now() - last) / 86400000; if (days >= 7) setTimeout(() => toast(`💾 ไม่ได้สำรองข้อมูล ${Math.floor(days)} วัน`), 2500); } catch (e) {}
 }
 
-// ============== TOAST ==============
 let toastTimer;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500); }
 
