@@ -143,46 +143,16 @@ tailwind.config = { theme: { extend: { colors: {
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
 
-  /* ⭐ Mobile: header fixed + main padding (ลดช่องว่าง) */
   @media (max-width: 1023px) {
-    .mobile-header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 40;
-    }
-    .main-wrapper {
-      padding-top: calc(max(60px, env(safe-area-inset-top)) + 150px);
-      padding-bottom: 130px;
-    }
+    .mobile-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
+    .main-wrapper { padding-top: calc(max(60px, env(safe-area-inset-top)) + 150px); padding-bottom: 130px; }
   }
 
-  /* ⭐ PC: flexbox layout */
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
-    .app-shell {
-      display: flex;
-      height: 100vh;
-      max-width: 1600px;
-      margin: 0 auto;
-      overflow: hidden;
-    }
-    .sidebar {
-      display: flex !important;
-      width: 260px;
-      flex-shrink: 0;
-      height: 100vh;
-      overflow-y: auto;
-    }
-    .main-wrapper {
-      flex: 1;
-      min-width: 0;
-      height: 100vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      padding-top: 0;
-      padding-bottom: 0;
-    }
+    .app-shell { display: flex; height: 100vh; max-width: 1600px; margin: 0 auto; overflow: hidden; }
+    .sidebar { display: flex !important; width: 260px; flex-shrink: 0; height: 100vh; overflow-y: auto; }
+    .main-wrapper { flex: 1; min-width: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; padding-top: 0; padding-bottom: 0; }
     .sidebar nav { overflow-y: auto; }
     .mobile-header { display: none; }
     .bottom-nav-new { display: none !important; }
@@ -324,7 +294,6 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
       </div>
     </header>
-
     <main class="flex-1 px-5 lg:px-6 hide-scrollbar">
       <div id="viewDashboard" class="pt-4 lg:pt-6">
         <button onclick="openSheet('add')" class="banner-card w-full text-left mb-6">
@@ -544,6 +513,7 @@ tailwind.config = { theme: { extend: { colors: {
     </nav>
   </div>
 </div>
+
 <div id="notifOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeNotifications()"></div>
 <div id="notifSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -592,7 +562,7 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== ADVANCED FILTER SHEET (ใหม่) ====== -->
+<!-- ====== ADVANCED FILTER SHEET ====== -->
 <div id="advFilterOverlay" class="fixed inset-0 bg-black/40 z-[80] hidden" onclick="closeAdvancedFilter()"></div>
 <div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -639,13 +609,13 @@ tailwind.config = { theme: { extend: { colors: {
 
     <!-- ห้องน้ำ -->
     <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">จำนวนห้องน้ำ (ขั้นต่ำ)</label>
-      <select id="advBath" class="inp !mt-0">
-        <option value="">ทั้งหมด</option>
-        <option value="1">1 Bath ขึ้นไป</option>
-        <option value="2">2 Bath ขึ้นไป</option>
-        <option value="3">3 Bath ขึ้นไป</option>
-      </select>
+      <label class="block text-xs font-semibold text-slate-500 mb-1.5">จำนวนห้องน้ำ</label>
+      <div class="flex flex-wrap gap-3">
+        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="1"> 1 Bath</label>
+        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="2"> 2 Bath</label>
+        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="3"> 3 Bath</label>
+        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="4"> 4 Bath</label>
+      </div>
     </div>
 
     <!-- สถานะ -->
@@ -916,7 +886,7 @@ let currentExpiryUnitId = null;
 let advFilter = {
   priceMin: null, priceMax: null,
   sizeMin: null, sizeMax: null,
-  types: [], bathMin: null,
+  types: [], baths: [],
   statuses: [], post: [], misc: []
 };
 
@@ -929,7 +899,6 @@ const FILTER_LABELS = {
 };
 const STATUS_FILTERS = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'];
 
-// ⭐ ลบ toggleSort() เดิมออก — เปลี่ยนเป็น Advanced Filter
 function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {} render(); }
 function load() { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(seed)); }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
@@ -940,8 +909,8 @@ function openAdvancedFilter() {
   document.getElementById('advPriceMax').value = advFilter.priceMax ?? '';
   document.getElementById('advSizeMin').value = advFilter.sizeMin ?? '';
   document.getElementById('advSizeMax').value = advFilter.sizeMax ?? '';
-  document.getElementById('advBath').value = advFilter.bathMin ?? '';
   document.querySelectorAll('.adv-type').forEach(cb => cb.checked = advFilter.types.includes(cb.value));
+  document.querySelectorAll('.adv-bath').forEach(cb => cb.checked = advFilter.baths.includes(cb.value));
   document.querySelectorAll('.adv-status').forEach(cb => cb.checked = advFilter.statuses.includes(cb.value));
   document.querySelectorAll('.adv-post').forEach(cb => cb.checked = advFilter.post.includes(cb.value));
   document.querySelectorAll('.adv-misc').forEach(cb => cb.checked = advFilter.misc.includes(cb.value));
@@ -961,14 +930,14 @@ function applyAdvancedFilter() {
   advFilter.priceMax = document.getElementById('advPriceMax').value ? Number(document.getElementById('advPriceMax').value) : null;
   advFilter.sizeMin = document.getElementById('advSizeMin').value ? Number(document.getElementById('advSizeMin').value) : null;
   advFilter.sizeMax = document.getElementById('advSizeMax').value ? Number(document.getElementById('advSizeMax').value) : null;
-  advFilter.bathMin = document.getElementById('advBath').value ? Number(document.getElementById('advBath').value) : null;
   advFilter.types = [...document.querySelectorAll('.adv-type:checked')].map(cb => cb.value);
+  advFilter.baths = [...document.querySelectorAll('.adv-bath:checked')].map(cb => cb.value);
   advFilter.statuses = [...document.querySelectorAll('.adv-status:checked')].map(cb => cb.value);
   advFilter.post = [...document.querySelectorAll('.adv-post:checked')].map(cb => cb.value);
   advFilter.misc = [...document.querySelectorAll('.adv-misc:checked')].map(cb => cb.value);
 
   const hasFilter = advFilter.priceMin || advFilter.priceMax || advFilter.sizeMin || advFilter.sizeMax ||
-                    advFilter.bathMin || advFilter.types.length || advFilter.statuses.length ||
+                    advFilter.baths.length || advFilter.types.length || advFilter.statuses.length ||
                     advFilter.post.length || advFilter.misc.length;
   ['advFilterDot','advFilterDotDesktop'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !hasFilter);
@@ -980,13 +949,12 @@ function applyAdvancedFilter() {
 }
 
 function clearAdvancedFilter() {
-  advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], bathMin: null, statuses: [], post: [], misc: [] };
-  document.querySelectorAll('.adv-type, .adv-status, .adv-post, .adv-misc').forEach(cb => cb.checked = false);
+  advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], statuses: [], post: [], misc: [] };
+  document.querySelectorAll('.adv-type, .adv-bath, .adv-status, .adv-post, .adv-misc').forEach(cb => cb.checked = false);
   document.getElementById('advPriceMin').value = '';
   document.getElementById('advPriceMax').value = '';
   document.getElementById('advSizeMin').value = '';
   document.getElementById('advSizeMax').value = '';
-  document.getElementById('advBath').value = '';
   ['advFilterDot','advFilterDotDesktop'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.add('hidden');
   });
@@ -1626,20 +1594,17 @@ function render() {
   const isPostedToday = u => { if (!u.lastPosted) return false; const today = new Date(); today.setHours(0,0,0,0); const p = new Date(u.lastPosted); p.setHours(0,0,0,0); return p.getTime() === today.getTime(); };
 
   const matchesFilter = (u) => {
-    // === ตัวกรองราคาเดิม ===
     if (priceMin !== null && Number(u.rent || 0) < priceMin) return false;
     if (priceMax !== null && Number(u.rent || 0) > priceMax) return false;
 
-    // === ตัวกรองขั้นสูง (ใหม่) ===
     const rent = Number(u.rent || 0);
     const size = Number(u.size || 0);
-    const bath = Number(u.bath || 0);
 
     if (advFilter.priceMin !== null && rent < advFilter.priceMin) return false;
     if (advFilter.priceMax !== null && rent > advFilter.priceMax) return false;
     if (advFilter.sizeMin !== null && size < advFilter.sizeMin) return false;
     if (advFilter.sizeMax !== null && size > advFilter.sizeMax) return false;
-    if (advFilter.bathMin !== null && bath < advFilter.bathMin) return false;
+    if (advFilter.baths.length && !advFilter.baths.includes(String(u.bath))) return false;
     if (advFilter.types.length && !advFilter.types.includes(u.type)) return false;
     if (advFilter.statuses.length && !advFilter.statuses.includes(u.status)) return false;
     if (advFilter.post.length) {
@@ -1667,7 +1632,6 @@ function render() {
       if (!miscMatch) return false;
     }
 
-    // === ตัวกรองเดิม ===
     if (activeFilters.has('all')) return true;
     const checks = [];
     if (activeFilters.has('AVAILABLE')) checks.push(u.status === 'AVAILABLE');
@@ -1706,12 +1670,13 @@ function render() {
     if (priceMax !== null) priceChips.push(`≤฿${fmtNum(priceMax)}`);
     const advChips = [];
     if (advFilter.types.length) advChips.push(advFilter.types.join(', '));
+    if (advFilter.baths.length) advChips.push(advFilter.baths.map(b => b + 'B').join(', '));
     if (advFilter.statuses.length) advChips.push(advFilter.statuses.map(s => FILTER_LABELS[s] || s).join(', '));
     if (active.length > 0 || priceChips.length > 0 || advChips.length > 0) {
       summary.classList.remove('hidden');
       chips.innerHTML = active.map(f => `<span class="inline-flex items-center gap-1 bg-brick-500/10 text-brick-700 px-2 py-0.5 rounded-full font-medium">${FILTER_LABELS[f] || f}<button onclick="event.stopPropagation(); toggleFilter('${f}')" class="hover:bg-brick-500/20 rounded-full p-0.5"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></span>`).join('') 
         + (priceChips.length ? `<span class="inline-flex items-center gap-1 bg-sky-500/10 text-sky-700 px-2 py-0.5 rounded-full font-medium"><i data-lucide="tag" class="w-2.5 h-2.5"></i>${priceChips.join(' - ')}</span>` : '')
-        + (advChips.length ? `<span class="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 px-2 py-0.5 rounded-full font-medium"><i data-lucide="sliders-horizontal" class="w-2.5 h-2.5"></i>ตัวกรองขั้นสูง</span>` : '');
+        + (advChips.length ? `<span class="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 px-2 py-0.5 rounded-full font-medium"><i data-lucide="sliders-horizontal" class="w-2.5 h-2.5"></i>${advChips.join(' · ')}</span>` : '');
     } else summary.classList.add('hidden');
   }
   ['vtCard','vtCardD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'card'); });
