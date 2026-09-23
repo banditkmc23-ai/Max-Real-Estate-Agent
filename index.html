@@ -31,13 +31,13 @@ tailwind.config = { theme: { extend: { colors: {
   .sheet.open { transform:translateY(0); }
   .sheet:not(.open) { visibility: hidden; pointer-events: none; }
   @media (min-width: 1024px) {
-    #sheet, #cfgSheet, #gallery, #pickSheet, #backup {
+    #sheet, #cfgSheet, #gallery, #pickSheet, #backup, #notifSheet, #profileSheet {
       left: 50% !important; right: auto !important;
       top: 50% !important; bottom: auto !important;
       transform: translate(-50%, -50%) scale(1) !important;
       margin: 0 !important; opacity: 1 !important; visibility: visible !important;
     }
-    #sheet:not(.open), #cfgSheet:not(.open), #gallery:not(.open), #pickSheet:not(.open), #backup:not(.open) {
+    #sheet:not(.open), #cfgSheet:not(.open), #gallery:not(.open), #pickSheet:not(.open), #backup:not(.open), #notifSheet:not(.open), #profileSheet:not(.open) {
       transform: translate(-50%, 20px) scale(.98) !important;
       opacity: 0 !important; visibility: hidden !important; pointer-events: none;
     }
@@ -77,7 +77,6 @@ tailwind.config = { theme: { extend: { colors: {
   .owner-action.phone { background:#f1eeea; color:#a04d2c; border-color:#e4dfd9; }
   .owner-action.line { background:rgba(6,199,85,.08); color:#06C755; border-color:rgba(6,199,85,.25); }
   .owner-action.source { background:rgba(14,165,233,.08); color:#0284c7; border-color:rgba(14,165,233,.25); }
-
   .kpi { background:#fff; border:1px solid #e4dfd9; border-radius:20px; padding:18px; position:relative; overflow:hidden; transition: all .15s; text-align: left; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
   .kpi:hover { border-color:#b85c38; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(184,92,56,.12); }
   .kpi:active { transform: translateY(0) scale(.98); }
@@ -86,44 +85,12 @@ tailwind.config = { theme: { extend: { colors: {
   .kpi-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow { position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; background:#f1eeea; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow svg { width:14px; height:14px; color:#8a8078; }
-
-  .banner-card {
-    background: linear-gradient(135deg, #b85c38 0%, #a04d2c 100%);
-    border-radius: 24px;
-    padding: 24px;
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-  }
+  .banner-card { background: linear-gradient(135deg, #b85c38 0%, #a04d2c 100%); border-radius: 24px; padding: 24px; color: #fff; position: relative; overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s; }
   .banner-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(184,92,56,.25); }
   .banner-card:active { transform: translateY(0) scale(.99); }
-  .banner-deco {
-    position: absolute; right: -20px; top: -20px;
-    width: 180px; height: 180px;
-    background: rgba(255,255,255,.1);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-  .banner-deco2 {
-    position: absolute; right: 40px; bottom: -60px;
-    width: 120px; height: 120px;
-    background: rgba(255,255,255,.08);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .h-card {
-    flex-shrink: 0;
-    width: 180px;
-    background: #fff;
-    border: 1px solid #e4dfd9;
-    border-radius: 18px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform .15s, border-color .15s, box-shadow .15s;
-  }
+  .banner-deco { position: absolute; right: -20px; top: -20px; width: 180px; height: 180px; background: rgba(255,255,255,.1); border-radius: 50%; pointer-events: none; }
+  .banner-deco2 { position: absolute; right: 40px; bottom: -60px; width: 120px; height: 120px; background: rgba(255,255,255,.08); border-radius: 50%; pointer-events: none; }
+  .h-card { flex-shrink: 0; width: 180px; background: #fff; border: 1px solid #e4dfd9; border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s; }
   .h-card:hover { border-color: #b85c38; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(184,92,56,.1); }
   .h-card:active { transform: translateY(0) scale(.98); }
   .h-card-img { width: 100%; aspect-ratio: 4/3; background: #f1eeea; position: relative; overflow: hidden; }
@@ -132,209 +99,91 @@ tailwind.config = { theme: { extend: { colors: {
   .h-card-title { font-size: 13px; font-weight: 700; color: #1c1917; line-height: 1.3; margin-bottom: 2px; }
   .h-card-sub { font-size: 10px; color: #8a8078; margin-bottom: 6px; }
   .h-card-price { font-size: 14px; font-weight: 700; color: #b85c38; }
-
-  .fab-btn {
-    position: absolute;
-    top: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #b85c38;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef;
-    transition: transform .15s, background .15s;
-    z-index: 45;
-    cursor: pointer;
-    border: none;
-  }
+  .fab-btn { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 45; cursor: pointer; border: none; }
   .fab-btn:hover { background: #a04d2c; }
   .fab-btn:active { transform: translateX(-50%) scale(.92); }
   .fab-btn svg { width: 28px; height: 28px; }
-
-  .bottom-nav-new {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: #ffffff;
-    border-top: 1px solid #e4dfd9;
-    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
-    display: flex;
-    justify-content: space-around;
-    align-items: flex-end;
-    z-index: 40;
-    box-shadow: 0 -4px 20px rgba(0,0,0,.04);
-  }
-  .bottom-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding: 6px 2px;
-    color: #8a8078;
-    font-size: 10px;
-    font-weight: 500;
-    border-radius: 12px;
-    transition: color .15s, background .15s;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-  }
+  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 12px max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; align-items: flex-end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
+  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; }
   .bottom-nav-item:hover { color: #a04d2c; background: #f1eeea; }
   .bottom-nav-item.active { color: #b85c38; }
   .bottom-nav-item.active svg { color: #b85c38; }
   .bottom-nav-item svg { width: 22px; height: 22px; }
   .bottom-nav-spacer { flex: 1; max-width: 70px; }
-
-  .app-header {
-    background: #f4f2ef;
-    padding: max(60px, env(safe-area-inset-top)) 20px 16px;
-  }
-  @media (min-width: 1024px) {
-    .app-header { padding: 20px 24px 16px; }
-  }
-
+  .app-header { background: #f4f2ef; padding: max(60px, env(safe-area-inset-top)) 20px 16px; }
+  @media (min-width: 1024px) { .app-header { padding: 20px 24px 16px; } }
   .bar-track { background:#f1eeea; border-radius:6px; height:6px; overflow:hidden; }
   .bar-fill { background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); height:100%; transition: width .6s cubic-bezier(.2,.8,.2,1); border-radius:6px; }
   .status-btn { cursor: pointer; transition: transform .12s, box-shadow .15s, filter .15s; }
   .status-btn:hover { filter: brightness(1.08); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
   .status-btn:active { transform: scale(.94); }
   .mini-photo { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f1eeea; }
-
-  .detail-view {
-    position: fixed; inset: 0;
-    background: rgba(28, 25, 23, 0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 44;
-    opacity: 0;
-    transition: opacity .3s ease;
-  }
+  .detail-view { position: fixed; inset: 0; background: rgba(28, 25, 23, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 44; opacity: 0; transition: opacity .3s ease; }
   .detail-view.show { opacity: 1; }
-  .detail-view-content {
-    position: fixed; inset: 0;
-    background: #f4f2ef;
-    z-index: 45;
-    overflow-y: auto;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease;
-  }
+  .detail-view-content { position: fixed; inset: 0; background: #f4f2ef; z-index: 45; overflow-y: auto; transform: translateY(20px); opacity: 0; transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
   .detail-view-content.show { transform: translateY(0); opacity: 1; }
-  @media (min-width: 1024px) {
-    .detail-view-content {
-      max-width: 900px;
-      left: 50%; right: auto;
-      transform: translate(-50%, 20px) scale(.98);
-      box-shadow: 0 24px 60px -12px rgba(0,0,0,.25);
-    }
-    .detail-view-content.show { transform: translate(-50%, 0) scale(1); }
-  }
-  .dv-header {
-    padding-top: max(60px, env(safe-area-inset-top));
-    padding-bottom: 12px;
-  }
-  @media (min-width: 1024px) {
-    .dv-header { padding-top: 16px; padding-bottom: 12px; }
-  }
-  .inline-edit {
-    display: inline-block;
-    padding: 2px 6px;
-    margin: -2px -6px;
-    border-radius: 6px;
-    cursor: text;
-    transition: background .15s;
-    border: 1px dashed transparent;
-    min-width: 30px;
-  }
+  @media (min-width: 1024px) { .detail-view-content { max-width: 900px; left: 50%; right: auto; transform: translate(-50%, 20px) scale(.98); box-shadow: 0 24px 60px -12px rgba(0,0,0,.25); } .detail-view-content.show { transform: translate(-50%, 0) scale(1); } }
+  .dv-header { padding-top: max(60px, env(safe-area-inset-top)); padding-bottom: 12px; }
+  @media (min-width: 1024px) { .dv-header { padding-top: 16px; padding-bottom: 12px; } }
+  .inline-edit { display: inline-block; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; cursor: text; transition: background .15s; border: 1px dashed transparent; min-width: 30px; }
   .inline-edit:hover { background: rgba(184,92,56,.08); border-color: rgba(184,92,56,.2); }
-  .inline-edit.editing {
-    background: #fff;
-    border: 1px solid #b85c38;
-    box-shadow: 0 0 0 3px rgba(184,92,56,.15);
-    padding: 4px 8px;
-    margin: -4px -8px;
-  }
-  input.inline-input, select.inline-select, textarea.inline-textarea {
-    background: #fff;
-    border: 1px solid #b85c38;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: inherit;
-    font-family: inherit;
-    color: inherit;
-    font-weight: inherit;
-    width: 100%;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(184,92,56,.15);
-  }
-  .loading-bar {
-    position: absolute;
-    bottom: 0; left: 0; height: 3px;
-    background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%);
-    width: 0%;
-    transition: width .3s ease, opacity .3s ease;
-    opacity: 0;
-  }
+  .inline-edit.editing { background: #fff; border: 1px solid #b85c38; box-shadow: 0 0 0 3px rgba(184,92,56,.15); padding: 4px 8px; margin: -4px -8px; }
+  input.inline-input, select.inline-select, textarea.inline-textarea { background: #fff; border: 1px solid #b85c38; border-radius: 6px; padding: 4px 8px; font-size: inherit; font-family: inherit; color: inherit; font-weight: inherit; width: 100%; outline: none; box-shadow: 0 0 0 3px rgba(184,92,56,.15); }
+  .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); width: 0%; transition: width .3s ease, opacity .3s ease; opacity: 0; }
   .loading-bar.active { opacity: 1; }
-  .notes-box {
-    min-height: 180px;
-    font-size: 15px;
-    line-height: 1.7;
-    padding: 16px 18px !important;
-    border-radius: 14px !important;
-    background: #fafafa;
-    border: 1px solid #e4dfd9;
-    transition: all .15s;
-  }
-  .notes-box:hover {
-    background: #fff;
-    border-color: #b85c38;
-    box-shadow: 0 2px 8px rgba(184,92,56,.08);
-  }
-  .notes-box.editing {
-    min-height: 220px;
-    background: #fff !important;
-    border-color: #b85c38 !important;
-    box-shadow: 0 0 0 3px rgba(184,92,56,.15) !important;
-  }
+  .notes-box { min-height: 180px; font-size: 15px; line-height: 1.7; padding: 16px 18px !important; border-radius: 14px !important; background: #fafafa; border: 1px solid #e4dfd9; transition: all .15s; }
+  .notes-box:hover { background: #fff; border-color: #b85c38; box-shadow: 0 2px 8px rgba(184,92,56,.08); }
+  .notes-box.editing { min-height: 220px; background: #fff !important; border-color: #b85c38 !important; box-shadow: 0 0 0 3px rgba(184,92,56,.15) !important; }
   textarea.inline-textarea { min-height: 180px; padding: 16px 18px; font-size: 15px; line-height: 1.7; resize: vertical; }
   textarea.form-notes { min-height: 320px; font-size: 15px; line-height: 1.7; padding: 16px 18px; resize: vertical; }
   textarea.form-internal-note { min-height: 160px; font-size: 14px; line-height: 1.6; padding: 14px 16px; resize: vertical; }
-
-  .expiry-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(28, 25, 23, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 80;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
+  .expiry-modal-overlay { position: fixed; inset: 0; background: rgba(28, 25, 23, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 80; display: none; align-items: center; justify-content: center; padding: 20px; }
   .expiry-modal-overlay.show { display: flex; }
-  .expiry-modal {
-    background: #fff;
-    border-radius: 24px;
-    padding: 24px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 24px 60px -12px rgba(0,0,0,.3);
-    transform: translateY(20px) scale(.95);
-    opacity: 0;
-    transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s;
-  }
+  .expiry-modal { background: #fff; border-radius: 24px; padding: 24px; max-width: 400px; width: 100%; box-shadow: 0 24px 60px -12px rgba(0,0,0,.3); transform: translateY(20px) scale(.95); opacity: 0; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s; }
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
-
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
+
+  /* ⭐⭐⭐ Mobile: header fixed + main padding */
+  @media (max-width: 1023px) {
+    .mobile-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 40;
+    }
+    .main-wrapper {
+      padding-top: calc(max(60px, env(safe-area-inset-top)) + 200px);
+      padding-bottom: 130px;
+    }
+  }
+
+  /* ⭐⭐⭐ PC: flexbox layout + fixed sidebar + fixed header + sticky filter */
   @media (min-width: 1024px) {
-    .app-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1600px; margin: 0 auto; }
-    .sidebar { display: flex !important; }
+    html, body { height: 100%; overflow: hidden; }
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .sidebar {
+      display: flex !important;
+      width: 260px;
+      flex-shrink: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .main-wrapper {
+      flex: 1;
+      min-width: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    .sidebar nav { overflow-y: auto; }
     .mobile-header { display: none; }
     .bottom-nav-new { display: none !important; }
     .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
@@ -356,10 +205,8 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="offlineBanner" class="offline-banner">📵 ออฟไลน์ — ข้อมูลที่กรอกจะถูกบันทึกไว้ในเครื่อง</div>
 
 <div class="app-shell">
-
-  <!-- Sidebar (PC) -->
-  <aside class="sidebar hidden flex-col bg-white border-r border-slate-700" style="display:none;">
-    <div class="p-5 border-b border-slate-700">
+  <aside class="sidebar hidden flex-col bg-white border-r border-slate-700">
+    <div class="p-5 border-b border-slate-700 flex-shrink-0">
       <div class="flex items-center gap-2">
         <div class="w-9 h-9 rounded-xl bg-brick-500 flex items-center justify-center text-white font-bold">S</div>
         <div>
@@ -368,7 +215,6 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
       </div>
     </div>
-
     <nav class="p-3 flex-1 overflow-y-auto hide-scrollbar">
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-2 pb-1.5">ภาพรวม</p>
       <button onclick="switchView('dashboard')" data-nav="dashboard" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
@@ -379,7 +225,6 @@ tailwind.config = { theme: { extend: { colors: {
         <i data-lucide="building-2" class="w-4 h-4"></i>ห้องพัก
         <span class="ml-auto text-[10px] opacity-60">⌘R</span>
       </button>
-
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-4 pb-1.5">สถานะ</p>
       <button onclick="gotoFilter('AVAILABLE')" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="circle-dot" class="w-4 h-4 text-brick-500"></i>ว่าง
@@ -405,7 +250,6 @@ tailwind.config = { theme: { extend: { colors: {
         <i data-lucide="megaphone-off" class="w-4 h-4 text-amber-600"></i>ยังไม่โพสต์
         <span id="navUnposted" class="ml-auto text-xs font-semibold">0</span>
       </button>
-
       <p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-3 pt-4 pb-1.5">จัดการ</p>
       <button onclick="openBackup()" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="database" class="w-4 h-4"></i>สำรองข้อมูล
@@ -414,21 +258,17 @@ tailwind.config = { theme: { extend: { colors: {
         <i data-lucide="settings" class="w-4 h-4"></i>ตั้งค่า
       </button>
     </nav>
-
-    <div class="p-3 border-t border-slate-700">
+    <div class="p-3 border-t border-slate-700 flex-shrink-0">
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2">v8.0 · <span id="totalUnitBadge">0</span> ห้อง</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2">v8.5 · <span id="totalUnitBadge">0</span> ห้อง</p>
     </div>
   </aside>
 
-  <!-- Main -->
-  <div class="flex flex-col min-h-screen bg-slate-950 relative pb-24 lg:pb-0">
-
-    <!-- Mobile Header -->
-    <header class="mobile-header app-header sticky top-0 z-30 border-b border-slate-700/50 backdrop-blur-md">
-      <div class="flex items-start justify-between">
+  <div class="main-wrapper bg-slate-950 relative">
+    <header class="mobile-header lg:hidden bg-slate-950 border-b border-slate-700/50 backdrop-blur-md" style="padding-top: max(60px, env(safe-area-inset-top));">
+      <div class="flex items-start justify-between px-5 pt-2 pb-3">
         <div>
           <div class="flex items-center gap-1.5 text-slate-500 mb-1">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
@@ -438,28 +278,38 @@ tailwind.config = { theme: { extend: { colors: {
           <p class="text-xs text-slate-400 mt-0.5" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-1.5">
-          <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" aria-label="การแจ้งเตือน">
-            <i data-lucide="bell" class="w-4.5 h-4.5"></i>
+          <button onclick="openNotifications()" class="w-10 h-10 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" aria-label="การแจ้งเตือน">
+            <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500"></span>
           </button>
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          <button onclick="openProfile()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-sm active:scale-95 transition-transform">
             M
+          </button>
+        </div>
+      </div>
+      <div class="px-5 pb-4">
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-white border border-slate-700 rounded-2xl py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 transition-all shadow-sm">
+            <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
           </div>
+          <button onclick="toggleSort()" class="w-11 h-11 rounded-2xl bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm" title="เรียงลำดับ">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+          </button>
         </div>
       </div>
     </header>
 
-    <!-- Desktop Header -->
-    <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 sticky top-0 z-30 relative">
+    <!-- ⭐ Desktop Header — flex-shrink-0 (fix เพราะ main-wrapper scroll) -->
+    <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 flex-shrink-0 z-40">
       <div class="loading-bar" id="desktopLoadingBar"></div>
       <div class="flex items-center gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
-          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, เจ้าของ... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off"
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500">
-          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2 text-slate-400 p-0.5">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
+          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, เจ้าของ... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500">
+          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
           <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
         </div>
       </div>
@@ -471,29 +321,8 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <!-- Mobile search bar -->
-    <div class="lg:hidden sticky z-20 bg-slate-950/95 backdrop-blur-md px-5 pb-3" style="top: calc(max(60px, env(safe-area-inset-top)) + 110px);">
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ผู้เช่า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off"
-            class="w-full bg-white border border-slate-700 rounded-full py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 transition-all shadow-sm">
-          <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-0.5">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-          <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
-        </div>
-        <button onclick="toggleSort()" class="w-11 h-11 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm" title="เรียงลำดับ">
-          <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5"></i>
-        </button>
-      </div>
-    </div>
-
-    <main class="flex-1 overflow-y-auto px-5 lg:px-6 pb-24 lg:pb-8 hide-scrollbar">
-
-      <!-- DASHBOARD -->
+    <main class="flex-1 px-5 lg:px-6 hide-scrollbar">
       <div id="viewDashboard" class="pt-4 lg:pt-6">
-
         <button onclick="openSheet('add')" class="banner-card w-full text-left mb-6">
           <div class="banner-deco"></div>
           <div class="banner-deco2"></div>
@@ -653,132 +482,147 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
       </div>
 
-      <!-- ROOMS -->
       <div id="viewRooms" class="pt-4 lg:pt-6 hidden">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h2 class="text-xl lg:text-2xl font-bold text-ink tracking-tight">ห้องพัก</h2>
-            <p class="text-xs lg:text-sm text-slate-400 mt-0.5" id="listTitle">ทั้งหมด 0 ห้อง</p>
+        <!-- ⭐ Sticky filter section — ใช้ top-0 เพราะ header อยู่นอก scroll -->
+        <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-800/60">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl lg:text-2xl font-bold text-ink tracking-tight">ห้องพัก</h2>
+              <p class="text-xs lg:text-sm text-slate-400 mt-0.5" id="listTitle">ทั้งหมด 0 ห้อง</p>
+            </div>
+            <div class="view-toggle lg:hidden">
+              <button onclick="setView('card')" id="vtCard" title="การ์ด"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
+              <button onclick="setView('list')" id="vtList" title="ตาราง"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
+            </div>
           </div>
-          <div class="view-toggle lg:hidden">
-            <button onclick="setView('card')" id="vtCard" title="การ์ด"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
-            <button onclick="setView('list')" id="vtList" title="ตาราง"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
+
+          <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
+            <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
+            <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
+            <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีผู้เช่า</button>
+            <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
+            <button onclick="toggleFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">รอตรวจ</button>
+            <button onclick="toggleFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ขาย</button>
+            <button onclick="toggleFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใกล้หมดสัญญา</button>
+            <button onclick="toggleFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่โพสต์</button>
+            <button onclick="toggleFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">โพสต์เกิน 7 วัน</button>
+            <button onclick="toggleFilter('NO_NOTES')" data-f="NO_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรายละเอียด</button>
+            <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรายละเอียด</button>
+            <button onclick="toggleFilter('HAS_PHOTOS')" data-f="HAS_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรูป</button>
+            <button onclick="toggleFilter('NO_PHOTOS')" data-f="NO_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรูป</button>
+          </div>
+
+          <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
+            <span class="text-slate-500 whitespace-nowrap font-medium">ช่วงราคา:</span>
+            <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
+            <span class="text-slate-400">—</span>
+            <input id="priceMax" type="number" inputmode="numeric" placeholder="สูงสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
+            <button onclick="clearPriceRange()" id="priceClearBtn" class="hidden text-brick-600 font-semibold hover:underline whitespace-nowrap">ล้าง</button>
+          </div>
+
+          <div id="filterSummary" class="hidden mb-2 flex items-center gap-2 text-[11px]">
+            <span class="text-slate-400">กรอง:</span>
+            <span id="filterChips" class="flex flex-wrap gap-1"></span>
+            <button onclick="clearAllFilters()" class="text-brick-600 font-semibold hover:underline ml-auto">ล้างทั้งหมด</button>
           </div>
         </div>
 
-        <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
-          <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
-          <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
-          <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีผู้เช่า</button>
-          <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
-          <button onclick="toggleFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">รอตรวจ</button>
-          <button onclick="toggleFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ขาย</button>
-          <button onclick="toggleFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใกล้หมดสัญญา</button>
-          <button onclick="toggleFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่โพสต์</button>
-          <button onclick="toggleFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">โพสต์เกิน 7 วัน</button>
-          <button onclick="toggleFilter('NO_NOTES')" data-f="NO_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรายละเอียด</button>
-          <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรายละเอียด</button>
-          <button onclick="toggleFilter('HAS_PHOTOS')" data-f="HAS_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรูป</button>
-          <button onclick="toggleFilter('NO_PHOTOS')" data-f="NO_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรูป</button>
-        </div>
-
-        <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
-          <span class="text-slate-500 whitespace-nowrap font-medium">ช่วงราคา:</span>
-          <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" oninput="onPriceInput()"
-            class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
-          <span class="text-slate-400">—</span>
-          <input id="priceMax" type="number" inputmode="numeric" placeholder="สูงสุด" oninput="onPriceInput()"
-            class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
-          <button onclick="clearPriceRange()" id="priceClearBtn" class="hidden text-brick-600 font-semibold hover:underline whitespace-nowrap">ล้าง</button>
-        </div>
-
-        <div id="filterSummary" class="hidden mb-3 flex items-center gap-2 text-[11px]">
-          <span class="text-slate-400">กรอง:</span>
-          <span id="filterChips" class="flex flex-wrap gap-1"></span>
-          <button onclick="clearAllFilters()" class="text-brick-600 font-semibold hover:underline ml-auto">ล้างทั้งหมด</button>
-        </div>
-
-        <div id="unitList" class="room-grid grid grid-cols-1 gap-3"></div>
+        <div id="unitList" class="room-grid grid grid-cols-1 gap-3 pt-3"></div>
       </div>
-
     </main>
 
-    <!-- Bottom nav + FAB -->
-    <nav class="bottom-nav-new lg:hidden" style="position: relative;">
-      <button onclick="switchView('dashboard')" data-nav="dashboard" class="bottom-nav-item">
-        <i data-lucide="home"></i>
-        <span>ภาพรวม</span>
-      </button>
-      <button onclick="switchView('rooms')" data-nav="rooms" class="bottom-nav-item">
-        <i data-lucide="building-2"></i>
-        <span>ห้องพัก</span>
-      </button>
+    <nav class="bottom-nav-new lg:hidden">
+      <button onclick="switchView('dashboard')" data-nav="dashboard" class="bottom-nav-item"><i data-lucide="home"></i><span>ภาพรวม</span></button>
+      <button onclick="switchView('rooms')" data-nav="rooms" class="bottom-nav-item"><i data-lucide="building-2"></i><span>ห้องพัก</span></button>
       <div class="bottom-nav-spacer"></div>
-      <button onclick="gotoFilter('AVAILABLE')" class="bottom-nav-item">
-        <i data-lucide="circle-dot"></i>
-        <span>ว่าง</span>
-      </button>
-      <button onclick="openSettings()" class="bottom-nav-item">
-        <i data-lucide="settings"></i>
-        <span>ตั้งค่า</span>
-      </button>
-      <button onclick="openSheet('add')" class="fab-btn" aria-label="เพิ่มห้องใหม่">
-        <i data-lucide="plus"></i>
-      </button>
+      <button onclick="gotoFilter('AVAILABLE')" class="bottom-nav-item"><i data-lucide="circle-dot"></i><span>ว่าง</span></button>
+      <button onclick="openSettings()" class="bottom-nav-item"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
+      <button onclick="openSheet('add')" class="fab-btn" aria-label="เพิ่มห้องใหม่"><i data-lucide="plus"></i></button>
     </nav>
   </div>
 </div>
 
-<!-- Modal แจ้งเตือนสัญญาหมดอายุ -->
+<div id="notifOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeNotifications()"></div>
+<div id="notifSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
+  <div class="flex justify-between items-center mb-4">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="bell" class="w-5 h-5 text-brick-600"></i></div>
+      <div><h2 class="text-base font-bold text-ink">การแจ้งเตือน</h2><p class="text-[11px] text-slate-400" id="notifCount">0 รายการ</p></div>
+    </div>
+    <button onclick="closeNotifications()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+  </div>
+  <div id="notifList" class="space-y-2"></div>
+</div>
+
+<div id="profileOverlay" class="fixed inset-0 bg-black/40 z-[75] hidden" onclick="closeProfile()"></div>
+<div id="profileSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[76] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()">
+  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
+  <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200">
+    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shadow-md">M</div>
+    <div class="flex-1 min-w-0">
+      <p class="text-base font-bold text-ink">MAX</p>
+      <p class="text-xs text-slate-500">Staylow Agent</p>
+      <p class="text-[11px] text-slate-400 mt-0.5" id="profileLineId">LINE: max.kmc</p>
+    </div>
+  </div>
+  <div class="space-y-1">
+    <button onclick="closeProfile(); openSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="settings" class="w-5 h-5 text-brick-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">ตั้งค่าการโพสต์</p><p class="text-[11px] text-slate-400">ชื่อเอเจ้น, เบอร์, Hashtag</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="closeProfile(); openBackup();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0"><i data-lucide="database" class="w-5 h-5 text-emerald-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">สำรอง / กู้คืนข้อมูล</p><p class="text-[11px] text-slate-400">ไฟล์ JSON, นำเข้า Excel</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="closeProfile(); switchView('rooms');" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการห้องพัก</p><p class="text-[11px] text-slate-400">ดูทั้งหมด / ค้นหา / กรอง</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <div class="border-t border-slate-200 my-3"></div>
+    <button onclick="closeProfile();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><i data-lucide="info" class="w-5 h-5 text-slate-500"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">เกี่ยวกับ</p><p class="text-[11px] text-slate-400">Staylow v8.5</p></div>
+    </button>
+  </div>
+</div>
+
 <div id="expiryModalOverlay" class="expiry-modal-overlay" onclick="if(event.target===this)closeExpiryModal()">
   <div id="expiryModal" class="expiry-modal">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600"></i>
-      </div>
-      <div>
-        <p class="text-xs text-slate-400">สัญญาหมดอายุ</p>
-        <p class="text-base font-bold text-ink" id="expiryRoomName">ห้อง -</p>
-      </div>
+      <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0"><i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600"></i></div>
+      <div><p class="text-xs text-slate-400">สัญญาหมดอายุ</p><p class="text-base font-bold text-ink" id="expiryRoomName">ห้อง -</p></div>
     </div>
     <p class="text-sm text-slate-500 mb-1">สัญญาเช่าของห้องนี้หมดอายุแล้ว</p>
     <p class="text-sm font-semibold text-amber-700 mb-5" id="expiryDaysText">- วันที่ผ่านมา</p>
-    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-5">
-      <p class="text-xs text-slate-500">ต้องการเปลี่ยนสถานะเป็น <span class="font-semibold text-brick-600">"ว่าง"</span> หรือไม่?</p>
-    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-5"><p class="text-xs text-slate-500">ต้องการเปลี่ยนสถานะเป็น <span class="font-semibold text-brick-600">"ว่าง"</span> หรือไม่?</p></div>
     <div class="flex gap-2">
-      <button onclick="dismissExpiry()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 py-3 rounded-full text-sm font-semibold active:scale-95">
-        ไว้ก่อน
-      </button>
-      <button onclick="confirmExpiry()" class="flex-1 bg-brick-500 hover:bg-brick-600 text-white py-3 rounded-full text-sm font-semibold active:scale-95 shadow-md shadow-brick-500/25">
-        เปลี่ยนเป็นว่าง
-      </button>
+      <button onclick="dismissExpiry()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 py-3 rounded-full text-sm font-semibold active:scale-95">ไว้ก่อน</button>
+      <button onclick="confirmExpiry()" class="flex-1 bg-brick-500 hover:bg-brick-600 text-white py-3 rounded-full text-sm font-semibold active:scale-95 shadow-md shadow-brick-500/25">เปลี่ยนเป็นว่าง</button>
     </div>
     <p class="text-[10px] text-slate-400 text-center mt-3" id="expiryProgress"></p>
   </div>
 </div>
 
-<!-- DETAIL VIEW -->
 <div id="detailView" class="detail-view hidden" onclick="closeDetailView()"></div>
 <div id="detailViewContent" class="detail-view-content hidden" onclick="event.stopPropagation()">
   <div class="max-w-[900px] mx-auto">
     <div class="dv-header sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-700 px-4 flex items-center gap-3 relative">
       <div class="loading-bar" id="detailLoadingBar"></div>
-      <button onclick="closeDetailView()" class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0" aria-label="กลับ">
-        <i data-lucide="arrow-left" class="w-5 h-5"></i>
-      </button>
+      <button onclick="closeDetailView()" class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center active:scale-95 shrink-0" aria-label="กลับ"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
       <div class="flex-1 min-w-0">
         <p id="dvProject" class="text-[11px] text-slate-400 font-medium truncate"></p>
         <h2 id="dvRoom" class="text-base font-bold text-ink truncate"></h2>
       </div>
     </div>
-
     <div id="detailContent" class="p-4 lg:p-6 space-y-4"></div>
     <div class="h-24"></div>
   </div>
 </div>
 
-<!-- Sheet: add / edit -->
 <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()"></div>
 <div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -799,42 +643,29 @@ tailwind.config = { theme: { extend: { colors: {
       <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
       <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option><option value="PENDING">รอตรวจสอบ (PENDING)</option></select></label>
     </div>
-
     <div class="border-t border-slate-800 pt-3 space-y-2">
       <label class="col-span-2 flex items-center gap-2 text-slate-300"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="inp-check"><span>ห้องนี้ปล่อยขายด้วย</span></label>
       <label id="salePriceWrap" class="hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
     </div>
-
     <div class="border-t border-slate-800 pt-3">
-      <div class="flex items-center justify-between mb-2">
-        <label class="!text-slate-300 font-semibold text-xs">📷 รูปห้อง</label>
-        <span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span>
-      </div>
+      <div class="flex items-center justify-between mb-2"><label class="!text-slate-300 font-semibold text-xs">📷 รูปห้อง</label><span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span></div>
       <div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5 mb-2"></div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all">
-          <i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป
-        </button>
-        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all">
-          <i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป
-        </button>
+        <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป</button>
+        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
       </div>
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
       <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
       <p id="formPhotoProgress" class="text-[10px] text-brick-600 mt-2 hidden"></p>
       <p class="text-[10px] text-slate-500 mt-2">💡 เพิ่มรูปได้เลยทันที ไม่ต้องกด "บันทึก" ก่อน</p>
     </div>
-
     <div class="border-t border-slate-800 pt-3">
       <label>🔗 ลิงก์ต้นทางโพสต์</label>
       <div class="url-row">
         <input id="f_sourceUrl" type="url" class="inp" placeholder="https://..." oninput="updateUrlBtn()">
-        <button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="url-open-btn" disabled>
-          <i data-lucide="external-link" class="w-4 h-4"></i><span>เปิด</span>
-        </button>
+        <button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="url-open-btn" disabled><i data-lucide="external-link" class="w-4 h-4"></i><span>เปิด</span></button>
       </div>
     </div>
-
     <div class="border-t border-slate-800 pt-3 grid grid-cols-2 gap-3">
       <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
       <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
@@ -845,12 +676,8 @@ tailwind.config = { theme: { extend: { colors: {
       <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp" onchange="onEndDateChange()"></label>
     </div>
     <label>รายละเอียดห้อง<textarea id="f_notes" rows="12" class="inp form-notes" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์ — ใส่จุดเด่นของห้อง ทำเล ใกล้ BTS/MRT ฯลฯ"></textarea></label>
-
     <div class="border-t border-slate-800 pt-3">
-      <div class="flex items-center gap-2 mb-1">
-        <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-600"></i>
-        <label class="!text-amber-700 font-semibold text-xs">📝 โน้ต (ภายใน)</label>
-      </div>
+      <div class="flex items-center gap-2 mb-1"><i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-600"></i><label class="!text-amber-700 font-semibold text-xs">📝 โน้ต (ภายใน)</label></div>
       <p class="text-[10px] text-slate-500 mb-2">💡 โน้ตนี้เห็นเฉพาะในหน้ารายละเอียด ไม่แสดงในการ์ดหรือในข้อความที่แชร์</p>
       <textarea id="f_internalNote" rows="6" class="inp form-internal-note" placeholder="เช่น ลูกค้าถามแล้วรอตอบ, ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea>
     </div>
@@ -862,7 +689,6 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- Settings / Gallery / Picker / Backup -->
 <div id="cfgOverlay" class="fixed inset-0 bg-black/30 z-[52] hidden" onclick="closeSettings()"></div>
 <div id="cfgSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[460px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[53] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -873,9 +699,7 @@ tailwind.config = { theme: { extend: { colors: {
     <label>LINE ID<input id="cfg_lineId" class="inp" placeholder="max.kmc"></label>
     <label>Hashtag<textarea id="cfg_hashtags" rows="3" class="inp" placeholder="#คอนโดให้เช่า #คอนโดกรุงเทพ"></textarea></label>
     <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_showContact" class="inp-check"><span>ใส่ข้อมูลติดต่อในข้อความที่แชร์</span></label>
-    <div class="border-t border-slate-800 pt-3">
-      <label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_autoBackupReminder" class="inp-check"><span>เตือนสำรองข้อมูลทุก 7 วัน</span></label>
-    </div>
+    <div class="border-t border-slate-800 pt-3"><label class="flex items-center gap-2 text-slate-300"><input type="checkbox" id="cfg_autoBackupReminder" class="inp-check"><span>เตือนสำรองข้อมูลทุก 7 วัน</span></label></div>
   </div>
   <div class="flex gap-2 mt-5">
     <button onclick="closeSettings()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
@@ -886,18 +710,12 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()"></div>
 <div id="gallery" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[520px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[55] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <div class="flex justify-between items-center mb-4">
-    <h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2>
-    <button onclick="closeGallery()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
-  </div>
+  <div class="flex justify-between items-center mb-4"><h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2><button onclick="closeGallery()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <div class="grid grid-cols-2 gap-2 mb-4">
     <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
     <button onclick="pickPhotos('camera')" class="bg-slate-800 active:scale-95 text-slate-200 border border-slate-700 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
   </div>
-  <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1">
-    <span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span>
-    <input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]">
-  </label>
+  <label class="flex items-center justify-between text-xs text-slate-300 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]"></label>
   <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
   <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
   <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
@@ -913,10 +731,7 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="pickOverlay" class="fixed inset-0 bg-black/40 z-[56] hidden" onclick="closePhotoPicker()"></div>
 <div id="pickSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[430px] lg:max-w-[500px] mx-auto bg-slate-900 lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[57] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[92vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <div class="flex justify-between items-center mb-1">
-    <h2 id="pickTitle" class="text-base font-bold text-ink">เลือกรูป</h2>
-    <button onclick="closePhotoPicker()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
-  </div>
+  <div class="flex justify-between items-center mb-1"><h2 id="pickTitle" class="text-base font-bold text-ink">เลือกรูป</h2><button onclick="closePhotoPicker()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <p id="pickHint" class="text-xs text-slate-400 mb-4">แตะเพื่อเลือก/ยกเลิก</p>
   <div class="flex gap-2 mb-3">
     <button onclick="pickAll()" class="flex-1 bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold py-2 rounded-full">เลือกทั้งหมด</button>
@@ -924,9 +739,7 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
   <div id="pickGrid" class="grid grid-cols-3 gap-1.5 mb-3"></div>
   <p id="pickCount" class="text-xs text-slate-400 text-center mb-3">เลือกแล้ว 0 รูป</p>
-  <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40">
-    <i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span>
-  </button>
+  <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span></button>
 </div>
 
 <div id="bkOverlay" class="fixed inset-0 bg-black/30 z-[58] hidden" onclick="closeBackup()"></div>
@@ -998,8 +811,6 @@ let priceMax = null;
 let currentView = (() => { try { return localStorage.getItem(NAV_KEY) || 'dashboard'; } catch (e) { return 'dashboard'; } })();
 let viewMode = (() => { try { return localStorage.getItem(VIEW_KEY) || 'card'; } catch (e) { return 'card'; } })();
 let detailUnitId = null;
-
-// Auto-status B queue
 let expiryQueue = [];
 let currentExpiryUnitId = null;
 
@@ -1012,7 +823,7 @@ const FILTER_LABELS = {
 };
 const STATUS_FILTERS = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'];
 
-function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
+function toggleSort() { sortDir = sortDir === 'new' ? 'old' : 'new'; if (document.getElementById('sortLabel')) document.getElementById('sortLabel').textContent = sortDir === 'new' ? 'ใหม่ก่อน' : 'เก่าก่อน'; render(); }
 function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, mode); } catch (e) {} render(); }
 function load() { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(seed)); }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
@@ -1025,7 +836,7 @@ function switchView(v) {
   document.querySelectorAll('.nav-link[data-nav], .bottom-nav-item[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === v));
   if (detailUnitId && v === 'dashboard') closeDetailView();
   render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelector('.main-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function gotoFilter(filterName) {
@@ -1056,7 +867,6 @@ function gotoProject(projectName) {
 function clearFilters() { activeFilters = new Set(['all']); render(); }
 function clearAllFilters() { activeFilters = new Set(['all']); clearPriceRange(); }
 
-// ============= PRICE RANGE =============
 function onPriceInput() {
   const minEl = document.getElementById('priceMin'), maxEl = document.getElementById('priceMax');
   priceMin = minEl && minEl.value ? Number(minEl.value) : null;
@@ -1081,7 +891,6 @@ function clearPriceRangeSilent() {
   if (clearBtn) clearBtn.classList.add('hidden');
 }
 
-// ============= SEARCH =============
 function syncSearch(v) {
   const s = document.getElementById('search'), d = document.getElementById('searchDesktop');
   if (s && s.value !== v) s.value = v;
@@ -1136,13 +945,8 @@ function renderSearchSuggest(query) {
   const html = projects.slice(0, 8).map(p => `
     <button type="button" onmousedown="event.preventDefault()" onclick="selectProject('${p.name.replace(/'/g, "\\'")}')"
       class="w-full text-left px-3 py-2.5 hover:bg-brick-500/10 border-b border-slate-800 last:border-0 flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-brick-500/10 flex items-center justify-center shrink-0">
-        <i data-lucide="building-2" class="w-4 h-4 text-brick-600"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-ink truncate">${esc(p.name)}</p>
-        <p class="text-[10px] text-slate-400">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p>
-      </div>
+      <div class="w-8 h-8 rounded-lg bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-4 h-4 text-brick-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink truncate">${esc(p.name)}</p><p class="text-[10px] text-slate-400">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div>
       <i data-lucide="corner-down-left" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
     </button>
   `).join('');
@@ -1150,10 +954,7 @@ function renderSearchSuggest(query) {
   lucide.createIcons();
 }
 function hideSearchSuggest() {
-  ['searchSuggest', 'searchSuggestDesktop'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
-  });
+  ['searchSuggest', 'searchSuggestDesktop'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
 }
 function selectProject(name) {
   selectedProject = name;
@@ -1194,42 +995,14 @@ function showLoadingBar(id, duration = 400) {
   clearTimeout(loadingTimers[id]);
   bar.classList.add('active'); bar.style.width = '0%';
   requestAnimationFrame(() => { bar.style.width = '70%'; });
-  loadingTimers[id] = setTimeout(() => {
-    bar.style.width = '100%';
-    setTimeout(() => { bar.classList.remove('active'); bar.style.width = '0%'; }, 200);
-  }, duration);
+  loadingTimers[id] = setTimeout(() => { bar.style.width = '100%'; setTimeout(() => { bar.classList.remove('active'); bar.style.width = '0%'; }, 200); }, duration);
 }
 
-// ============= EDGE SWIPE =============
 let edgeSwipe = { active: false, startX: 0, startY: 0 };
-document.addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  if (t.clientX < 24 && !edgeSwipe.active) { edgeSwipe.active = true; edgeSwipe.startX = t.clientX; edgeSwipe.startY = t.clientY; }
-}, { passive: true });
-document.addEventListener('touchmove', e => {
-  if (!edgeSwipe.active) return;
-  const t = e.touches[0];
-  const dx = t.clientX - edgeSwipe.startX, dy = Math.abs(t.clientY - edgeSwipe.startY);
-  if (dy > 60) { edgeSwipe.active = false; return; }
-  if (dx > 0) {
-    const dvc = document.getElementById('detailViewContent');
-    if (dvc && detailUnitId) {
-      dvc.style.transform = `translateX(${Math.min(dx * 0.6, 120)}px)`;
-      dvc.style.opacity = String(Math.max(1 - dx / 300, 0.5));
-    }
-  }
-}, { passive: true });
-document.addEventListener('touchend', e => {
-  if (!edgeSwipe.active) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - edgeSwipe.startX;
-  const dvc = document.getElementById('detailViewContent');
-  if (dvc) { dvc.style.transform = ''; dvc.style.opacity = ''; }
-  if (dx > 100 && detailUnitId) closeDetailView();
-  edgeSwipe.active = false;
-}, { passive: true });
+document.addEventListener('touchstart', e => { const t = e.touches[0]; if (t.clientX < 24 && !edgeSwipe.active) { edgeSwipe.active = true; edgeSwipe.startX = t.clientX; edgeSwipe.startY = t.clientY; } }, { passive: true });
+document.addEventListener('touchmove', e => { if (!edgeSwipe.active) return; const t = e.touches[0]; const dx = t.clientX - edgeSwipe.startX, dy = Math.abs(t.clientY - edgeSwipe.startY); if (dy > 60) { edgeSwipe.active = false; return; } if (dx > 0) { const dvc = document.getElementById('detailViewContent'); if (dvc && detailUnitId) { dvc.style.transform = `translateX(${Math.min(dx * 0.6, 120)}px)`; dvc.style.opacity = String(Math.max(1 - dx / 300, 0.5)); } } }, { passive: true });
+document.addEventListener('touchend', e => { if (!edgeSwipe.active) return; const t = e.changedTouches[0]; const dx = t.clientX - edgeSwipe.startX; const dvc = document.getElementById('detailViewContent'); if (dvc) { dvc.style.transform = ''; dvc.style.opacity = ''; } if (dx > 100 && detailUnitId) closeDetailView(); edgeSwipe.active = false; }, { passive: true });
 
-// ============= INLINE EDIT =============
 function startInlineEdit(el, field, type = 'text') {
   if (el.querySelector('input, select, textarea')) return;
   const u = units.find(x => x.id === detailUnitId);
@@ -1238,73 +1011,38 @@ function startInlineEdit(el, field, type = 'text') {
   const originalHTML = el.innerHTML;
   el.classList.add('editing');
   el.dataset.originalHTML = originalHTML;
-
   let editor;
-  if (type === 'textarea') {
-    editor = document.createElement('textarea'); editor.rows = 12; editor.value = currentValue;
-    editor.className = 'inline-textarea';
-  } else if (type === 'select') {
+  if (type === 'textarea') { editor = document.createElement('textarea'); editor.rows = 12; editor.value = currentValue; editor.className = 'inline-textarea'; }
+  else if (type === 'select') {
     editor = document.createElement('select'); editor.className = 'inline-select';
-    const options = field === 'status'
-      ? [['AVAILABLE','ว่าง'],['OCCUPIED','มีผู้เช่า'],['RESERVED','จอง'],['PENDING','รอตรวจ']]
+    const options = field === 'status' ? [['AVAILABLE','ว่าง'],['OCCUPIED','มีผู้เช่า'],['RESERVED','จอง'],['PENDING','รอตรวจ']]
       : field === 'type' ? [['Studio','Studio'],['1 Bed','1 Bed'],['2 Bed','2 Bed'],['3 Bed','3 Bed'],['Duplex','Duplex']]
       : field === 'bath' ? [['1','1 Bath'],['2','2 Bath'],['3','3 Bath'],['4','4 Bath']] : [];
-    options.forEach(([val, label]) => {
-      const opt = document.createElement('option'); opt.value = val; opt.textContent = label;
-      if (String(currentValue) === String(val)) opt.selected = true;
-      editor.appendChild(opt);
-    });
-  } else {
-    editor = document.createElement('input'); editor.type = type; editor.value = currentValue;
-    editor.className = 'inline-input';
-    if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; }
-  }
-
-  el.innerHTML = '';
-  el.appendChild(editor);
-  editor.focus();
-  if (editor.select) editor.select();
-
+    options.forEach(([val, label]) => { const opt = document.createElement('option'); opt.value = val; opt.textContent = label; if (String(currentValue) === String(val)) opt.selected = true; editor.appendChild(opt); });
+  } else { editor = document.createElement('input'); editor.type = type; editor.value = currentValue; editor.className = 'inline-input'; if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; } }
+  el.innerHTML = ''; el.appendChild(editor); editor.focus(); if (editor.select) editor.select();
   let saved = false;
   const save = () => {
     if (saved) return; saved = true;
     let newValue = editor.value;
     if (type === 'number') newValue = newValue === '' ? '' : Number(newValue);
-    if (String(newValue) === String(currentValue)) {
-      el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); return;
-    }
+    if (String(newValue) === String(currentValue)) { el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); return; }
     u[field] = newValue;
     if (field === 'end' && newValue) autoUpgradeToOccupied(u, true);
-    persist();
-    toast('✓ บันทึกแล้ว');
-    renderDetailView(); render();
+    persist(); toast('✓ บันทึกแล้ว'); renderDetailView(); render();
     setTimeout(() => { if (detailUnitId === u.id) loadDetailCover(u.id); }, 50);
   };
-  const cancel = () => {
-    if (saved) return; saved = true;
-    el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons();
-  };
+  const cancel = () => { if (saved) return; saved = true; el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); };
   editor.addEventListener('blur', save);
-  editor.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); }
-    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
-  });
+  editor.addEventListener('keydown', e => { if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); } if (e.key === 'Escape') { e.preventDefault(); cancel(); } });
   if (type === 'select') editor.addEventListener('change', () => editor.blur());
 }
 
-// ═══════════════════════════════════════════════════
-// AUTO-STATUS A: ใส่วันหมดสัญญา → OCCUPIED
-// ═══════════════════════════════════════════════════
 function autoUpgradeToOccupied(u, silent) {
   if (!u.end) return false;
   const d = daysLeft(u.end);
   if (d === null) return false;
-  if (u.status !== 'OCCUPIED' && d >= 0) {
-    u.status = 'OCCUPIED';
-    u.expiredNotified = false;
-    if (!silent) toast('✅ อัปเดตเป็น "มีผู้เช่า" อัตโนมัติ');
-    return true;
-  }
+  if (u.status !== 'OCCUPIED' && d >= 0) { u.status = 'OCCUPIED'; u.expiredNotified = false; if (!silent) toast('✅ อัปเดตเป็น "มีผู้เช่า" อัตโนมัติ'); return true; }
   return false;
 }
 
@@ -1313,31 +1051,18 @@ function onEndDateChange() {
   const statusEl = document.getElementById('f_status');
   if (endVal && statusEl.value !== 'OCCUPIED') {
     const d = daysLeft(endVal);
-    if (d !== null && d >= 0) {
-      statusEl.value = 'OCCUPIED';
-      toast('✅ เปลี่ยนสถานะเป็น "มีผู้เช่า" เพราะมีวันหมดสัญญา');
-    }
+    if (d !== null && d >= 0) { statusEl.value = 'OCCUPIED'; toast('✅ เปลี่ยนสถานะเป็น "มีผู้เช่า" เพราะมีวันหมดสัญญา'); }
   }
 }
 
-// ═══════════════════════════════════════════════════
-// AUTO-STATUS B: วันหมดสัญญาผ่าน → modal ถาม
-// ═══════════════════════════════════════════════════
 function checkExpiredContracts() {
-  const now = Date.now();
-  const expired = units.filter(u =>
-    u.status === 'OCCUPIED' &&
-    u.end &&
-    daysLeft(u.end) < 0 &&
-    !u.expiredNotified
-  );
+  const expired = units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) < 0 && !u.expiredNotified);
   if (!expired.length) return;
   expired.sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   expiryQueue = expired.map(u => u.id);
   updateBellDot();
   if (!currentExpiryUnitId) showNextExpiryModal();
 }
-
 function showNextExpiryModal() {
   if (!expiryQueue.length) { currentExpiryUnitId = null; return; }
   const id = expiryQueue[0];
@@ -1347,56 +1072,108 @@ function showNextExpiryModal() {
   const d = daysLeft(u.end);
   document.getElementById('expiryRoomName').textContent = `${u.project} · ห้อง ${u.room}`;
   document.getElementById('expiryDaysText').textContent = `หมดสัญญามาแล้ว ${-d} วัน (${fmtDate(u.end)})`;
-  document.getElementById('expiryProgress').textContent = expiryQueue.length > 1
-    ? `มีอีก ${expiryQueue.length - 1} ห้องที่หมดสัญญา`
-    : '';
+  document.getElementById('expiryProgress').textContent = expiryQueue.length > 1 ? `มีอีก ${expiryQueue.length - 1} ห้องที่หมดสัญญา` : '';
   const overlay = document.getElementById('expiryModalOverlay');
   const modal = document.getElementById('expiryModal');
   overlay.classList.add('show');
   requestAnimationFrame(() => modal.classList.add('show'));
   lucide.createIcons();
 }
-
 function closeExpiryModal() {
   const overlay = document.getElementById('expiryModalOverlay');
   const modal = document.getElementById('expiryModal');
   modal.classList.remove('show');
   setTimeout(() => { overlay.classList.remove('show'); currentExpiryUnitId = null; }, 250);
 }
-
 function confirmExpiry() {
   const u = units.find(x => x.id === currentExpiryUnitId);
-  if (u) {
-    u.status = 'AVAILABLE';
-    u.expiredNotified = true;
-    persist();
-    toast(`✅ ห้อง ${u.room} เปลี่ยนเป็น "ว่าง" แล้ว`);
-  }
-  expiryQueue.shift();
-  closeExpiryModal();
-  render();
+  if (u) { u.status = 'AVAILABLE'; u.expiredNotified = true; persist(); toast(`✅ ห้อง ${u.room} เปลี่ยนเป็น "ว่าง" แล้ว`); }
+  expiryQueue.shift(); closeExpiryModal(); render();
   setTimeout(() => { showNextExpiryModal(); updateBellDot(); }, 350);
 }
-
 function dismissExpiry() {
   const u = units.find(x => x.id === currentExpiryUnitId);
-  if (u) {
-    u.expiredNotified = true;
-    persist();
-  }
-  expiryQueue.shift();
-  closeExpiryModal();
+  if (u) { u.expiredNotified = true; persist(); }
+  expiryQueue.shift(); closeExpiryModal();
   setTimeout(() => { showNextExpiryModal(); updateBellDot(); }, 350);
 }
-
 function updateBellDot() {
-  const dot = document.getElementById('bellDot');
-  if (!dot) return;
-  const hasExpired = units.some(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) < 0 && !u.expiredNotified);
-  dot.classList.toggle('hidden', !hasExpired);
+  const dot = document.getElementById('bellDot'); if (!dot) return;
+  const hasUrgent = units.some(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) <= EXPIRY_DAYS);
+  dot.classList.toggle('hidden', !hasUrgent);
 }
 
-// ============= DETAIL VIEW =============
+function openNotifications() {
+  const overlay = document.getElementById('notifOverlay'), sheet = document.getElementById('notifSheet');
+  renderNotifications();
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => sheet.classList.add('open'));
+  lucide.createIcons();
+}
+function closeNotifications() {
+  const overlay = document.getElementById('notifOverlay'), sheet = document.getElementById('notifSheet');
+  sheet.classList.remove('open');
+  setTimeout(() => overlay.classList.add('hidden'), 280);
+}
+function getNotifications() {
+  const items = [];
+  units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) < 0).forEach(u => {
+    items.push({ type: 'expired', priority: 0, unit: u, days: daysLeft(u.end), title: `ห้อง ${u.room} หมดสัญญาแล้ว`, sub: `${u.project} · หมดมา ${-daysLeft(u.end)} วัน` });
+  });
+  units.filter(u => u.status === 'OCCUPIED' && u.end && daysLeft(u.end) >= 0 && daysLeft(u.end) <= EXPIRY_DAYS).forEach(u => {
+    const d = daysLeft(u.end);
+    items.push({ type: 'expiring', priority: d <= 7 ? 1 : 2, unit: u, days: d, title: `ห้อง ${u.room} สัญญาใกล้หมด`, sub: `${u.project} · เหลือ ${d} วัน` });
+  });
+  items.sort((a, b) => a.priority - b.priority || a.days - b.days);
+  return items;
+}
+function renderNotifications() {
+  const list = document.getElementById('notifList'), count = document.getElementById('notifCount');
+  const items = getNotifications();
+  if (count) count.textContent = items.length > 0 ? `${items.length} รายการ` : 'ไม่มีการแจ้งเตือน';
+  if (!items.length) {
+    list.innerHTML = `<div class="text-center py-12"><div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3"><i data-lucide="check-circle" class="w-8 h-8 text-emerald-600"></i></div><p class="text-sm font-semibold text-ink mb-1">ไม่มีการแจ้งเตือน</p><p class="text-xs text-slate-400">ทุกห้องอยู่ในสถานะปกติ 🎉</p></div>`;
+    lucide.createIcons(); return;
+  }
+  list.innerHTML = items.map(n => {
+    const u = n.unit;
+    const isExpired = n.type === 'expired';
+    const bgColor = isExpired ? 'bg-rose-50 border-rose-200' : (n.days <= 7 ? 'bg-amber-50 border-amber-200' : 'bg-sky-50 border-sky-200');
+    const iconColor = isExpired ? 'text-rose-600' : (n.days <= 7 ? 'text-amber-600' : 'text-sky-600');
+    const iconBg = isExpired ? 'bg-rose-500/10' : (n.days <= 7 ? 'bg-amber-500/10' : 'bg-sky-500/10');
+    const iconName = isExpired ? 'alert-octagon' : 'clock';
+    const badgeText = isExpired ? `หมด ${-n.days} วัน` : `${n.days} วัน`;
+    const badgeClass = isExpired ? 'bg-rose-500 text-white' : (n.days <= 7 ? 'bg-amber-500 text-white' : 'bg-sky-500 text-white');
+    return `<button onclick="closeNotifications(); openDetailView('${u.id}')" class="w-full text-left p-3 rounded-xl border ${bgColor} hover:brightness-95 active:scale-[0.98] transition-all">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center shrink-0"><i data-lucide="${iconName}" class="w-5 h-5 ${iconColor}"></i></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-ink truncate">${esc(n.title)}</p>
+          <p class="text-[11px] text-slate-500 mt-0.5 truncate">${esc(n.sub)}</p>
+          <p class="text-[10px] text-slate-400 mt-1">สัญญาสิ้นสุด: ${fmtDate(u.end)}</p>
+        </div>
+        <span class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full ${badgeClass} whitespace-nowrap">${badgeText}</span>
+      </div>
+    </button>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function openProfile() {
+  const overlay = document.getElementById('profileOverlay'), sheet = document.getElementById('profileSheet');
+  const cfg = getPostConfig();
+  const lineEl = document.getElementById('profileLineId');
+  if (lineEl) lineEl.textContent = 'LINE: ' + cfg.lineId;
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => sheet.classList.add('open'));
+  lucide.createIcons();
+}
+function closeProfile() {
+  const overlay = document.getElementById('profileOverlay'), sheet = document.getElementById('profileSheet');
+  sheet.classList.remove('open');
+  setTimeout(() => overlay.classList.add('hidden'), 280);
+}
+
 function openDetailView(unitId) {
   const u = units.find(x => x.id === unitId);
   if (!u) return;
@@ -1441,42 +1218,24 @@ function renderDetailView() {
   const hasUrl = u.sourceUrl && isValidUrl(normalizeUrl(u.sourceUrl));
   const hasPhone = u.ownerPhone && /^\+?\d{6,}$/.test((u.ownerPhone || '').replace(/[^0-9+]/g, ''));
   const hasLine = !!u.ownerLine;
-
   const contractBadge = d === null ? '' : d < 0
     ? `<span class="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
     : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-100 text-slate-500 border-slate-200'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
-
   document.getElementById('detailContent').innerHTML = `
-    <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;">
-      <img id="dvCoverImg" class="w-full h-full object-cover" alt="">
-    </div>
-
+    <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;"><img id="dvCoverImg" class="w-full h-full object-cover" alt=""></div>
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
           <h2 class="text-2xl font-bold text-ink">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
         </div>
-        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}
-        </button>
+        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
       </div>
-      <div class="flex items-baseline gap-2 mb-4">
-        <span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span>
-        <span class="text-sm text-slate-400">/เดือน</span>
-      </div>
-
+      <div class="flex items-baseline gap-2 mb-4"><span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span><span class="text-sm text-slate-400">/เดือน</span></div>
       <div class="grid grid-cols-2 gap-2 mb-2">
-        <button onclick="quickCopy('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-500/25">
-          <i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด
-        </button>
-        ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="bg-brick-300 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-300/25">
-          <i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูป (${pic})
-        </button>` : `<button disabled class="bg-slate-100 text-slate-400 font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 cursor-not-allowed">
-          <i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป
-        </button>`}
+        <button onclick="quickCopy('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-500/25"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด</button>
+        ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="bg-brick-300 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-300/25"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูป (${pic})</button>` : `<button disabled class="bg-slate-100 text-slate-400 font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 cursor-not-allowed"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
       </div>
-
       ${(hasPhone || hasLine || hasUrl) ? `<div class="grid gap-2" style="grid-template-columns: repeat(${(hasPhone?1:0)+(hasLine?1:0)+(hasUrl?1:0)}, minmax(0, 1fr));">
         ${hasPhone ? `<button onclick="contactOwner('${u.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรเจ้าของ</button>` : ''}
         ${hasLine ? `<button onclick="openOwnerLine('${u.id}')" class="owner-action line"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
@@ -1484,137 +1243,55 @@ function renderDetailView() {
       </div>` : ''}
       <p class="text-[10px] text-slate-400 mt-2 text-center">💡 แตะข้อความสีเทาเพื่อแก้ไข · ปัดจากขอบซ้ายเพื่อปิด</p>
     </div>
-
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
-        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p>
-      </div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
-        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p>
-      </div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
-        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p>
-      </div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center">
-        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p>
-        <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p>
-      </div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
     </div>
-
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3">
-      <i data-lucide="eye" class="w-4 h-4 text-brick-600"></i>
-      <span class="text-sm text-slate-500">วิว:</span>
-      <span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span>
-    </div>
-
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
-      <span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span>
-      <span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span>
-    </div>
-
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
-      <div>
-        <p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p>
-        <p class="text-sm font-semibold ${ps.cls}">${ps.label}</p>
-      </div>
+      <div><p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p><p class="text-sm font-semibold ${ps.cls}">${ps.label}</p></div>
       <button onclick="markAsPosted('${u.id}')" class="bg-[#06C755]/10 hover:bg-[#06C755]/20 text-[#06C755] font-semibold text-xs px-3 py-2 rounded-full border border-[#06C755]/25 active:scale-95">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
-
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-3">
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p>
-          <p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p>
-        </div>
+        <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
       </div>
-      <div class="flex items-center gap-2 text-sm text-slate-500 mb-1">
-        <i data-lucide="phone" class="w-4 h-4 text-brick-600"></i>
-        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span>
-      </div>
-      <div class="flex items-center gap-2 text-sm text-slate-500">
-        <i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i>
-        <span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span>
-      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-500 mb-1"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span></div>
+      <div class="flex items-center gap-2 text-sm text-slate-500"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span></div>
     </div>
-
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <i data-lucide="sticky-note" class="w-4 h-4 text-amber-600"></i>
-          <p class="text-sm font-semibold text-amber-800">โน้ต (ภายใน)</p>
-        </div>
-        <span class="text-[10px] text-amber-600">${(u.internalNote || '').length} ตัวอักษร</span>
-      </div>
+      <div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-600"></i><p class="text-sm font-semibold text-amber-800">โน้ต (ภายใน)</p></div><span class="text-[10px] text-amber-600">${(u.internalNote || '').length} ตัวอักษร</span></div>
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน — เห็นเฉพาะคุณ')}</div>
     </div>
-
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
-      <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}
-      </div>
+      <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}</div>
       <div class="text-sm text-slate-500 space-y-2">
-        <div class="flex items-center gap-2">
-          <span class="w-16">เริ่ม:</span>
-          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-16">สิ้นสุด:</span>
-          <span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')">${fmtDate(u.end)}</span>
-        </div>
+        <div class="flex items-center gap-2"><span class="w-16">เริ่ม:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span></div>
+        <div class="flex items-center gap-2"><span class="w-16">สิ้นสุด:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')">${fmtDate(u.end)}</span></div>
       </div>
     </div>
-
     <div class="bg-white border border-slate-700 rounded-2xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p>
-        <span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span>
-      </div>
+      <div class="flex items-center justify-between mb-3"><p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
       <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง — จุดเด่น, ทำเล, ใกล้ BTS/MRT, เฟอร์นิเจอร์, เงื่อนไขพิเศษ ฯลฯ')}</div>
     </div>
-
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
-      <p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p>
-      <p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p>
-    </div>
-
+    <div class="bg-white border border-slate-700 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
     <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div>
-        <div class="text-left">
-          <p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p>
-          <p class="text-xs text-slate-400">${pic} รูป</p>
-        </div>
-      </div>
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p><p class="text-xs text-slate-400">${pic} รูป</p></div></div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
-
     <button onclick="dvDelete()" class="w-full bg-white border border-rose-500/30 rounded-2xl p-5 flex items-center justify-between hover:border-rose-500 hover:bg-rose-500/5 transition-all active:scale-[0.98]">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
-          <i data-lucide="trash-2" class="w-5 h-5 text-rose-600"></i>
-        </div>
-        <div class="text-left">
-          <p class="text-sm font-semibold text-rose-600">ลบห้องนี้</p>
-          <p class="text-xs text-slate-400">ข้อมูลและรูปทั้งหมดจะถูกลบถาวร</p>
-        </div>
-      </div>
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center"><i data-lucide="trash-2" class="w-5 h-5 text-rose-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-rose-600">ลบห้องนี้</p><p class="text-xs text-slate-400">ข้อมูลและรูปทั้งหมดจะถูกลบถาวร</p></div></div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-rose-400"></i>
     </button>
   `;
   lucide.createIcons();
 }
-function dvCycleStatus() {
-  if (!detailUnitId) return;
-  cycleStatus(detailUnitId);
-  renderDetailView();
-  setTimeout(() => loadDetailCover(detailUnitId), 50);
-}
+function dvCycleStatus() { if (!detailUnitId) return; cycleStatus(detailUnitId); renderDetailView(); setTimeout(() => loadDetailCover(detailUnitId), 50); }
 
-// ============= POST CONFIG =============
 const DEFAULT_CFG = { agentName:'MAX', phone:'062-242-3154', lineId:'max.kmc', hashtags:'#คอนโดให้เช่า #คอนโดกรุงเทพ #ห้องเช่า', showContact:true, autoBackupReminder:true };
 function getPostConfig() { try { return { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; } catch (e) { return { ...DEFAULT_CFG }; } }
 function savePostConfig(cfg) { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
@@ -1643,7 +1320,6 @@ function saveSettings() {
   savePostConfig(cfg); closeSettings(); toast('บันทึกการตั้งค่าแล้ว'); render();
 }
 
-// ============= STATUS =============
 const statusMeta = {
   AVAILABLE: { label:'ว่าง', cls:'bg-brick-500/10 text-brick-600 border-brick-500/20', dot:'bg-brick-500' },
   OCCUPIED:  { label:'มีผู้เช่า', cls:'bg-rose-500/10 text-rose-600 border-rose-500/20', dot:'bg-rose-500' },
@@ -1652,12 +1328,10 @@ const statusMeta = {
 };
 const EXPIRY_DAYS = 30;
 const STALE_DAYS = 7;
-
 function statusOf(u) {
   const d = daysLeft(u.end);
   if (u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS) {
-    return d < 0
-      ? { label: 'หมดสัญญา', cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
+    return d < 0 ? { label: 'หมดสัญญา', cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20', dot: 'bg-rose-400', short: `หมดสัญญา ${-d} วัน` }
       : { label: `ใกล้หมด ${d} วัน`, cls: 'bg-amber-500/10 text-amber-700 border-amber-500/30', dot: 'bg-amber-400', short: `เหลือ ${d} วัน` };
   }
   return statusMeta[u.status];
@@ -1665,11 +1339,7 @@ function statusOf(u) {
 const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
 const fmtNum = n => Number(n || 0).toLocaleString('th-TH');
 const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
-function daysLeft(end) {
-  if (!end) return null;
-  const ms = new Date(end + 'T00:00:00') - new Date(new Date().toDateString());
-  return Math.ceil(ms / 86400000);
-}
+function daysLeft(end) { if (!end) return null; const ms = new Date(end + 'T00:00:00') - new Date(new Date().toDateString()); return Math.ceil(ms / 86400000); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function postedState(u) {
   if (!u.lastPosted) return { level:'never', label:'ยังไม่โพสต์', cls:'text-amber-600' };
@@ -1686,21 +1356,13 @@ function postedState(u) {
   return { level:'stale', label:`⚠ โพสต์ ${days} วันก่อน${cnt}${time}`, cls:'text-amber-600 font-semibold' };
 }
 
-// ============= URL =============
 function isValidUrl(url) { if (!url) return false; try { const u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
 function normalizeUrl(url) { if (!url) return ''; const s = url.trim(); if (!s) return ''; if (!/^https?:\/\//i.test(s)) return 'https://' + s; return s; }
-function openUrl(url) {
-  if (!url) return toast('ไม่มีลิงก์');
-  const n = normalizeUrl(url);
-  if (!isValidUrl(n)) return toast('ลิงก์ไม่ถูกต้อง');
-  const w = window.open(n, '_blank', 'noopener,noreferrer');
-  if (!w) location.href = n;
-}
+function openUrl(url) { if (!url) return toast('ไม่มีลิงก์'); const n = normalizeUrl(url); if (!isValidUrl(n)) return toast('ลิงก์ไม่ถูกต้อง'); const w = window.open(n, '_blank', 'noopener,noreferrer'); if (!w) location.href = n; }
 function openSourceUrlFromInput() { const v = document.getElementById('f_sourceUrl').value.trim(); if (!v) return; openUrl(normalizeUrl(v)); }
 function updateUrlBtn() { const btn = document.getElementById('urlOpenBtn'); if (!btn) return; const v = document.getElementById('f_sourceUrl').value.trim(); btn.disabled = !(v && isValidUrl(normalizeUrl(v))); }
 function openSourceUrl(unitId) { const u = units.find(x => x.id === unitId); if (!u || !u.sourceUrl) return toast('ไม่มีลิงก์'); openUrl(u.sourceUrl); }
 
-// ============= DASHBOARD =============
 function computeStats() {
   const cnt = s => units.filter(u => u.status === s).length;
   const available = cnt('AVAILABLE'), occupied = cnt('OCCUPIED'), reserved = cnt('RESERVED'), pending = cnt('PENDING');
@@ -1710,12 +1372,7 @@ function computeStats() {
   const vacantRevenue = units.filter(u => u.status === 'AVAILABLE').reduce((s, u) => s + Number(u.rent || 0), 0);
   const expiring = units.filter(u => { const d = daysLeft(u.end); return u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS && d >= 0; });
   const atRisk = expiring.reduce((s, u) => s + Number(u.rent || 0), 0);
-  const postedToday = units.filter(u => {
-    if (!u.lastPosted) return false;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const p = new Date(u.lastPosted); p.setHours(0,0,0,0);
-    return p.getTime() === today.getTime();
-  }).length;
+  const postedToday = units.filter(u => { if (!u.lastPosted) return false; const today = new Date(); today.setHours(0,0,0,0); const p = new Date(u.lastPosted); p.setHours(0,0,0,0); return p.getTime() === today.getTime(); }).length;
   const unposted = units.filter(u => !u.lastPosted).length;
   const noNotes = units.filter(u => !(u.notes || '').trim()).length;
   const hasPhotos = units.filter(u => (photoCount[u.id] || 0) > 0).length;
@@ -1725,146 +1382,82 @@ function computeStats() {
 
 function renderDashboard() {
   const s = computeStats();
-  setText('kpiAvailable', s.available);
-  setText('kpiOccupied', s.occupied);
-  setText('kpiReserved', s.reserved);
-  setText('kpiPending', s.pending);
-  setText('occupancyPct', s.occupancy + '%');
-  setText('occupancyDetail', s.occupied + '/' + s.total + ' ห้อง');
+  setText('kpiAvailable', s.available); setText('kpiOccupied', s.occupied); setText('kpiReserved', s.reserved); setText('kpiPending', s.pending);
+  setText('occupancyPct', s.occupancy + '%'); setText('occupancyDetail', s.occupied + '/' + s.total + ' ห้อง');
   const bar = document.getElementById('occupancyBar'); if (bar) bar.style.width = s.occupancy + '%';
-  setText('totalRevenue', baht(s.totalRevenue));
-  setText('revenueRented', baht(s.totalRevenue));
-  setText('revenueFromRented', baht(s.totalRevenue));
-  setText('revenueFromVacant', baht(s.vacantRevenue));
-  setText('revenueAtRisk', baht(s.atRisk));
-  setText('postedToday', s.postedToday);
-  setText('notPosted', s.unposted);
-  setText('expiringCount', s.expiring.length);
-  setText('noNotesCount', s.noNotes);
-  setText('navAvail', s.available); setText('navOcc', s.occupied);
-  setText('navReserved', s.reserved); setText('navPend', s.pending);
-  setText('navExp', s.expiring.length); setText('navUnposted', s.unposted);
-  setText('totalUnitBadge', s.total);
-
-  const greeting = document.getElementById('greetingText');
-  if (greeting) greeting.textContent = 'สวัสดี MAX 👋';
+  setText('totalRevenue', baht(s.totalRevenue)); setText('revenueRented', baht(s.totalRevenue)); setText('revenueFromRented', baht(s.totalRevenue));
+  setText('revenueFromVacant', baht(s.vacantRevenue)); setText('revenueAtRisk', baht(s.atRisk));
+  setText('postedToday', s.postedToday); setText('notPosted', s.unposted); setText('expiringCount', s.expiring.length); setText('noNotesCount', s.noNotes);
+  setText('navAvail', s.available); setText('navOcc', s.occupied); setText('navReserved', s.reserved); setText('navPend', s.pending);
+  setText('navExp', s.expiring.length); setText('navUnposted', s.unposted); setText('totalUnitBadge', s.total);
+  const greeting = document.getElementById('greetingText'); if (greeting) greeting.textContent = 'สวัสดี MAX 👋';
   const hd = document.getElementById('headerDate');
-  if (hd) {
-    const now = new Date();
-    hd.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-  }
-  const td = document.getElementById('todayDate');
-  if (td) td.textContent = new Date().toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
-
+  if (hd) { const now = new Date(); hd.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
+  const td = document.getElementById('todayDate'); if (td) td.textContent = new Date().toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
   renderAvailableScroll();
-
   const byProject = {};
-  units.forEach(u => {
-    const p = u.project || '(ไม่ระบุ)';
-    if (!byProject[p]) byProject[p] = { count: 0, revenue: 0, occupied: 0 };
-    byProject[p].count++;
-    if (u.status === 'OCCUPIED') { byProject[p].revenue += Number(u.rent || 0); byProject[p].occupied++; }
-  });
+  units.forEach(u => { const p = u.project || '(ไม่ระบุ)'; if (!byProject[p]) byProject[p] = { count: 0, revenue: 0, occupied: 0 }; byProject[p].count++; if (u.status === 'OCCUPIED') { byProject[p].revenue += Number(u.rent || 0); byProject[p].occupied++; } });
   const projects = Object.entries(byProject).sort((a, b) => b[1].revenue - a[1].revenue);
   const maxRevenue = Math.max(...projects.map(p => p[1].revenue), 1);
   const pb = document.getElementById('projectBreakdown');
   if (pb) pb.innerHTML = projects.length ? projects.slice(0, 6).map(([name, d]) => `
     <button onclick="gotoProject('${name.replace(/'/g, "\\'")}')" class="w-full text-left group">
-      <div class="flex justify-between items-baseline mb-1.5 gap-2">
-        <span class="text-xs font-medium text-ink truncate group-hover:text-brick-600 transition-colors">${esc(name)}</span>
-        <span class="text-xs font-bold text-brick-600 shrink-0">${baht(d.revenue)}</span>
-      </div>
+      <div class="flex justify-between items-baseline mb-1.5 gap-2"><span class="text-xs font-medium text-ink truncate group-hover:text-brick-600 transition-colors">${esc(name)}</span><span class="text-xs font-bold text-brick-600 shrink-0">${baht(d.revenue)}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((d.revenue / maxRevenue) * 100)}%"></div></div>
       <p class="text-[10px] text-slate-400 mt-1">${d.occupied}/${d.count} ห้องมีผู้เช่า</p>
     </button>`).join('') : '<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีข้อมูล</p>';
-
   const expiringSorted = s.expiring.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   const el = document.getElementById('expiringList');
   if (el) el.innerHTML = expiringSorted.length ? expiringSorted.slice(0, 5).map(u => {
     const d = daysLeft(u.end);
     const cls = d < 0 ? 'text-rose-600' : d <= 7 ? 'text-rose-500' : 'text-amber-600';
     return `<button onclick="openDetailView('${u.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-950 transition-colors">
-      <div class="shrink-0 w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
-        <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-xs font-semibold text-ink truncate">${esc(u.project)} · ${esc(u.room)}</p>
-        <p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p>
-      </div>
+      <div class="shrink-0 w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4 text-amber-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)} · ${esc(u.room)}</p><p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p></div>
       <span class="text-xs font-bold ${cls} shrink-0">${d < 0 ? 'หมดแล้ว' : d + ' วัน'}</span>
     </button>`;
   }).join('') : '<p class="text-xs text-slate-400 text-center py-6">ไม่มีสัญญาใกล้หมด 🎉</p>';
-
   updateBellDot();
   lucide.createIcons();
 }
 
 function renderAvailableScroll() {
-  const container = document.getElementById('availableScroll');
-  if (!container) return;
+  const container = document.getElementById('availableScroll'); if (!container) return;
   const available = units.filter(u => u.status === 'AVAILABLE').slice(0, 8);
-  if (!available.length) {
-    container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center w-full">ไม่มีห้องว่างในขณะนี้</p>`;
-    return;
-  }
+  if (!available.length) { container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center w-full">ไม่มีห้องว่างในขณะนี้</p>`; return; }
   container.innerHTML = available.map(u => {
     const pic = photoCount[u.id] || 0;
     return `<div class="h-card" onclick="openDetailView('${u.id}')">
-      <div class="h-card-img">
-        ${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}
-        ${pic ? `<span class="absolute top-2 right-2 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${pic} รูป</span>` : ''}
-      </div>
-      <div class="h-card-body">
-        <p class="h-card-title truncate">${esc(u.project || '-')}</p>
-        <p class="h-card-sub truncate">ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p>
-        <p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p>
-      </div>
+      <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${pic} รูป</span>` : ''}</div>
+      <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p></div>
     </div>`;
   }).join('');
   lucide.createIcons();
   available.forEach(u => { if (photoCount[u.id]) loadHScrollPhoto(u.id); });
 }
-
 async function loadHScrollPhoto(unitId) {
-  const img = document.getElementById('hscroll-' + unitId);
-  if (!img) return;
-  try {
-    const ps = await getUnitPhotos(unitId);
-    if (!ps.length) return;
-    img.src = URL.createObjectURL(ps[0].thumb);
-    img.classList.add('w-full','h-full','object-cover');
-  } catch (e) {}
+  const img = document.getElementById('hscroll-' + unitId); if (!img) return;
+  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; img.src = URL.createObjectURL(ps[0].thumb); img.classList.add('w-full','h-full','object-cover'); } catch (e) {}
 }
-
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
 function toggleFilter(f) {
-  if (f === 'all') {
-    activeFilters = new Set(['all']);
-  } else {
+  if (f === 'all') { activeFilters = new Set(['all']); }
+  else {
     activeFilters.delete('all');
     if (STATUS_FILTERS.includes(f)) STATUS_FILTERS.forEach(s => activeFilters.delete(s));
-    if (activeFilters.has(f)) activeFilters.delete(f);
-    else activeFilters.add(f);
+    if (activeFilters.has(f)) activeFilters.delete(f); else activeFilters.add(f);
     if (activeFilters.size === 0) activeFilters.add('all');
   }
   render();
 }
 
-// ============= RENDER =============
 function render() {
   renderDashboard();
-
   const q = getSearchQuery();
   const isExpiring = u => { const d = daysLeft(u.end); return u.status === 'OCCUPIED' && d !== null && d <= EXPIRY_DAYS && d >= 0; };
   const isStale = u => u.lastPosted && (Date.now() - u.lastPosted) / 86400000 >= STALE_DAYS;
-  const isPostedToday = u => {
-    if (!u.lastPosted) return false;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const p = new Date(u.lastPosted); p.setHours(0,0,0,0);
-    return p.getTime() === today.getTime();
-  };
-
+  const isPostedToday = u => { if (!u.lastPosted) return false; const today = new Date(); today.setHours(0,0,0,0); const p = new Date(u.lastPosted); p.setHours(0,0,0,0); return p.getTime() === today.getTime(); };
   const matchesFilter = (u) => {
     if (priceMin !== null && Number(u.rent || 0) < priceMin) return false;
     if (priceMax !== null && Number(u.rent || 0) > priceMax) return false;
@@ -1885,26 +1478,18 @@ function render() {
     if (activeFilters.has('POSTED_TODAY')) checks.push(isPostedToday(u));
     return checks.every(Boolean);
   };
-
   let list = units.filter(matchesFilter);
   if (activeFilters.has('EXPIRING') && !q && !selectedProject) list = list.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   else list = list.slice().sort((a, b) => sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
-
   if (selectedProject) list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
   else if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
     const hay = u => [u.project, u.room, u.tenant, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
   }
-
   const lt = document.getElementById('listTitle');
-  if (lt) {
-    if (selectedProject) lt.textContent = `${selectedProject} · ${list.length} ห้อง`;
-    else lt.textContent = `ทั้งหมด ${list.length} ห้อง`;
-  }
-
+  if (lt) { if (selectedProject) lt.textContent = `${selectedProject} · ${list.length} ห้อง`; else lt.textContent = `ทั้งหมด ${list.length} ห้อง`; }
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('on', activeFilters.has(b.dataset.f)));
-
   const summary = document.getElementById('filterSummary'), chips = document.getElementById('filterChips');
   if (summary && chips) {
     const active = [...activeFilters].filter(f => f !== 'all');
@@ -1913,55 +1498,26 @@ function render() {
     if (priceMax !== null) priceChips.push(`≤฿${fmtNum(priceMax)}`);
     if (active.length > 0 || priceChips.length > 0) {
       summary.classList.remove('hidden');
-      chips.innerHTML = active.map(f => `
-        <span class="inline-flex items-center gap-1 bg-brick-500/10 text-brick-700 px-2 py-0.5 rounded-full font-medium">
-          ${FILTER_LABELS[f] || f}
-          <button onclick="event.stopPropagation(); toggleFilter('${f}')" class="hover:bg-brick-500/20 rounded-full p-0.5">
-            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </span>
-      `).join('') + (priceChips.length ? `<span class="inline-flex items-center gap-1 bg-sky-500/10 text-sky-700 px-2 py-0.5 rounded-full font-medium"><i data-lucide="tag" class="w-2.5 h-2.5"></i>${priceChips.join(' - ')}</span>` : '');
+      chips.innerHTML = active.map(f => `<span class="inline-flex items-center gap-1 bg-brick-500/10 text-brick-700 px-2 py-0.5 rounded-full font-medium">${FILTER_LABELS[f] || f}<button onclick="event.stopPropagation(); toggleFilter('${f}')" class="hover:bg-brick-500/20 rounded-full p-0.5"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></span>`).join('') + (priceChips.length ? `<span class="inline-flex items-center gap-1 bg-sky-500/10 text-sky-700 px-2 py-0.5 rounded-full font-medium"><i data-lucide="tag" class="w-2.5 h-2.5"></i>${priceChips.join(' - ')}</span>` : '');
     } else summary.classList.add('hidden');
   }
-
   ['vtCard','vtCardD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'card'); });
   ['vtList','vtListD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('on', viewMode === 'list'); });
-
   const ul = document.getElementById('unitList');
   if (ul) {
     if (selectedProject && list.length === 0) {
-      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2">
-        <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
-          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ
-        </button>
-        <p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)}</p>
-      </div>
-      <p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>`;
+      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)}</p></div><p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>`;
     } else if (selectedProject) {
-      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2">
-        <button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95">
-          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ
-        </button>
-        <p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p>
-      </div>${viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('')}`;
+      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p></div>${viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('')}`;
     } else if (list.length === 0) {
       ul.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
     } else if (q) {
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
-        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>
-          ${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left">
-              <div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p>
-              </div>
-              <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i>
-            </button>`).join('')}`;
+        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
       } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
     } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
   }
-
   if (detailUnitId) renderDetailView();
   lucide.createIcons();
   list.forEach(x => { if (photoCount[x.id]) loadMiniCardPhoto(x.id); });
@@ -1975,7 +1531,6 @@ function cardRowHTML(x) {
   const hasLine = !!x.ownerLine;
   const ownerBtnCount = (hasPhone ? 1 : 0) + (hasLine ? 1 : 0) + (hasUrl ? 1 : 0);
   const hasNote = !!(x.internalNote || '').trim();
-
   return `<div class="unit-card bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="p-4">
       <div class="flex items-start gap-3 mb-2">
@@ -1984,39 +1539,23 @@ function cardRowHTML(x) {
           ${pic ? `<span class="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded-tl">${pic}</span>` : ''}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5">
-            <p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>
-            ${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0" title="มีโน้ต"></i>` : ''}
-          </div>
+          <div class="flex items-center gap-1.5"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0" title="มีโน้ต"></i>` : ''}</div>
           <h3 class="text-base font-bold text-ink truncate">ห้อง ${esc(x.room)}</h3>
-          <div class="flex items-baseline gap-1.5 mt-1">
-            <span class="text-base font-bold text-brick-600">${baht(x.rent)}</span>
-            <span class="text-[10px] text-slate-400">/เดือน</span>
-          </div>
+          <div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>
         </div>
         <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
-
       <div class="flex items-center gap-3 text-[11px] text-slate-500 mb-2 flex-wrap">
         <span class="flex items-center gap-1"><i data-lucide="bed" class="w-3 h-3"></i>${esc(x.type)}</span>
         <span class="flex items-center gap-1"><i data-lucide="bath" class="w-3 h-3"></i>${esc(x.bath)} Bath</span>
         ${x.size ? `<span class="flex items-center gap-1"><i data-lucide="maximize" class="w-3 h-3"></i>${esc(x.size)} ตร.ม.</span>` : ''}
       </div>
-
       <p class="text-[10px] ${ps.cls} mb-3">${ps.label}</p>
-
       <div class="grid grid-cols-3 gap-1.5 mb-2" onclick="event.stopPropagation()">
-        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95">
-          <i data-lucide="copy" class="w-3 h-3"></i>ข้อความ
-        </button>
-        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95">
-          <i data-lucide="images" class="w-3 h-3"></i>รูป
-        </button>
-        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95 border border-slate-200">
-          <i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข
-        </button>
+        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
+        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
+        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
       </div>
-
       ${ownerBtnCount > 0 ? `<div class="grid gap-1.5" style="grid-template-columns: repeat(${ownerBtnCount}, minmax(0, 1fr));" onclick="event.stopPropagation()">
         ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone" title="${esc(x.ownerPhone)}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
         ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="owner-action line" title="LINE: ${esc(x.ownerLine)}"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
@@ -2039,10 +1578,7 @@ function listRowHTML(x) {
         ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
       </div>
       <div class="flex-1 text-left min-w-0">
-        <div class="flex items-center gap-1.5">
-          <p class="text-xs font-semibold text-ink truncate">${esc(x.project)} · ${esc(x.room)}</p>
-          ${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}
-        </div>
+        <div class="flex items-center gap-1.5"><p class="text-xs font-semibold text-ink truncate">${esc(x.project)} · ${esc(x.room)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}</div>
         <p class="text-[11px] text-slate-400 truncate">${esc(x.type)} ${esc(x.bath)}B${x.size ? ' · ' + esc(x.size) + ' ตร.ม.' : ''}${pic ? ' · 📷 ' + pic : ''}</p>
         <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p>
       </div>
@@ -2062,20 +1598,11 @@ function listRowHTML(x) {
 
 const miniPhotoCache = new Map();
 async function loadMiniCardPhoto(unitId) {
-  const img = document.getElementById('mini-' + unitId);
-  if (!img) return;
+  const img = document.getElementById('mini-' + unitId); if (!img) return;
   if (miniPhotoCache.has(unitId)) { img.src = miniPhotoCache.get(unitId); return; }
-  try {
-    const ps = await getUnitPhotos(unitId);
-    if (!ps.length) return;
-    const url = URL.createObjectURL(ps[0].thumb);
-    miniPhotoCache.set(unitId, url);
-    const img2 = document.getElementById('mini-' + unitId);
-    if (img2) img2.src = url;
-  } catch (e) {}
+  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = URL.createObjectURL(ps[0].thumb); miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; } catch (e) {}
 }
 
-// ============= ACTIONS =============
 function cycleStatus(id) {
   const u = units.find(x => x.id === id); if (!u) return;
   const order = ['AVAILABLE', 'RESERVED', 'PENDING', 'OCCUPIED'];
@@ -2118,7 +1645,6 @@ function contactOwner(id) {
   else toast(`ยังไม่มีเบอร์ของ ${u.owner || 'เจ้าของ'}`);
 }
 
-// ============= FORM PHOTOS =============
 let currentFormUnitId = null;
 function pickFormPhotos(src) {
   const id = document.getElementById('f_id').value;
@@ -2134,8 +1660,7 @@ async function importFormPhotos(files) {
   let ok = 0, failed = 0; const base = Date.now();
   for (let i = 0; i < files.length; i++) {
     prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
-    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:currentFormUnitId, full, thumb, ts:base+i, order:base+i })); ok++; }
-    catch (e) { failed++; }
+    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:currentFormUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
   }
   prog.classList.add('hidden');
   document.getElementById('formFileAlbum').value = ''; document.getElementById('formFileCamera').value = '';
@@ -2151,25 +1676,14 @@ async function renderFormPhotos() {
     const photos = await getUnitPhotos(id);
     if (cnt) cnt.textContent = `${photos.length} รูป`;
     if (!photos.length) { grid.innerHTML = ''; return; }
-    grid.innerHTML = photos.map((p, i) => `<div class="mini-photo" onclick="event.stopPropagation(); deleteFormPhoto('${p.id}')">
-      <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover" alt="">
-      ${i === 0 ? '<span class="absolute bottom-0 left-0 bg-brick-500 text-white text-[8px] font-bold px-1 rounded-tr">ปก</span>' : ''}
-      <span class="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5">
-        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </span>
-    </div>`).join('');
+    grid.innerHTML = photos.map((p, i) => `<div class="mini-photo" onclick="event.stopPropagation(); deleteFormPhoto('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover" alt="">${i === 0 ? '<span class="absolute bottom-0 left-0 bg-brick-500 text-white text-[8px] font-bold px-1 rounded-tr">ปก</span>' : ''}<span class="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>`).join('');
   } catch (e) { grid.innerHTML = ''; }
 }
 async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
-  try {
-    await req(tx('readwrite').delete(photoId));
-    await refreshCounts(); await renderFormPhotos(); render();
-    toast('ลบรูปแล้ว');
-  } catch (e) { toast('ลบไม่สำเร็จ'); }
+  try { await req(tx('readwrite').delete(photoId)); await refreshCounts(); await renderFormPhotos(); render(); toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
 
-// ============= SHEET =============
 const F = ['project','room','floor','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
 function showProjectSuggest() {
@@ -2188,13 +1702,11 @@ function openSheet(mode, id) {
   closeAllSheets('sheet');
   const u = mode === 'edit' ? units.find(x => x.id === id) : null;
   document.getElementById('sheetTitle').textContent = u ? `แก้ไข ห้อง ${u.room}` : 'เพิ่มห้อง';
-
   let unitId;
   if (u) { unitId = u.id; document.getElementById('f_isTemp').value = ''; }
   else { unitId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); document.getElementById('f_isTemp').value = '1'; }
   document.getElementById('f_id').value = unitId;
   currentFormUnitId = unitId;
-
   hideProjectSuggest();
   F.forEach(k => document.getElementById('f_' + k).value = u ? (u[k] ?? '') : (k === 'type' ? '1 Bed' : k === 'bath' ? '1' : k === 'status' ? 'AVAILABLE' : ''));
   document.getElementById('deleteBtn').classList.toggle('hidden', !u);
@@ -2208,7 +1720,6 @@ function openSheet(mode, id) {
   const sheetEl = document.getElementById('sheet'); sheetEl.scrollTop = 0;
   requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
 }
-
 function closeSheet() {
   const isTemp = document.getElementById('f_isTemp').value === '1';
   const id = document.getElementById('f_id').value;
@@ -2234,31 +1745,19 @@ function saveUnit() {
   if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้อง');
   data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
   data.salePrice = data.salePrice ? Number(data.salePrice) : '';
-
   if (id && !isTemp) {
     const t = units.find(x => x.id === id);
     const wasOccupied = t.status === 'OCCUPIED';
     Object.assign(t, data);
     if (data.end) {
       const d = daysLeft(data.end);
-      if (d !== null && d >= 0 && !wasOccupied) {
-        t.status = 'OCCUPIED';
-        t.expiredNotified = false;
-        toast('✅ อัปเดตสถานะเป็น "มีผู้เช่า"');
-      } else if (d !== null && d < 0) {
-        toast('บันทึกแล้ว');
-      } else toast('บันทึกแล้ว');
+      if (d !== null && d >= 0 && !wasOccupied) { t.status = 'OCCUPIED'; t.expiredNotified = false; toast('✅ อัปเดตสถานะเป็น "มีผู้เช่า"'); }
+      else toast('บันทึกแล้ว');
     } else toast('บันทึกแล้ว');
   } else {
-    if (isTemp && id) data.id = id;
-    else data.id = 'u' + Date.now();
-    data.createdAt = Date.now();
-    data.lastPosted = null; data.postCount = 0;
-    data.expiredNotified = false;
-    if (data.end) {
-      const d = daysLeft(data.end);
-      if (d !== null && d >= 0) data.status = 'OCCUPIED';
-    }
+    if (isTemp && id) data.id = id; else data.id = 'u' + Date.now();
+    data.createdAt = Date.now(); data.lastPosted = null; data.postCount = 0; data.expiredNotified = false;
+    if (data.end) { const d = daysLeft(data.end); if (d !== null && d >= 0) data.status = 'OCCUPIED'; }
     units.unshift(data);
     currentFormUnitId = data.id;
     miniPhotoCache.delete(data.id);
@@ -2287,15 +1786,9 @@ function deleteUnit() {
   currentFormUnitId = null;
   render(); toast('ลบแล้ว');
 }
-function openBackup() {
-  closeAllSheets('backup');
-  document.getElementById('bkOverlay').classList.remove('hidden');
-  document.getElementById('backup').classList.add('open');
-  lucide.createIcons();
-}
+function openBackup() { closeAllSheets('backup'); document.getElementById('bkOverlay').classList.remove('hidden'); document.getElementById('backup').classList.add('open'); lucide.createIcons(); }
 function closeBackup() { document.getElementById('bkOverlay').classList.add('hidden'); document.getElementById('backup').classList.remove('open'); }
 
-// ============= BACKUP =============
 const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(b); });
 const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type }); };
 async function exportData() {
@@ -2303,15 +1796,13 @@ async function exportData() {
   const photos = [];
   if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, full:await blobToB64(p.full), thumb:await blobToB64(p.thumb) }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
   const cfg = getPostConfig();
-  const payload = { app:'staylow', version:24, exportedAt:new Date().toISOString(), units, photos, cfg };
+  const payload = { app:'staylow', version:25, exportedAt:new Date().toISOString(), units, photos, cfg };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
   prog.classList.add('hidden');
   try { localStorage.setItem(LAST_BK_KEY, Date.now().toString()); } catch (e) {}
-  if (navigator.canShare && navigator.canShare({ files:[file] })) {
-    try { await navigator.share({ files:[file], title:'Staylow backup' }); toast('สำรองแล้ว'); return; } catch (e) { if (e.name === 'AbortError') return; }
-  }
+  if (navigator.canShare && navigator.canShare({ files:[file] })) { try { await navigator.share({ files:[file], title:'Staylow backup' }); toast('สำรองแล้ว'); return; } catch (e) { if (e.name === 'AbortError') return; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   toast(`สำรองแล้ว ${units.length} ห้อง ${photos.length} รูป`);
 }
@@ -2345,7 +1836,6 @@ async function importData(file) {
   prog.classList.add('hidden'); document.getElementById('bkFile').value = '';
 }
 
-// ============= EXCEL =============
 function excelCellToDate(v) { if (v == null || v === '') return ''; if (v instanceof Date) return v.toISOString().slice(0,10); const s = String(v).trim(); const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; return s; }
 const VALID_STATUS = ['AVAILABLE','OCCUPIED','RESERVED','PENDING'];
 async function importExcel(file) {
@@ -2389,7 +1879,6 @@ async function importExcel(file) {
   prog.classList.add('hidden'); document.getElementById('xlFile').value = '';
 }
 
-// ============= PHOTOS =============
 const photoCount = {};
 let db;
 function openDB() {
@@ -2409,7 +1898,6 @@ async function refreshCounts() {
 }
 async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); await refreshCounts(); } catch (e) {} }
 
-// ============= WATERMARK =============
 const WM_KEY = 'staylow_wm';
 let wmOn = (() => { try { return localStorage.getItem(WM_KEY) !== '0'; } catch (e) { return true; } })();
 let logoImg = null, logoTried = false;
@@ -2435,7 +1923,6 @@ async function processPhoto(file) {
   return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)];
 }
 
-// ============= COLLAGE =============
 async function makeCollage(selectedPhotos) {
   const u = units.find(x => x.id === galleryUnitId); if (!u || !selectedPhotos.length) return;
   const prog = document.getElementById('galProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังสร้างภาพรวม...';
@@ -2481,7 +1968,6 @@ async function makeCollage(selectedPhotos) {
   } catch (e) { prog.classList.add('hidden'); toast('สร้างไม่สำเร็จ: ' + e.message); }
 }
 
-// ============= GALLERY =============
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
 const photoUrlCache = new Map();
 function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = URL.createObjectURL(p.thumb); return e.thumbUrl; }
@@ -2494,8 +1980,7 @@ async function importPhotos(files) {
   let ok = 0, failed = 0; const base = Date.now();
   for (let i = 0; i < files.length; i++) {
     prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
-    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:galleryUnitId, full, thumb, ts:base+i, order:base+i })); ok++; }
-    catch (e) { failed++; }
+    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:galleryUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
   }
   prog.classList.add('hidden');
   document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
@@ -2517,10 +2002,7 @@ function closeGallery() { document.getElementById('galOverlay').classList.add('h
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
-  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800" data-id="${p.id}" onclick="openLightboxById('${p.id}')">
-    <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
-    ${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}
-  </div>`).join('');
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800" data-id="${p.id}" onclick="openLightboxById('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}</div>`).join('');
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
@@ -2548,7 +2030,6 @@ async function setCover() {
   toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
 
-// ============= PHOTO PICKER =============
 let pickerMode = null, pickerSelected = [];
 function openPhotoPicker(mode) {
   closeAllSheets('pickSheet');
@@ -2566,10 +2047,7 @@ function renderPicker() {
   const grid = document.getElementById('pickGrid');
   grid.innerHTML = galleryPhotos.map(p => {
     const idx = pickerSelected.indexOf(p.id), isSel = idx >= 0;
-    return `<div class="pick-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 ${isSel ? 'selected' : ''}" onclick="togglePick('${p.id}')">
-      <img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">
-      ${isSel ? `<div class="order-badge">${idx + 1}</div>` : ''}
-    </div>`;
+    return `<div class="pick-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 ${isSel ? 'selected' : ''}" onclick="togglePick('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${isSel ? `<div class="order-badge">${idx + 1}</div>` : ''}</div>`;
   }).join('');
   const c = pickerSelected.length;
   document.getElementById('pickCount').textContent = `เลือกแล้ว ${c} รูป${pickerMode === 'collage' ? ' / สูงสุด 6' : ''}`;
@@ -2598,70 +2076,46 @@ async function shareSelectedPhotos(photos) {
   else { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดแล้ว'); }
 }
 
-// ============= KEYBOARD =============
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); const s = document.getElementById('search') || document.getElementById('searchDesktop'); if (s) { s.focus(); s.select(); } return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'd') { e.preventDefault(); switchView('dashboard'); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === 'r') { e.preventDefault(); switchView('rooms'); return; }
   if (e.key === 'Escape') {
     if (document.getElementById('expiryModalOverlay').classList.contains('show')) { dismissExpiry(); return; }
+    if (document.getElementById('notifOverlay') && !document.getElementById('notifOverlay').classList.contains('hidden')) { closeNotifications(); return; }
+    if (document.getElementById('profileOverlay') && !document.getElementById('profileOverlay').classList.contains('hidden')) { closeProfile(); return; }
     if (detailUnitId) { closeDetailView(); return; }
     hideSearchSuggest();
     closeAllSheets(); closeLightbox();
   }
 });
 
-// ============= OFFLINE =============
 function updateOnlineStatus() { const b = document.getElementById('offlineBanner'); if (navigator.onLine) b.classList.remove('show'); else b.classList.add('show'); }
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-// ============= BACKUP REMINDER =============
 function checkBackupReminder() {
   const cfg = getPostConfig();
   if (!cfg.autoBackupReminder) return;
-  try {
-    const last = Number(localStorage.getItem(LAST_BK_KEY) || 0);
-    if (!last) return;
-    const days = (Date.now() - last) / 86400000;
-    if (days >= 7) setTimeout(() => toast(`💾 ไม่ได้สำรองข้อมูล ${Math.floor(days)} วัน`), 2500);
-  } catch (e) {}
+  try { const last = Number(localStorage.getItem(LAST_BK_KEY) || 0); if (!last) return; const days = (Date.now() - last) / 86400000; if (days >= 7) setTimeout(() => toast(`💾 ไม่ได้สำรองข้อมูล ${Math.floor(days)} วัน`), 2500); } catch (e) {}
 }
 
-// ============= INIT =============
 let toastTimer;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500); }
 
-openDB().then(async () => {
-  await refreshCounts();
-  render();
-  switchView(currentView);
-  setTimeout(() => checkExpiredContracts(), 800);
-}).catch(() => {
-  render();
-  switchView(currentView);
-  setTimeout(() => checkExpiredContracts(), 800);
-});
+openDB().then(async () => { await refreshCounts(); render(); switchView(currentView); setTimeout(() => checkExpiredContracts(), 800); }).catch(() => { render(); switchView(currentView); setTimeout(() => checkExpiredContracts(), 800); });
 
 render();
 switchView(currentView);
 checkBackupReminder();
 
-// ============= UPDATE =============
-const APP_VERSION = '8.0';
+const APP_VERSION = '8.5';
 async function checkUpdate() {
-  try {
-    const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) return;
-    const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/);
-    if (m && m[1] !== APP_VERSION) { document.getElementById('newVer').textContent = 'v' + m[1]; document.getElementById('updateBar').classList.remove('hidden'); }
-  } catch (e) {}
+  try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { document.getElementById('newVer').textContent = 'v' + m[1]; document.getElementById('updateBar').classList.remove('hidden'); } } catch (e) {}
 }
 setTimeout(checkUpdate, 1500);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { checkUpdate(); checkExpiredContracts(); }
-});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkUpdate(); checkExpiredContracts(); } });
 </script>
 </body>
 </html>
