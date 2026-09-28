@@ -1986,12 +1986,30 @@ async function copyAndSharePhotos(id) {
   const u = units.find(x => x.id === id); if (!u) return;
   const photos = await getUnitPhotos(id);
   if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
-  const text = (u.notes || '').trim();
-  if (text) copy(text, true);
+
   const files = photos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
+
+  // ✅ ไม่คัดลอกข้อความ — คัดลอกเฉพาะรูปเท่านั้น
   if (navigator.canShare && navigator.canShare({ files })) {
-    try { await navigator.share({ files, text: text || undefined }); toast('แชร์รูปแล้ว'); }
-    catch (e) { if (e.name !== 'AbortError') { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดรูปแล้ว'); } }
+    try {
+      await navigator.share({ files });   // ← ส่งเฉพาะ files ไม่มี text
+      toast('แชร์รูปแล้ว');
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
+        toast('ดาวน์โหลดรูปแล้ว');
+      }
+    }
+  } else {
+    files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
+    toast('ดาวน์โหลดรูปแล้ว');
+  }
+}
+  } else {
+    files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
+    toast('ดาวน์โหลดรูปแล้ว');
+  }
+}
   } else { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดรูปแล้ว'); }
 }
 function copy(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text)); else fallbackCopy(text); }
