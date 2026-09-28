@@ -114,17 +114,16 @@ tailwind.config = { theme: { extend: { colors: {
   .h-card-title { font-size: 13px; font-weight: 700; color: #1c1917; line-height: 1.3; margin-bottom: 2px; }
   .h-card-sub { font-size: 10px; color: #8a8078; margin-bottom: 6px; }
   .h-card-price { font-size: 14px; font-weight: 700; color: #b85c38; }
-  .fab-btn { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); width: 58px; height: 58px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 42; cursor: pointer; border: none; }
+  .fab-btn { position: relative; top: -26px; width: 58px; height: 58px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 42; cursor: pointer; border: none; margin: 0 auto; grid-column: 3; justify-self: center; align-self: end; }
   .fab-btn:hover { background: #a04d2c; }
-  .fab-btn:active { transform: translateX(-50%) scale(.92); }
+  .fab-btn:active { transform: scale(.92); }
   .fab-btn svg { width: 28px; height: 28px; }
-  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; align-items: flex-end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
-  .bottom-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; min-width: 0; }
+  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
+  .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; min-width: 0; }
   .bottom-nav-item:hover { color: #a04d2c; background: #f1eeea; }
   .bottom-nav-item.active { color: #b85c38; }
   .bottom-nav-item.active svg { color: #b85c38; }
   .bottom-nav-item svg { width: 22px; height: 22px; }
-  .bottom-nav-spacer { flex: 1.5 1 0; max-width: 80px; }
   .app-header { background: #f4f2ef; padding: max(60px, env(safe-area-inset-top)) 20px 16px; }
   @media (min-width: 1024px) { .app-header { padding: 20px 24px 16px; } }
   .bar-track { background:#f1eeea; border-radius:6px; height:6px; overflow:hidden; }
@@ -653,7 +652,7 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </main>
 
-     <nav class="bottom-nav-new lg:hidden">
+    <nav class="bottom-nav-new lg:hidden">
       <button onclick="switchView('dashboard')" data-nav="dashboard" class="bottom-nav-item"><i data-lucide="home"></i><span>ภาพรวม</span></button>
       <button onclick="switchView('rooms')" data-nav="rooms" class="bottom-nav-item"><i data-lucide="building-2"></i><span>ห้องพัก</span></button>
       <button onclick="openSheet('add')" class="fab-btn" aria-label="เพิ่มห้องใหม่"><i data-lucide="plus"></i></button>
@@ -918,7 +917,7 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== ROOM SHEET (มีฟิลด์อาคาร เรียงตามความสำคัญ) ====== -->
+<!-- ====== ROOM SHEET ====== -->
 <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()" ontouchstart="event.preventDefault(); closeSheet();" style="touch-action: manipulation;"></div>
 <div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-16px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -927,19 +926,14 @@ tailwind.config = { theme: { extend: { colors: {
   <input type="hidden" id="f_isTemp" value="">
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
-      <!-- ⭐ 1. ข้อมูลระบุตัวตน -->
       <label class="col-span-2 relative">โครงการ *<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
         <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto hide-scrollbar"></div>
       </label>
       <label>เลขห้อง *<input id="f_room" class="inp" placeholder="1203"></label>
       <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
       <label class="col-span-2">อาคาร<input id="f_building" class="inp" placeholder="เช่น Tower A / อาคาร 1 / Building B"></label>
-
-      <!-- ⭐ 2. ราคา/ขนาด -->
       <label>ราคา/ค่าเช่า (บาท/เดือน) *<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
       <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
-
-      <!-- ⭐ 3. ข้อมูลพื้นฐานห้อง -->
       <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
       <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
       <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
@@ -1676,12 +1670,12 @@ function renderDetailView() {
   const hasLine = !!u.ownerLine;
   const contractBadge = d === null ? '' : d < 0
     ? `<span class="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-semibold px-2 py-0.5 rounded">หมดสัญญาแล้ว ${-d} วัน</span>`
-    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-100 text-slate-500 border-slate-200'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
+    : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-100 text-slate-500 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
   const linkedCusts = customers.filter(c => (c.linkedUnits || []).includes(u.id));
 
   document.getElementById('detailContent').innerHTML = `
     <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;"><img id="dvCoverImg" class="w-full h-full object-cover" alt=""></div>
-    <div class="bg-white border border-slate-200 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
@@ -1703,16 +1697,16 @@ function renderDetailView() {
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
-      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
-      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
-      <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
       <div><p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p><p class="text-sm font-semibold ${ps.cls}">${ps.label}</p></div>
       <button onclick="markAsPosted('${u.id}')" class="bg-[#06C755]/10 hover:bg-[#06C755]/20 text-[#06C755] font-semibold text-xs px-3 py-2 rounded-full border border-[#06C755]/25 active:scale-95">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
@@ -1732,7 +1726,7 @@ function renderDetailView() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีลูกค้าที่สนใจห้องนี้</p>'}
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex items-center gap-3 mb-3">
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
         <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
@@ -1746,7 +1740,7 @@ function renderDetailView() {
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน')}</div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}</div>
       <div class="text-sm text-slate-500 space-y-2">
         <div class="flex items-center gap-2"><span class="w-16">เริ่ม:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span></div>
@@ -1754,14 +1748,14 @@ function renderDetailView() {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-3"><p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
       <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
 
-    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
+    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
       <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p><p class="text-xs text-slate-400">${pic} รูป</p></div></div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
@@ -2083,7 +2077,7 @@ function renderDashboard() {
       followList.innerHTML = follow.map(c => {
         const cm = CUST_STATUS_META[c.status];
         const overdue = c.nextFollow && new Date(c.nextFollow) < new Date(new Date().toDateString());
-        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98]">
+        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-700 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98]">
           <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center text-brick-700 font-bold text-sm shrink-0">${esc((c.name||'?').slice(0,1))}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}</p>
@@ -2209,7 +2203,7 @@ function render() {
     } else if (q) {
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
-        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
+        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
       } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
     } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
   }
@@ -2227,7 +2221,7 @@ function cardRowHTML(x) {
   const ownerBtnCount = (hasPhone ? 1 : 0) + (hasLine ? 1 : 0) + (hasUrl ? 1 : 0);
   const hasNote = !!(x.internalNote || '').trim();
   const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
-  return `<div class="unit-card bg-white border border-slate-200 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
+  return `<div class="unit-card bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="p-4">
       <div class="flex items-start gap-3 mb-2">
         <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
@@ -2269,7 +2263,7 @@ function listRowHTML(x) {
   const hasLine = !!x.ownerLine;
   const hasNote = !!(x.internalNote || '').trim();
   const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
-  return `<div class="unit-row bg-white border border-slate-200 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
+  return `<div class="unit-row bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="flex items-center gap-3 p-3">
       <div class="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
         ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
@@ -2526,7 +2520,7 @@ function renderCustDetail() {
       <button onclick="closeCustDetail()" class="text-slate-400 p-1 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-sm">
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 mb-3 shadow-sm">
       <div class="flex items-center gap-3 mb-3">
         <div class="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-base shadow-md">${esc((c.name||'?').slice(0,1))}</div>
         <div class="flex-1 min-w-0">
@@ -2542,7 +2536,7 @@ function renderCustDetail() {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3 space-y-2 text-sm">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3 space-y-2 text-sm">
       ${c.phone ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="phone" class="w-4 h-4 text-brick-600 shrink-0"></i><span class="text-ink font-medium">${esc(c.phone)}</span></div>` : ''}
       ${c.line ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755] shrink-0"></i><span class="text-ink font-medium">${esc(c.line)}</span></div>` : ''}
       ${c.email ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="mail" class="w-4 h-4 text-purple-600 shrink-0"></i><span class="text-ink font-medium break-all">${esc(c.email)}</span></div>` : ''}
@@ -2561,7 +2555,7 @@ function renderCustDetail() {
       </div>
     </div>` : ''}
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3">
       <div class="flex items-center justify-between mb-2.5">
         <p class="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5 text-brick-600"></i>ห้องที่สนใจ (${linkedUnits.length})</p>
         <button onclick="openCustLinkPicker(null, '${c.id}')" class="text-[10px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95 hover:bg-brick-600"><i data-lucide="plus" class="w-3 h-3 inline"></i> ผูกห้อง</button>
@@ -2576,7 +2570,7 @@ function renderCustDetail() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่ได้ผูกห้อง</p>'}
     </div>
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-3.5 mb-3">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3">
       <p class="text-[11px] font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5 text-brick-600"></i>ประวัติติดต่อ (${timeline.length})</p>
       ${timeline.length ? timeline.map(t => `
         <div class="timeline-item">
@@ -2593,7 +2587,7 @@ function renderCustDetail() {
     </div>
 
     <div class="grid grid-cols-2 gap-2 mb-2">
-      <button onclick="closeCustDetail(); openCustSheet('edit','${c.id}')" class="bg-white text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 hover:border-brick-500 hover:text-brick-600 active:scale-95 transition-all"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>แก้ไข</button>
+      <button onclick="closeCustDetail(); openCustSheet('edit','${c.id}')" class="bg-white text-slate-600 border border-slate-700 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 hover:border-brick-500 hover:text-brick-600 active:scale-95 transition-all"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>แก้ไข</button>
       <button onclick="closeCustDetail(); document.getElementById('cf_id').value='${c.id}'; deleteCustomer();" class="bg-rose-500/10 text-rose-600 border border-rose-500/20 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-rose-500/20 active:scale-95 transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>ลบ</button>
     </div>
   `;
@@ -2673,7 +2667,7 @@ function renderCustLinkList() {
     list.innerHTML = custList.length ? custList.map(c => {
       const isLinked = (c.linkedUnits || []).includes(linkPickerUnitId);
       const cm = CUST_STATUS_META[c.status];
-      return `<button onclick="toggleCustLinkUnit('${c.id}', '${linkPickerUnitId}'); renderCustLinkList();" class="w-full text-left flex items-center gap-3 p-3 rounded-xl border ${isLinked ? 'border-brick-500 bg-brick-50' : 'border-slate-200 bg-white'} hover:border-brick-500 transition-colors">
+      return `<button onclick="toggleCustLinkUnit('${c.id}', '${linkPickerUnitId}'); renderCustLinkList();" class="w-full text-left flex items-center gap-3 p-3 rounded-xl border ${isLinked ? 'border-brick-500 bg-brick-50' : 'border-slate-700 bg-white'} hover:border-brick-500 transition-colors">
         <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center text-brick-700 font-bold text-sm shrink-0">${esc((c.name||'?').slice(0,1))}</div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}</p>
@@ -2690,7 +2684,7 @@ function renderCustLinkList() {
     list.innerHTML = unitList.length ? unitList.map(u => {
       const isLinked = (c.linkedUnits || []).includes(u.id);
       const m = statusOf(u);
-      return `<button onclick="toggleCustLinkUnit('${c.id}', '${u.id}'); renderCustLinkList(); renderCustDetail();" class="w-full text-left flex items-center gap-3 p-3 rounded-xl border ${isLinked ? 'border-brick-500 bg-brick-50' : 'border-slate-200 bg-white'} hover:border-brick-500 transition-colors">
+      return `<button onclick="toggleCustLinkUnit('${c.id}', '${u.id}'); renderCustLinkList(); renderCustDetail();" class="w-full text-left flex items-center gap-3 p-3 rounded-xl border ${isLinked ? 'border-brick-500 bg-brick-50' : 'border-slate-700 bg-white'} hover:border-brick-500 transition-colors">
         <div class="w-10 h-10 rounded-lg bg-brick-500/10 flex items-center justify-center text-brick-600 shrink-0"><i data-lucide="building-2" class="w-5 h-5"></i></div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p>
