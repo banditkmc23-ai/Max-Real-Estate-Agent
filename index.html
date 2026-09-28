@@ -78,7 +78,7 @@ tailwind.config = { theme: { extend: { colors: {
   .view-toggle { display:inline-flex; background:#f1eeea; border-radius:999px; padding:2px; }
   .view-toggle button { padding:5px 10px; border-radius:999px; transition:all .15s; display:flex; align-items:center; gap:4px; }
   .view-toggle button.on { background:#fff; color:#b85c38; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-  .offline-banner { position:fixed; top:0; left:0; right:0; background:#dc2626; color:#fff; text-align:center; padding:6px; font-size:11px; font-weight:600; z-[100]; transform:translateY(-100%); transition:transform .3s; }
+  .offline-banner { position:fixed; top:0; left:0; right:0; background:#dc2626; color:#fff; text-align:center; padding:6px; font-size:11px; font-weight:600; z-index:100; transform:translateY(-100%); transition:transform .3s; }
   .offline-banner.show { transform:translateY(0); }
   .url-row { display:flex; gap:6px; align-items:stretch; }
   .url-row input { flex:1; }
@@ -1989,10 +1989,10 @@ async function copyAndSharePhotos(id) {
 
   const files = photos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
 
-  // ✅ ไม่คัดลอกข้อความ — คัดลอกเฉพาะรูปเท่านั้น
+  // คัดลอกเฉพาะรูป ไม่แนบข้อความ
   if (navigator.canShare && navigator.canShare({ files })) {
     try {
-      await navigator.share({ files });   // ← ส่งเฉพาะ files ไม่มี text
+      await navigator.share({ files });
       toast('แชร์รูปแล้ว');
     } catch (e) {
       if (e.name !== 'AbortError') {
@@ -2005,13 +2005,7 @@ async function copyAndSharePhotos(id) {
     toast('ดาวน์โหลดรูปแล้ว');
   }
 }
-  } else {
-    files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
-    toast('ดาวน์โหลดรูปแล้ว');
-  }
-}
-  } else { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดรูปแล้ว'); }
-}
+
 function copy(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text)); else fallbackCopy(text); }
 function fallbackCopy(text) { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (e) {} }
 function openOwnerLine(id) { const u = units.find(x => x.id === id); if (!u) return; const url = lineUrlOf(u.ownerLine); if (!url) return toast('ยังไม่ได้ใส่ LINE'); const w = window.open(url, '_blank'); if (!w) location.href = url; }
