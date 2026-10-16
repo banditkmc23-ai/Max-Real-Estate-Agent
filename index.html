@@ -63,6 +63,27 @@ tailwind.config = { theme: { extend: { colors: {
     }
   }
   input, select, textarea { font-family:inherit; }
+
+  /* ====== FORCE ROUNDED (PILL) SHAPES ====== */
+  #search, #searchDesktop {
+    border-radius: 9999px !important;
+    -webkit-border-radius: 9999px !important;
+  }
+  #searchSuggest, #searchSuggestDesktop { border-radius: 20px !important; }
+  /* Filter button (both mobile & desktop) */
+  .mobile-header button[title="ตัวกรองขั้นสูง"],
+  header button[title="ตัวกรองขั้นสูง"] {
+    border-radius: 9999px !important;
+    -webkit-border-radius: 9999px !important;
+  }
+  /* Filter chips / toggle buttons */
+  .filter-btn { border-radius: 9999px !important; }
+  /* Price range inputs (bottom of Rooms view) */
+  #priceMin, #priceMax, #priceClearBtn { border-radius: 9999px !important; }
+  /* View toggle stays pill */
+  .view-toggle { border-radius: 9999px !important; }
+  .view-toggle button { border-radius: 9999px !important; }
+
   .unit-card { transition: border-color .18s, transform .18s, box-shadow .18s; cursor: pointer; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
   .unit-card:hover { border-color:#b85c38; transform:translateY(-2px); box-shadow:0 10px 24px -6px rgba(184,92,56,.18); }
   .unit-row { transition: border-color .15s, background .15s, box-shadow .15s; cursor: pointer; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
@@ -72,29 +93,29 @@ tailwind.config = { theme: { extend: { colors: {
   .pick-cell:active { transform: scale(.96); }
   .pick-cell.selected { outline: 3px solid #b85c38; outline-offset: -3px; }
   .pick-cell .order-badge { position:absolute; top:4px; left:4px; min-width:22px; height:22px; border-radius:11px; background:#b85c38; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; }
-  .inp { display:block; width:100%; margin-top:6px; background:#fff; border:1.5px solid #e4dfd9; border-radius:14px; padding:12px 14px; font-size:14px; color:#1c1917; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .inp { display:block; width:100%; margin-top:6px; background:#fff; border:1.5px solid #e4dfd9; border-radius:16px; padding:12px 16px; font-size:14px; color:#1c1917; transition: border-color .15s, box-shadow .15s, background .15s; }
   .inp:hover { border-color:#d6cec4; }
   .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 4px rgba(184,92,56,.15); background:#fff; }
   .inp-check { width:18px; height:18px; accent-color:#b85c38; }
   label { color:#6b625a; font-size:12px; font-weight:500; }
-  .filter-btn { color:#6b625a; border:1.5px solid transparent; background:transparent; border-radius:999px; white-space:nowrap; transition: all .15s; font-weight:500; }
+  .filter-btn { color:#6b625a; border:1.5px solid transparent; background:transparent; white-space:nowrap; transition: all .15s; font-weight:500; }
   .filter-btn:hover { background:#fdf4ee; color:#a04d2c; }
   .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; box-shadow: 0 4px 12px -2px rgba(184,92,56,.35); }
   .nav-link { transition: all .15s; color:#6b625a; }
   .nav-link:hover { background:#fdf4ee; color:#a04d2c; }
   .nav-link.active { background:#b85c38; color:#fff; box-shadow: 0 6px 16px -4px rgba(184,92,56,.4); }
   .nav-link.active svg { color:#fff; }
-  .view-toggle { display:inline-flex; background:#f1eeea; border-radius:999px; padding:3px; }
-  .view-toggle button { padding:6px 12px; border-radius:999px; transition:all .15s; display:flex; align-items:center; gap:4px; color:#6b625a; }
+  .view-toggle { display:inline-flex; background:#f1eeea; padding:3px; }
+  .view-toggle button { padding:6px 12px; transition:all .15s; display:flex; align-items:center; gap:4px; color:#6b625a; }
   .view-toggle button.on { background:#fff; color:#b85c38; box-shadow:0 2px 6px rgba(28,25,23,.08); }
   .offline-banner { position:fixed; top:0; left:0; right:0; background:#dc2626; color:#fff; text-align:center; padding:6px; font-size:11px; font-weight:600; z-index:100; transform:translateY(-100%); transition:transform .3s; }
   .offline-banner.show { transform:translateY(0); }
   .url-row { display:flex; gap:6px; align-items:stretch; }
   .url-row input { flex:1; }
-  .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 14px; margin-top:6px; background:#0ea5e9; color:#fff; border-radius:14px; font-size:12px; font-weight:600; transition:all .15s; }
+  .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 16px; margin-top:6px; background:#0ea5e9; color:#fff; border-radius:9999px; font-size:12px; font-weight:600; transition:all .15s; }
   .url-open-btn:active { transform:scale(.96); background:#0284c7; }
   .url-open-btn:disabled { background:#e4dfd9; color:#8a8078; cursor:not-allowed; }
-  .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:999px; transition:all .15s; border:1px solid; }
+  .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:9999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
   .owner-action.phone { background:#fdf4ee; color:#a04d2c; border-color:#f0c4a8; }
   .owner-action.line { background:rgba(6,199,85,.08); color:#06C755; border-color:rgba(6,199,85,.25); }
@@ -137,10 +158,10 @@ tailwind.config = { theme: { extend: { colors: {
   @media (min-width: 1024px) { .app-header { padding: 20px 24px 16px; } }
   .bar-track { background:#f1eeea; border-radius:8px; height:8px; overflow:hidden; }
   .bar-fill { background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); height:100%; transition: width .6s cubic-bezier(.2,.8,.2,1); border-radius:8px; }
-  .status-btn { cursor: pointer; transition: transform .12s, box-shadow .15s, filter .15s; }
+  .status-btn { cursor: pointer; transition: transform .12s, box-shadow .15s, filter .15s; border-radius:9999px; }
   .status-btn:hover { filter: brightness(1.04); box-shadow: 0 2px 8px rgba(28,25,23,.08); }
   .status-btn:active { transform: scale(.94); }
-  .mini-photo { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f1eeea; }
+  .mini-photo { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #f1eeea; }
   .detail-view { position: fixed; inset: 0; background: rgba(28,25,23, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 44; opacity: 0; transition: opacity .3s ease; }
   .detail-view.show { opacity: 1; }
   .detail-view-content { position: fixed; inset: 0; background: #f4f2ef; z-index: 45; overflow-y: auto; transform: translateY(20px); opacity: 0; transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
@@ -151,7 +172,7 @@ tailwind.config = { theme: { extend: { colors: {
   .inline-edit { display: inline-block; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; cursor: text; transition: background .15s; border: 1px dashed transparent; min-width: 30px; }
   .inline-edit:hover { background: rgba(184,92,56,.08); border-color: rgba(184,92,56,.25); }
   .inline-edit.editing { background: #fff; border: 1.5px solid #b85c38; box-shadow: 0 0 0 4px rgba(184,92,56,.15); padding: 4px 8px; margin: -4px -8px; }
-  input.inline-input, select.inline-select, textarea.inline-textarea { background: #fff; border: 1.5px solid #b85c38; border-radius: 8px; padding: 4px 8px; font-size: inherit; font-family: inherit; color: inherit; font-weight: inherit; width: 100%; outline: none; box-shadow: 0 0 0 4px rgba(184,92,56,.15); }
+  input.inline-input, select.inline-select, textarea.inline-textarea { background: #fff; border: 1.5px solid #b85c38; border-radius: 12px; padding: 4px 10px; font-size: inherit; font-family: inherit; color: inherit; font-weight: inherit; width: 100%; outline: none; box-shadow: 0 0 0 4px rgba(184,92,56,.15); }
   .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); width: 0%; transition: width .3s ease, opacity .3s ease; opacity: 0; }
   .loading-bar.active { opacity: 1; }
   .notes-box { min-height: 180px; font-size: 15px; line-height: 1.7; padding: 16px 18px !important; border-radius: 16px !important; background: #faf9f8; border: 1.5px solid #f1eeea; transition: all .15s; }
@@ -171,7 +192,7 @@ tailwind.config = { theme: { extend: { colors: {
   .cust-card { background:#fff; border:1.5px solid #f1eeea; border-radius:22px; padding:16px; transition:border-color .18s, transform .18s, box-shadow .18s; cursor:pointer; box-shadow: 0 1px 3px rgba(28,25,23,.03); }
   .cust-card:hover { border-color:#e6a88c; transform:translateY(-2px); box-shadow:0 12px 26px -8px rgba(184,92,56,.22); }
   .cust-card:active { transform:translateY(0) scale(.99); }
-  .pipe-status { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid; white-space:nowrap; }
+  .pipe-status { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:9999px; font-size:11px; font-weight:600; border:1px solid; white-space:nowrap; }
   .pipe-new { background:rgba(107,98,90,.1); color:#4b5563; border-color:rgba(107,98,90,.22); }
   .pipe-talking { background:rgba(14,165,233,.1); color:#0284c7; border-color:rgba(14,165,233,.28); }
   .pipe-viewing { background:rgba(139,92,246,.1); color:#7c3aed; border-color:rgba(139,92,246,.28); }
@@ -185,11 +206,11 @@ tailwind.config = { theme: { extend: { colors: {
   .kanban-col { flex-shrink:0; width:270px; background:#faf9f8; border:1.5px solid #f1eeea; border-radius:20px; padding:12px; display:flex; flex-direction:column; gap:8px; max-height:70vh; }
   .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid #e4dfd9; margin-bottom:4px; }
   .kanban-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-  .link-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:600; background:rgba(184,92,56,.12); color:#a04d2c; }
+  .link-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:9999px; font-size:10px; font-weight:600; background:rgba(184,92,56,.12); color:#a04d2c; }
 
   @media (max-width: 1023px) {
-    .mobile-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
-    .main-wrapper { padding-top: calc(max(60px, env(safe-area-inset-top)) + 200px); padding-bottom: 130px; }
+    .mobile-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
+    .main-wrapper { padding-top: calc(env(safe-area-inset-top, 0px) + 175px) !important; padding-bottom: 130px; }
   }
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
@@ -294,22 +315,19 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2">v9.0 · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2">v9.3 · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
   <div class="main-wrapper bg-slate-950 relative">
 
-    <!-- ============ MOBILE HERO HEADER ============ -->
-    <header class="mobile-header lg:hidden relative overflow-hidden" style="padding-top: max(60px, env(safe-area-inset-top));">
-      <!-- Hero cover background - tap to change -->
+    <header class="mobile-header lg:hidden" style="padding-top: env(safe-area-inset-top, 0px);">
       <div id="heroCover" onclick="document.getElementById('heroFile').click()" class="absolute inset-0 z-0 cursor-pointer active:opacity-90 transition-opacity" style="background-image: linear-gradient(135deg, #b85c38 0%, #83401f 100%); background-size: cover; background-position: center;">
         <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(28,25,23,0.55) 0%, rgba(28,25,23,0.15) 45%, rgba(244,242,239,0.85) 78%, #f4f2ef 100%);"></div>
       </div>
       <input type="file" id="heroFile" accept="image/*" class="hidden" onchange="importHeroImage(this.files[0])">
 
-      <!-- Greeting row (over image) -->
-      <div class="relative z-10 flex items-start justify-between px-5 pt-3 pb-8">
+      <div class="relative z-10 flex items-start justify-between px-5 pt-3 pb-5">
         <div>
           <div class="flex items-center gap-1.5 text-white mb-1" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
@@ -319,27 +337,26 @@ tailwind.config = { theme: { extend: { colors: {
           <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-1.5">
-          <button onclick="openNotifications()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" aria-label="การแจ้งเตือน">
+          <button onclick="openNotifications()" class="w-10 h-10 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" style="border-radius:9999px !important;" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
           </button>
-          <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-md active:scale-95 transition-transform overflow-hidden" id="headerAvatar">
+          <button onclick="openSettings()" class="w-10 h-10 bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-md active:scale-95 transition-transform overflow-hidden" id="headerAvatar" style="border-radius:9999px !important;">
             <span id="headerAvatarText">M</span>
             <img id="headerAvatarImg" class="w-full h-full object-cover hidden" alt="">
           </button>
         </div>
       </div>
 
-      <!-- Search bar row -->
       <div class="relative z-10 px-5 pb-4">
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
-            <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-white border border-slate-700 rounded-full py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15 transition-all shadow-sm">
-            <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
-            <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto hide-scrollbar"></div>
+            <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+            <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-white border border-slate-700 py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15 transition-all shadow-sm" style="border-radius:9999px !important; -webkit-border-radius:9999px !important;">
+            <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-0.5" style="border-radius:9999px !important;"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 shadow-xl max-h-60 overflow-y-auto hide-scrollbar" style="border-radius:20px !important;"></div>
           </div>
-          <button onclick="openAdvancedFilter()" class="w-11 h-11 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm relative" title="ตัวกรองขั้นสูง">
+          <button onclick="openAdvancedFilter()" class="w-11 h-11 bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm relative" style="border-radius:9999px !important; -webkit-border-radius:9999px !important;" title="ตัวกรองขั้นสูง">
             <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
             <span id="advFilterDot" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-brick-500 border-2 border-white"></span>
           </button>
@@ -347,19 +364,18 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
-    <!-- ============ DESKTOP HEADER ============ -->
     <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 flex-shrink-0 z-40">
       <div class="loading-bar" id="desktopLoadingBar"></div>
       <div class="flex items-center gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-4 top-3 text-slate-400"></i>
-          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded-full py-2.5 pl-11 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15">
-          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
-          <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto hide-scrollbar"></div>
+          <i data-lucide="search" class="w-4 h-4 absolute left-4 top-3 text-slate-400 pointer-events-none"></i>
+          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 py-2.5 pl-11 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15" style="border-radius:9999px !important; -webkit-border-radius:9999px !important;">
+          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-slate-400 p-0.5" style="border-radius:9999px !important;"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 shadow-xl max-h-60 overflow-y-auto hide-scrollbar" style="border-radius:20px !important;"></div>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="openAdvancedFilter()" class="w-10 h-10 rounded-full bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" title="ตัวกรองขั้นสูง">
+        <button onclick="openAdvancedFilter()" class="w-10 h-10 bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" style="border-radius:9999px !important; -webkit-border-radius:9999px !important;" title="ตัวกรองขั้นสูง">
           <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
           <span id="advFilterDotDesktop" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-brick-500 border-2 border-white"></span>
         </button>
@@ -372,7 +388,6 @@ tailwind.config = { theme: { extend: { colors: {
 
     <main class="flex-1 px-5 lg:px-6 hide-scrollbar">
 
-      <!-- ============= VIEW: DASHBOARD ============= -->
       <div id="viewDashboard" class="pt-4 lg:pt-6">
         <button onclick="openSheet('add')" class="banner-card w-full text-left mb-6">
           <div class="banner-deco"></div>
@@ -579,7 +594,6 @@ tailwind.config = { theme: { extend: { colors: {
         <div id="dashFollowList" class="space-y-2 mb-6"></div>
       </div>
 
-      <!-- ============= VIEW: ROOMS ============= -->
       <div id="viewRooms" class="pt-4 lg:pt-6 hidden">
         <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-700/60">
           <div class="flex items-center justify-between mb-4">
@@ -611,10 +625,10 @@ tailwind.config = { theme: { extend: { colors: {
 
           <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
             <span class="text-slate-500 whitespace-nowrap font-medium">ช่วงราคา:</span>
-            <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
+            <input id="priceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500" style="border-radius:9999px !important;">
             <span class="text-slate-400">—</span>
-            <input id="priceMax" type="number" inputmode="numeric" placeholder="สูงสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 rounded-full px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500">
-            <button onclick="clearPriceRange()" id="priceClearBtn" class="hidden text-brick-600 font-semibold hover:underline whitespace-nowrap">ล้าง</button>
+            <input id="priceMax" type="number" inputmode="numeric" placeholder="สูงสุด" oninput="onPriceInput()" class="w-24 bg-white border border-slate-700 px-3 py-1.5 text-xs text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500" style="border-radius:9999px !important;">
+            <button onclick="clearPriceRange()" id="priceClearBtn" class="hidden text-brick-600 font-semibold hover:underline whitespace-nowrap" style="border-radius:9999px !important;">ล้าง</button>
           </div>
 
           <div id="filterSummary" class="hidden mb-2 flex items-center gap-2 text-[11px]">
@@ -627,7 +641,6 @@ tailwind.config = { theme: { extend: { colors: {
         <div id="unitList" class="room-grid grid grid-cols-1 gap-3 pt-3"></div>
       </div>
 
-      <!-- ============= VIEW: CUSTOMERS ============= -->
       <div id="viewCustomers" class="pt-4 lg:pt-6 hidden">
         <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-700/60">
           <div class="flex items-center justify-between mb-4">
@@ -696,7 +709,6 @@ tailwind.config = { theme: { extend: { colors: {
   <div id="notifList" class="space-y-2"></div>
 </div>
 
-<!-- ====== ADVANCED FILTER ====== -->
 <div id="advFilterOverlay" class="fixed inset-0 bg-black/40 z-[80] hidden" onclick="closeAdvancedFilter()" ontouchstart="event.preventDefault(); closeAdvancedFilter();" style="touch-action: manipulation;"></div>
 <div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -785,7 +797,6 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== CUSTOMER SHEET ====== -->
 <div id="custOverlay" class="fixed inset-0 bg-black/40 z-[82] hidden" onclick="closeCustSheet()" ontouchstart="event.preventDefault(); closeCustSheet();" style="touch-action: manipulation;"></div>
 <div id="custSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[83] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -858,14 +869,12 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== CUSTOMER DETAIL ====== -->
 <div id="custDetailOverlay" class="fixed inset-0 bg-black/40 z-[84] hidden" onclick="closeCustDetail()" ontouchstart="event.preventDefault(); closeCustDetail();" style="touch-action: manipulation;"></div>
 <div id="custDetail" class="sheet fixed bottom-0 lg:top-0 lg:bottom-0 left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 max-w-[calc(100vw-24px)] lg:max-w-[900px] w-full mx-auto bg-white lg:rounded-none border-t lg:border-0 rounded-t-3xl z-[85] p-4 lg:p-6 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] lg:max-h-full overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div id="custDetailContent"></div>
 </div>
 
-<!-- ====== CUSTOMER LINK UNIT ====== -->
 <div id="custLinkOverlay" class="fixed inset-0 bg-black/40 z-[86] hidden" onclick="closeCustLink()" ontouchstart="event.preventDefault(); closeCustLink();" style="touch-action: manipulation;"></div>
 <div id="custLinkSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[87] p-4 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -883,7 +892,6 @@ tailwind.config = { theme: { extend: { colors: {
   <button onclick="closeCustLink()" class="w-full mt-4 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ปิด</button>
 </div>
 
-<!-- ====== CUSTOMER NOTE ====== -->
 <div id="custNoteOverlay" class="fixed inset-0 bg-black/40 z-[88] hidden" onclick="closeCustNote()" ontouchstart="event.preventDefault(); closeCustNote();" style="touch-action: manipulation;"></div>
 <div id="custNoteSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[440px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[89] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -905,7 +913,6 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== EXPIRY MODAL ====== -->
 <div id="expiryModalOverlay" class="expiry-modal-overlay" onclick="if(event.target===this)closeExpiryModal()">
   <div id="expiryModal" class="expiry-modal">
     <div class="flex items-center gap-3 mb-4">
@@ -939,7 +946,6 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
-<!-- ====== ROOM SHEET ====== -->
 <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()" ontouchstart="event.preventDefault(); closeSheet();" style="touch-action: manipulation;"></div>
 <div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-16px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -947,7 +953,6 @@ tailwind.config = { theme: { extend: { colors: {
   <input type="hidden" id="f_id">
   <input type="hidden" id="f_isTemp" value="">
 
-  <!-- ======= AUTO PARSE PANEL ======= -->
   <div class="bg-gradient-to-br from-brick-50 to-brick-100 border border-brick-200 rounded-2xl p-4 mb-4">
     <div class="flex items-center gap-2 mb-1.5">
       <div class="w-7 h-7 rounded-lg bg-brick-500 flex items-center justify-center"><i data-lucide="wand-2" class="w-3.5 h-3.5 text-white"></i></div>
@@ -956,16 +961,14 @@ tailwind.config = { theme: { extend: { colors: {
         <p class="text-[10px] text-brick-600 leading-tight">วางข้อความ แล้วระบบจะกรอกช่องให้</p>
       </div>
     </div>
-    <textarea id="parseInput" rows="4" class="inp !mt-2 !text-xs !bg-white/95 !border-brick-200 focus:!border-brick-500" placeholder="ตัวอย่าง:
-The Excel Sukhumvit 50
-ห้อง 1203 ชั้น 3 อาคาร Tower A
-ราคา 13,000 บาท/เดือน
-1 ห้องนอน 1 ห้องน้ำ 30 ตร.ม.
-วิว Pool
-เจ้าของ คุณสมชาย โทร 081-234-5678
-LINE: somchai88"></textarea>
+    <textarea id="parseInput" rows="5" class="inp !mt-2 !text-xs !bg-white/95 !border-brick-200 focus:!border-brick-500" placeholder="ตัวอย่าง:
+ให้เช่า 13,000/เดือน The Base Sukhumvit 77
+ใกล้ BTS อ่อนนุช, Big C, Lotus, ทางด่วน
+ขนาด : 30 ตร.ม.
+ตึก : A
+ชั้น : 22"></textarea>
     <div class="flex gap-2 mt-2">
-      <button type="button" onclick="clearParseInput()" class="bg-white text-brick-700 border border-brick-200 text-xs py-2 px-3 rounded-full font-semibold active:scale-95">ล้าง</button>
+      <button type="button" onclick="clearParseInput()" class="bg-white text-brick-700 border border-brick-200 text-xs py-2 px-4 rounded-full font-semibold active:scale-95">ล้าง</button>
       <button type="button" onclick="parseAndFill()" class="flex-1 bg-brick-500 hover:bg-brick-600 text-white text-xs py-2 rounded-full font-semibold shadow-md shadow-brick-500/25 flex items-center justify-center gap-1.5 active:scale-95">
         <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>แยกและเติมข้อมูล
       </button>
@@ -976,7 +979,7 @@ LINE: somchai88"></textarea>
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
       <label class="col-span-2 relative">โครงการ *<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
-        <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto hide-scrollbar"></div>
+        <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-48 overflow-y-auto hide-scrollbar" style="border-radius:16px;"></div>
       </label>
       <label>เลขห้อง *<input id="f_room" class="inp" placeholder="1203"></label>
       <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
@@ -996,8 +999,8 @@ LINE: somchai88"></textarea>
       <div class="flex items-center justify-between mb-2"><label class="!text-slate-600 font-semibold text-xs">📷 รูปห้อง</label><span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span></div>
       <div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5 mb-2"></div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป</button>
-        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
+        <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป</button>
+        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200 font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
       </div>
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
       <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
@@ -1034,7 +1037,6 @@ LINE: somchai88"></textarea>
   </div>
 </div>
 
-<!-- ====== SETTINGS ====== -->
 <div id="cfgOverlay" class="fixed inset-0 bg-black/30 z-[52] hidden" onclick="closeSettings()" ontouchstart="event.preventDefault(); closeSettings();" style="touch-action: manipulation;"></div>
 <div id="cfgSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[53] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -1042,7 +1044,7 @@ LINE: somchai88"></textarea>
   <input type="file" id="avatarFile" accept="image/*" class="hidden" onchange="importAvatarImage(this.files[0])">
 
   <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200">
-    <button onclick="document.getElementById('avatarFile').click()" class="relative w-14 h-14 rounded-full overflow-hidden shadow-md active:scale-95 transition-transform bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
+    <button onclick="document.getElementById('avatarFile').click()" class="relative w-14 h-14 overflow-hidden shadow-md active:scale-95 transition-transform bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shrink-0" style="border-radius:9999px !important;">
       <span id="settingsAvatarText">M</span>
       <img id="settingsAvatarImg" class="absolute inset-0 w-full h-full object-cover hidden" alt="">
       <span class="absolute -bottom-0 -right-0 w-5 h-5 rounded-full bg-brick-500 border-2 border-white flex items-center justify-center">
@@ -1108,10 +1110,9 @@ LINE: somchai88"></textarea>
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.0 (CRM)</p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.3 (CRM)</p>
 </div>
 
-<!-- ====== GALLERY ====== -->
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
 <div id="gallery" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[520px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[55] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -1133,7 +1134,6 @@ LINE: somchai88"></textarea>
   </div>
 </div>
 
-<!-- ====== PHOTO PICKER ====== -->
 <div id="pickOverlay" class="fixed inset-0 bg-black/40 z-[56] hidden" onclick="closePhotoPicker()" ontouchstart="event.preventDefault(); closePhotoPicker();" style="touch-action: manipulation;"></div>
 <div id="pickSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[57] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -1148,7 +1148,6 @@ LINE: somchai88"></textarea>
   <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40 shadow-md shadow-brick-500/25"><i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span></button>
 </div>
 
-<!-- ====== BACKUP ====== -->
 <div id="bkOverlay" class="fixed inset-0 bg-black/30 z-[58] hidden" onclick="closeBackup()" ontouchstart="event.preventDefault(); closeBackup();" style="touch-action: manipulation;"></div>
 <div id="backup" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[59] p-5 pb-[max(20px,env(safe-area-inset-bottom))]" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
@@ -1387,128 +1386,128 @@ function resetAvatar() {
 function parseRoomText(raw) {
   const out = {};
   if (!raw) return out;
-  // Normalize
-  let t = raw.replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ');
 
-  // === ROOM NUMBER ===
-  // patterns: "ห้อง 1203", "Room 1203", "unit A1203", "1203" (if just number line)
-  let m = t.match(/(?:ห้อง|room|unit|no\.?|เลขที่)\s*[:：#]?\s*([A-Za-z]?[\d][\d\/\-]*)/i);
-  if (m) out.room = m[1];
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const tOneLine = lines.join(' ').replace(/\s+/g, ' ');
 
-  // === FLOOR ===
-  m = t.match(/(?:ชั้น|floor|fl\.?)\s*[:：]?\s*(\d{1,3})/i);
-  if (m) out.floor = m[1];
+  const stripPrefix = (s) => {
+    let r = String(s).trim();
+    r = r.replace(/^(condo\s+)?for\s+rent\s*[:：\-]?\s*/i, '');
+    r = r.replace(/^(condo\s+)?for\s+sale\s*[:：\-]?\s*/i, '');
+    r = r.replace(/^(ให้เช่า|ปล่อยเช่า|ปล่อยขาย|ขาย)\s*[:：\-]?\s*/i, '');
+    r = r.replace(/^[\d,]+(?:\.\d+)?\s*(?:\/|ต่อ)\s*(?:เดือน|month|วัน|day|สัปดาห์|week)\s*/i, '');
+    r = r.replace(/^[\d,]+(?:\.\d+)?\s*(?:บาท|฿|thb|baht|k|พัน)(?:\s*(?:\/|ต่อ)\s*(?:เดือน|month|วัน|day|สัปดาห์|week))?\s*/i, '');
+    r = r.replace(/\s*(for\s+rent|for\s+sale|ให้เช่า|ปล่อยเช่า|ปล่อยขาย|ขาย)\s*$/i, '');
+    return r.trim();
+  };
 
-  // === BUILDING ===
-  m = t.match(/(?:อาคาร|ตึก|building|tower)\s*[:：]?\s*([A-Za-z0-9ก-๙]+(?:\s+[A-Za-z0-9ก-๙]+){0,2})/i);
+  let m = tOneLine.match(/(?:โครงการ|คอนโด|project|condo)\s*[:：]\s*([^\n\r,;]{3,80})/i);
   if (m) {
-    const b = m[1].trim().replace(/\s+(ห้อง|ชั้น|ราคา|ขนาด|วิว|โทร|เบอร์)$/i, '').trim();
-    if (b && b.length < 30) out.building = b;
-  }
-
-  // === RENT (ราคา/ค่าเช่า) ===
-  // Thai number with comma
-  m = t.match(/(?:ราคา|ค่าเช่า|ค่า\s*เช่า|rent|เช่า)\s*[:：]?\s*([\d,]+(?:\.\d+)?)\s*(?:บาท|฿|thb|baht|\/เดือน|\/month|ต่อเดือน|เดือน)?/i);
-  if (m) out.rent = m[1].replace(/,/g, '');
-  else {
-    // fallback: any number followed by บาท/เดือน
-    m = t.match(/([\d,]{4,}(?:\.\d+)?)\s*(?:บาท|฿)\s*(?:\/|ต่อ)?\s*เดือน/i);
-    if (m) out.rent = m[1].replace(/,/g, '');
-  }
-
-  // === SIZE (ตร.ม.) ===
-  m = t.match(/(?:ขนาด|พื้นที่|size|sqm)\s*[:：]?\s*([\d.]+)\s*(?:ตร\.?ม\.?|sqm|sq\.?m|m²|m2)?/i);
-  if (m) out.size = m[1];
-  else {
-    m = t.match(/([\d.]+)\s*(?:ตร\.?ม\.?|sqm|sq\.?m|m²|m2)/i);
-    if (m) out.size = m[1];
-  }
-
-  // === BEDROOM / TYPE ===
-  const bedMatch = t.match(/(\d+)\s*(?:ห้องนอน|bed(?:room)?s?)/i);
-  const thaiBedMatch = t.match(/(?:นอน|bed(?:room)?s?)\s*[:：]?\s*(\d+)/i);
-  if (/studio|สตูดิโอ/i.test(t)) out.type = 'Studio';
-  else if (bedMatch) out.type = bedMatch[1] + ' Bed';
-  else if (thaiBedMatch) out.type = thaiBedMatch[1] + ' Bed';
-  else {
-    const singleBed = t.match(/\b(one|1)\s*(?:bed|ห้องนอน)/i);
-    if (singleBed) out.type = '1 Bed';
-  }
-
-  // === BATHROOM ===
-  const bathMatch = t.match(/(\d+)\s*(?:ห้องน้ำ|bath(?:room)?s?)/i) || t.match(/(?:ห้องน้ำ|bath(?:room)?s?)\s*[:：]?\s*(\d+)/i);
-  if (bathMatch) out.bath = bathMatch[1];
-
-  // === VIEW ===
-  m = t.match(/(?:วิว|view)\s*[:：]?\s*([A-Za-zก-๙][A-Za-zก-๙\s]{0,25})/i);
-  if (m) {
-    const v = m[1].trim().replace(/\s+(ชั้น|ห้อง|ราคา|โทร|เบอร์|ขนาด).*$/i, '').trim();
-    if (v && v.length < 30) out.view = v;
+    out.project = stripPrefix(m[1].trim());
   } else {
-    // common view keywords
-    if (/\bpool\s*view\b|\bสระว่ายน้ำ\b|\bวิวสระ\b/i.test(t)) out.view = 'Pool';
-    else if (/\bcity\s*view\b|\bวิวเมือง\b/i.test(t)) out.view = 'City';
-    else if (/\bgarden\s*view\b|\bวิวสวน\b/i.test(t)) out.view = 'Garden';
-  }
-
-  // === PHONE ===
-  m = t.match(/(?:โทร|tel|phone|เบอร์|tel\.)\s*[:：]?\s*((?:\+?66|0)[\d\-\s]{7,15})/i);
-  if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
-  else {
-    m = t.match(/((?:\+?66|0)\d{1,2}[\-\s]?\d{3}[\-\s]?\d{3,4})/);
-    if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
-  }
-
-  // === LINE ===
-  m = t.match(/(?:line|ไลน์|line\s*id)\s*[:：]?\s*(@?[A-Za-z0-9._\-]{3,})/i);
-  if (m) out.ownerLine = m[1].replace(/^@/, '');
-  else {
-    m = t.match(/(?:line\.me\/ti\/p\/~?|line:\/\/ti\/p\/~?)([A-Za-z0-9._\-]+)/i);
-    if (m) out.ownerLine = m[1];
-  }
-
-  // === OWNER NAME ===
-  m = t.match(/(?:เจ้าของ|owner)\s*[:：]?\s*([ก-๙A-Za-z][ก-๙A-Za-z\s.]{0,30})/i);
-  if (m) {
-    const o = m[1].trim().replace(/\s+(โทร|tel|phone|เบอร์|line|ไลน์).*$/i, '').trim();
-    if (o && o.length < 40) out.owner = o;
-  } else {
-    m = t.match(/(?:คุณ|khun|mr\.?|mrs\.?|ms\.?)\s*([ก-๙A-Za-z][ก-๙A-Za-z\s.]{1,30})/i);
-    if (m) {
-      const o = ('คุณ' + m[1]).trim().replace(/\s+(โทร|tel|phone|เบอร์|line|ไลน์|ห้อง).*$/i, '').trim();
-      if (o && o.length < 40) out.owner = o;
-    }
-  }
-
-  // === STATUS ===
-  if (/มีผู้เช่า|occupied|มีคนเช่า|เช่าอยู่/i.test(t)) out.status = 'OCCUPIED';
-  else if (/\bจอง\b|reserved|booked/i.test(t)) out.status = 'RESERVED';
-  else if (/รอตรวจ|pending/i.test(t)) out.status = 'PENDING';
-  else if (/\bว่าง\b|available|ให้เช่า|ปล่อยเช่า/i.test(t)) out.status = 'AVAILABLE';
-
-  // === PROJECT ===
-  // Priority 1: explicit label
-  m = t.match(/(?:โครงการ|คอนโด|คอนโดมิเนียม|project|condo)\s*[:：]?\s*([^\n\r,;]{3,60})/i);
-  if (m) {
-    out.project = m[1].trim().replace(/\s+(ห้อง|ชั้น|อาคาร|ราคา|ขนาด).*$/i, '').trim();
-  } else {
-    // Priority 2: first non-empty line that looks like a project name
-    const lines = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     for (const line of lines) {
-      // skip lines that are clearly labels
-      if (/^(ห้อง|ชั้น|ราคา|ค่าเช่า|ขนาด|วิว|เจ้าของ|โทร|line|เบอร์|สถานะ|อาคาร|type|room|floor|rent|size|view|owner|tel|phone|status|building)/i.test(line)) continue;
-      // skip lines with only numbers
+      if (/^(ห้อง|ชั้น|ราคา|ค่าเช่า|ขนาด|วิว|เจ้าของ|โทร|line|เบอร์|สถานะ|อาคาร|ตึก|type|room|floor|rent|size|view|owner|tel|phone|status|building|ready\s+to|move\s+in|#|✓|✕|-)/i.test(line)) continue;
       if (/^[\d\s,.\/\-]+$/.test(line)) continue;
-      // project name usually has letters
-      if (/[A-Za-zก-๙]/.test(line) && line.length >= 3 && line.length <= 80) {
-        out.project = line.replace(/^[•\-*]\s*/, '').trim();
-        break;
+      if (/[A-Za-zก-๙]/.test(line) && line.length >= 3 && line.length <= 120) {
+        const cleaned = stripPrefix(line).replace(/^[•\-*]\s*/, '').trim();
+        if (cleaned.length >= 3) { out.project = cleaned; break; }
       }
     }
   }
 
-  // === NOTES (fallback = whole text if not too long) ===
-  if (raw.length < 800) out.notes = raw.trim();
+  m = tOneLine.match(/(?:ห้อง|room|unit|no\.?|เลขที่)\s*[:：#]?\s*([A-Za-z]?\d[\d\/\-]*)/i);
+  if (m) out.room = m[1];
+
+  m = tOneLine.match(/(?:ชั้น|floor|fl\.?)\s*[:：]?\s*(\d{1,3})\b/i);
+  if (m) out.floor = m[1];
+
+  m = tOneLine.match(/(?:อาคาร|ตึก|building|tower)\s*[:：]?\s*([A-Za-z0-9ก-๙]+(?:\s+[A-Za-z0-9ก-๙]+){0,2})/i);
+  if (m) {
+    const b = m[1].trim().replace(/\s+(ห้อง|ชั้น|ราคา|ขนาด|วิว|โทร|เบอร์|sqm|square|bed|bath)/i, '').trim();
+    if (b && b.length < 30) out.building = b;
+  }
+
+  const rentPatterns = [
+    /([\d,]{4,}(?:\.\d+)?)\s*(?:\/|ต่อ|per)\s*(?:เดือน|month)/i,
+    /([\d,]{4,}(?:\.\d+)?)\s*(?:บาท|฿|thb|baht)\s*(?:\/|ต่อ|per)?\s*(?:เดือน|month)/i,
+    /(?:ค่าเช่า|ราคาเช่า|ราคา|rent|monthly|ค่า\s*เช่า)\s*[:：]?\s*(?:฿|thb|baht)?\s*([\d,]+(?:\.\d+)?)\s*(?:บาท|฿|thb|baht|k|พัน)?(?:\s*(?:\/|ต่อ|per)\s*(?:เดือน|month))?/i,
+    /(?:฿|thb|baht)\s*([\d,]+(?:\.\d+)?)/i,
+    /([\d.]+)\s*k\b(?:\s*(?:\/|ต่อ)\s*เดือน)?/i,
+  ];
+  for (const pat of rentPatterns) {
+    m = tOneLine.match(pat);
+    if (m) {
+      let val = m[1].replace(/,/g, '');
+      if (/\dk\b/i.test(m[0]) && Number(val) < 100) val = String(Number(val) * 1000);
+      if (Number(val) >= 500) { out.rent = val; break; }
+    }
+  }
+
+  m = tOneLine.match(/(?:ขนาด|พื้นที่|size|area)\s*[:：]?\s*([\d.]+)\s*(?:ตร\.?ม\.?|ตรม|sqm|sq\.?\s*m\.?|m²|m2|square\s*meters?)/i);
+  if (m) out.size = m[1];
+  if (!out.size) {
+    m = tOneLine.match(/([\d.]+)\s*(?:ตร\.?ม\.?|ตรม|sqm|sq\.?\s*m\.?|m²|m2|square\s*meters?)/i);
+    if (m) out.size = m[1];
+  }
+
+  if (/studio|สตูดิโอ/i.test(tOneLine)) out.type = 'Studio';
+  else {
+    const bedMatch = tOneLine.match(/(\d+)\s*(?:bedroom|bedrooms|bed\b|ห้องนอน)/i);
+    if (bedMatch) out.type = bedMatch[1] + ' Bed';
+    else {
+      const wordMap = { one:'1', two:'2', three:'3', four:'4' };
+      const wm = tOneLine.match(/\b(one|two|three|four)\s+(?:bedroom|bed)/i);
+      if (wm) out.type = wordMap[wm[1].toLowerCase()] + ' Bed';
+    }
+  }
+
+  const bathMatch = tOneLine.match(/(\d+)\s*(?:bathroom|bathrooms|bath\b|ห้องน้ำ)/i);
+  if (bathMatch) out.bath = bathMatch[1];
+  else {
+    const wordMap = { one:'1', two:'2', three:'3', four:'4' };
+    const wm = tOneLine.match(/\b(one|two|three|four)\s+(?:bathroom|bath)/i);
+    if (wm) out.bath = wordMap[wm[1].toLowerCase()];
+  }
+
+  m = tOneLine.match(/(?:วิว|view)\s*[:：]?\s*([A-Za-zก-๙][A-Za-zก-๙\s]{0,25})/i);
+  if (m) {
+    const v = m[1].trim().replace(/\s+(ชั้น|ห้อง|ราคา|โทร|เบอร์|ขนาด|sqm|square|bed|bath).*$/i, '').trim();
+    if (v && v.length < 30) out.view = v;
+  } else {
+    if (/\bpool\s*view\b|\bสระว่ายน้ำ\b|\bวิวสระ\b/i.test(tOneLine)) out.view = 'Pool';
+    else if (/\bcity\s*view\b|\bวิวเมือง\b/i.test(tOneLine)) out.view = 'City';
+    else if (/\bgarden\s*view\b|\bวิวสวน\b/i.test(tOneLine)) out.view = 'Garden';
+  }
+
+  m = tOneLine.match(/(?:โทร|tel|phone|เบอร์|tel\.|call)\s*[:：]?\s*((?:\+?66|0)[\d\-\s]{7,15})/i);
+  if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
+  else {
+    m = tOneLine.match(/\b((?:\+?66|0)[689]\d[\-\s]?\d{3}[\-\s]?\d{4})\b/);
+    if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
+  }
+
+  m = tOneLine.match(/(?:line\s*id|line|ไลน์)\s*[:：]\s*(@?[A-Za-z0-9._\-]{3,})/i);
+  if (m) {
+    const cand = m[1].replace(/^@/, '');
+    if (cand.length >= 3 && !/^(and|or|the|for|to|is|of)$/i.test(cand)) out.ownerLine = cand;
+  }
+  if (!out.ownerLine) {
+    m = tOneLine.match(/(?:line\.me\/ti\/p\/~?|line:\/\/ti\/p\/~?)([A-Za-z0-9._\-]+)/i);
+    if (m) out.ownerLine = m[1];
+  }
+
+  m = tOneLine.match(/(?:เจ้าของ|owner)\s*[:：]?\s*([ก-๙A-Za-z][ก-๙A-Za-z\s.]{0,30})/i);
+  if (m) {
+    const o = m[1].trim().replace(/\s+(โทร|tel|phone|เบอร์|line|ไลน์|ห้อง|ชั้น).*$/i, '').trim();
+    if (o && o.length < 40) out.owner = o;
+  }
+
+  if (/มีผู้เช่า|occupied|มีคนเช่า|เช่าอยู่|rented(?!\s*for)/i.test(tOneLine)) out.status = 'OCCUPIED';
+  else if (/\bจอง\b|reserved|booked/i.test(tOneLine)) out.status = 'RESERVED';
+  else if (/รอตรวจ|pending/i.test(tOneLine)) out.status = 'PENDING';
+  else if (/\bว่าง\b|\bavailable\b|ให้เช่า|ปล่อยเช่า|for\s*rent/i.test(tOneLine)) out.status = 'AVAILABLE';
+
+  if (raw.trim().length <= 1500) out.notes = raw.trim();
 
   return out;
 }
@@ -1524,21 +1523,23 @@ function parseAndFill() {
   }
   const parsed = parseRoomText(raw);
   const filled = [];
-  const setF = (id, val) => { if (val !== undefined && val !== null && String(val).trim() !== '') { document.getElementById('f_' + id).value = val; filled.push(id); } };
 
-  setF('project', parsed.project);
-  setF('room', parsed.room);
-  setF('floor', parsed.floor);
-  setF('building', parsed.building);
-  setF('rent', parsed.rent);
-  setF('size', parsed.size);
-  setF('type', parsed.type);
-  setF('bath', parsed.bath);
-  setF('view', parsed.view);
-  setF('status', parsed.status);
-  setF('owner', parsed.owner);
-  setF('ownerPhone', parsed.ownerPhone);
-  setF('ownerLine', parsed.ownerLine);
+  const targets = ['project','room','floor','building','rent','size','type','bath','view','status','owner','ownerPhone','ownerLine'];
+  const defaults = { type: '1 Bed', bath: '1', status: 'AVAILABLE' };
+
+  targets.forEach(id => {
+    const el = document.getElementById('f_' + id);
+    if (!el) return;
+    const val = parsed[id];
+    if (val !== undefined && val !== null && String(val).trim() !== '') {
+      el.value = val;
+      filled.push(id);
+    } else if (defaults[id] !== undefined) {
+      el.value = defaults[id];
+    } else {
+      el.value = '';
+    }
+  });
 
   if (filled.length === 0) {
     status.textContent = '⚠ ไม่พบข้อมูลที่แยกได้ ลองตรวจสอบรูปแบบ';
@@ -1546,7 +1547,6 @@ function parseAndFill() {
     return;
   }
 
-  // Auto scroll to first filled field
   const firstEl = document.getElementById('f_' + filled[0]);
   if (firstEl) firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -2254,7 +2254,6 @@ function openSheet(mode, id) {
   toggleSalePrice(hasSale);
   updateUrlBtn();
   renderFormPhotos();
-  // Reset parse panel
   const pi = document.getElementById('parseInput'); if (pi) pi.value = '';
   const ps = document.getElementById('parseStatus'); if (ps) { ps.textContent = ''; ps.className = 'text-[10px] text-brick-600 mt-2'; }
   document.getElementById('overlay').classList.remove('hidden');
@@ -2624,9 +2623,9 @@ function cardRowHTML(x) {
       </div>
       <p class="text-[10px] ${ps.cls} mb-3">${ps.label}</p>
       <div class="grid grid-cols-3 gap-1.5 mb-2" onclick="event.stopPropagation()">
-        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
-        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
-        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
+        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
+        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
+        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
       </div>
       ${ownerBtnCount > 0 ? `<div class="grid gap-1.5" style="grid-template-columns: repeat(${ownerBtnCount}, minmax(0, 1fr));" onclick="event.stopPropagation()">
         ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
@@ -2656,13 +2655,13 @@ function listRowHTML(x) {
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0">
         <span class="text-sm font-bold text-brick-600">${baht(x.rent)}</span>
-        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">${m.short ? m.short : m.label}</button>
+        <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
       <div class="flex flex-col gap-1 shrink-0" onclick="event.stopPropagation()">
-        <button onclick="quickCopy('${x.id}')" class="w-7 h-7 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i></button>
-        ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="w-7 h-7 rounded-lg bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95"><i data-lucide="phone" class="w-3 h-3"></i></button>` : ''}
-        ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="w-7 h-7 rounded-lg bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95"><i data-lucide="message-circle" class="w-3 h-3"></i></button>` : ''}
-        ${hasUrl ? `<button onclick="openSourceUrl('${x.id}')" class="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-600 flex items-center justify-center active:scale-95"><i data-lucide="external-link" class="w-3 h-3"></i></button>` : ''}
+        <button onclick="quickCopy('${x.id}')" class="w-7 h-7 rounded-full bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i></button>
+        ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="w-7 h-7 rounded-full bg-brick-500/15 text-brick-600 flex items-center justify-center active:scale-95"><i data-lucide="phone" class="w-3 h-3"></i></button>` : ''}
+        ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="w-7 h-7 rounded-full bg-[#06C755]/15 text-[#06C755] flex items-center justify-center active:scale-95"><i data-lucide="message-circle" class="w-3 h-3"></i></button>` : ''}
+        ${hasUrl ? `<button onclick="openSourceUrl('${x.id}')" class="w-7 h-7 rounded-full bg-sky-500/15 text-sky-600 flex items-center justify-center active:scale-95"><i data-lucide="external-link" class="w-3 h-3"></i></button>` : ''}
       </div>
     </div>
   </div>`;
@@ -2846,7 +2845,7 @@ function renderKanban(list) {
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full ${cm.dot}"></span>
           <span class="text-xs font-bold text-ink">${cm.label}</span>
-          <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-semibold">${items.length}</span>
+          <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-semibold">${items.length}</span>
         </div>
       </div>
       <div class="kanban-body">${items.map(c => `<div class="cust-card !p-3 !rounded-xl" onclick="openCustDetail('${c.id}')">
@@ -3436,7 +3435,7 @@ renderCustomers();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '9.1';
+const APP_VERSION = '9.3';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
