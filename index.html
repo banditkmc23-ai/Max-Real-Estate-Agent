@@ -13,19 +13,26 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = { theme: { extend: { colors: {
-  brick: { 300:'#e6a88c', 400:'#cf7a56', 500:'#b85c38', 600:'#a04d2c', 700:'#83401f' },
+  brick: {
+    50:'#fdf4ee', 100:'#f8e2d2', 200:'#f0c4a8',
+    300:'#e6a88c', 400:'#cf7a56',
+    500:'#b85c38', 600:'#a04d2c', 700:'#83401f', 800:'#5a2c15'
+  },
   ink: '#1c1917',
-  slate: { 200:'#1c1917', 300:'#3f3733', 400:'#6b625a', 500:'#8a8078', 700:'#e4dfd9', 800:'#f1eeea', 900:'#ffffff', 950:'#f4f2ef' }
-} }, borderRadius: { xl: '14px', '2xl': '22px', '3xl': '28px' } } }
+  slate: {
+    200:'#1c1917', 300:'#3f3733', 400:'#6b625a', 500:'#8a8078',
+    700:'#e4dfd9', 800:'#f1eeea', 900:'#ffffff', 950:'#f4f2ef'
+  }
+} }, borderRadius: { xl: '16px', '2xl': '22px', '3xl': '30px' } } }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#f4f2ef; color:#1c1917; }
+  body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
   .hide-scrollbar::-webkit-scrollbar { display:none; } .hide-scrollbar { scrollbar-width:none; }
-  .toast { position:fixed; box-shadow:0 10px 30px rgba(0,0,0,.15); left:50%; bottom:110px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; z-index:100; }
+  .toast { position:fixed; box-shadow:0 16px 40px rgba(28,25,23,.18); left:50%; bottom:110px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .25s; pointer-events:none; z-index:100; background:#1c1917; color:#fff; border-radius:16px; padding:12px 20px; font-size:13px; font-weight:500; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .sheet { transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s linear .28s; visibility: hidden; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
   .sheet.open { transform:translateY(0); visibility: visible; transition:transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s; overflow-y: auto; overscroll-behavior: contain; }
@@ -48,7 +55,7 @@ tailwind.config = { theme: { extend: { colors: {
       max-height: 100vh !important;
       border-radius: 0 !important;
       border: none !important;
-      box-shadow: 0 24px 60px -12px rgba(0,0,0,.25);
+      box-shadow: 0 24px 60px -12px rgba(28,25,23,.25);
     }
     #custDetail:not(.open) {
       transform: translateX(-50%) translateY(20px) scale(.98) !important;
@@ -56,131 +63,133 @@ tailwind.config = { theme: { extend: { colors: {
     }
   }
   input, select, textarea { font-family:inherit; }
-  .unit-card { transition: border-color .15s, transform .15s, box-shadow .15s; cursor: pointer; }
-  .unit-card:hover { border-color:#b85c38; transform:translateY(-1px); box-shadow:0 4px 12px rgba(184,92,56,.1); }
-  .unit-row { transition: border-color .15s, background .15s; cursor: pointer; }
-  .unit-row:hover { border-color:#b85c38; }
+  .unit-card { transition: border-color .18s, transform .18s, box-shadow .18s; cursor: pointer; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .unit-card:hover { border-color:#b85c38; transform:translateY(-2px); box-shadow:0 10px 24px -6px rgba(184,92,56,.18); }
+  .unit-row { transition: border-color .15s, background .15s, box-shadow .15s; cursor: pointer; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .unit-row:hover { border-color:#b85c38; box-shadow:0 6px 16px -6px rgba(184,92,56,.18); }
   .photo-cell { position:relative; touch-action: manipulation; }
   .pick-cell { transition: transform .12s; cursor:pointer; }
   .pick-cell:active { transform: scale(.96); }
   .pick-cell.selected { outline: 3px solid #b85c38; outline-offset: -3px; }
   .pick-cell .order-badge { position:absolute; top:4px; left:4px; min-width:22px; height:22px; border-radius:11px; background:#b85c38; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; }
-  .inp { display:block; width:100%; margin-top:4px; background:#fff; border:1px solid #e4dfd9; border-radius:12px; padding:10px 12px; font-size:14px; color:#1c1917; }
-  .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 3px rgba(184,92,56,.15); }
+  .inp { display:block; width:100%; margin-top:6px; background:#fff; border:1.5px solid #e4dfd9; border-radius:14px; padding:12px 14px; font-size:14px; color:#1c1917; transition: border-color .15s, box-shadow .15s, background .15s; }
+  .inp:hover { border-color:#d6cec4; }
+  .inp:focus { outline:none; border-color:#b85c38; box-shadow:0 0 0 4px rgba(184,92,56,.15); background:#fff; }
   .inp-check { width:18px; height:18px; accent-color:#b85c38; }
-  label { color:#6b625a; font-size:12px; }
-  .filter-btn { color:#6b625a; border:1px solid transparent; border-radius:999px; white-space:nowrap; transition: all .15s; }
-  .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; }
+  label { color:#6b625a; font-size:12px; font-weight:500; }
+  .filter-btn { color:#6b625a; border:1.5px solid transparent; background:transparent; border-radius:999px; white-space:nowrap; transition: all .15s; font-weight:500; }
+  .filter-btn:hover { background:#fdf4ee; color:#a04d2c; }
+  .filter-btn.on { color:#fff; background:#b85c38; border-color:#b85c38; box-shadow: 0 4px 12px -2px rgba(184,92,56,.35); }
   .nav-link { transition: all .15s; color:#6b625a; }
-  .nav-link:hover { background:#f1eeea; color:#a04d2c; }
-  .nav-link.active { background:#b85c38; color:#fff; }
+  .nav-link:hover { background:#fdf4ee; color:#a04d2c; }
+  .nav-link.active { background:#b85c38; color:#fff; box-shadow: 0 6px 16px -4px rgba(184,92,56,.4); }
   .nav-link.active svg { color:#fff; }
-  .view-toggle { display:inline-flex; background:#f1eeea; border-radius:999px; padding:2px; }
-  .view-toggle button { padding:5px 10px; border-radius:999px; transition:all .15s; display:flex; align-items:center; gap:4px; }
-  .view-toggle button.on { background:#fff; color:#b85c38; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .view-toggle { display:inline-flex; background:#f1eeea; border-radius:999px; padding:3px; }
+  .view-toggle button { padding:6px 12px; border-radius:999px; transition:all .15s; display:flex; align-items:center; gap:4px; color:#6b625a; }
+  .view-toggle button.on { background:#fff; color:#b85c38; box-shadow:0 2px 6px rgba(28,25,23,.08); }
   .offline-banner { position:fixed; top:0; left:0; right:0; background:#dc2626; color:#fff; text-align:center; padding:6px; font-size:11px; font-weight:600; z-index:100; transform:translateY(-100%); transition:transform .3s; }
   .offline-banner.show { transform:translateY(0); }
   .url-row { display:flex; gap:6px; align-items:stretch; }
   .url-row input { flex:1; }
-  .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 12px; margin-top:4px; background:#0ea5e9; color:#fff; border-radius:12px; font-size:12px; font-weight:600; transition:all .15s; }
+  .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 14px; margin-top:6px; background:#0ea5e9; color:#fff; border-radius:14px; font-size:12px; font-weight:600; transition:all .15s; }
   .url-open-btn:active { transform:scale(.96); background:#0284c7; }
   .url-open-btn:disabled { background:#e4dfd9; color:#8a8078; cursor:not-allowed; }
-  .owner-action { display:flex; align-items:center; justify-content:center; gap:5px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:999px; transition:all .15s; border:1px solid; }
+  .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
-  .owner-action.phone { background:#f1eeea; color:#a04d2c; border-color:#e4dfd9; }
+  .owner-action.phone { background:#fdf4ee; color:#a04d2c; border-color:#f0c4a8; }
   .owner-action.line { background:rgba(6,199,85,.08); color:#06C755; border-color:rgba(6,199,85,.25); }
   .owner-action.source { background:rgba(14,165,233,.08); color:#0284c7; border-color:rgba(14,165,233,.25); }
   .owner-action.whatsapp { background:rgba(37,211,102,.08); color:#25D366; border-color:rgba(37,211,102,.25); }
   .owner-action.email { background:rgba(168,85,247,.08); color:#a855f7; border-color:rgba(168,85,247,.25); }
-  .kpi { background:#fff; border:1px solid #e4dfd9; border-radius:20px; padding:18px; position:relative; overflow:hidden; transition: all .15s; text-align: left; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
-  .kpi:hover { border-color:#b85c38; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(184,92,56,.12); }
+  .kpi { background:#fff; border:1.5px solid #f1eeea; border-radius:22px; padding:18px; position:relative; overflow:hidden; transition: all .18s; text-align: left; min-height: 122px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 3px rgba(28,25,23,.03); }
+  .kpi:hover { border-color:#e6a88c; transform: translateY(-2px); box-shadow: 0 12px 28px -8px rgba(184,92,56,.22); }
   .kpi:active { transform: translateY(0) scale(.98); }
-  .kpi .kpi-value { font-size:34px; font-weight:700; line-height:1; margin-bottom:6px; }
+  .kpi .kpi-value { font-size:34px; font-weight:700; line-height:1; margin-bottom:6px; letter-spacing:-.02em; }
   .kpi .kpi-label { font-size:12px; color:#6b625a; font-weight:500; }
-  .kpi-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+  .kpi-icon { width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow { position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; background:#f1eeea; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow svg { width:14px; height:14px; color:#8a8078; }
-  .banner-card { background: linear-gradient(135deg, #b85c38 0%, #a04d2c 100%); border-radius: 24px; padding: 24px; color: #fff; position: relative; overflow: hidden; cursor: pointer; transition: transform .15s, box-shadow .15s; }
-  .banner-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(184,92,56,.25); }
+  .banner-card { background: linear-gradient(135deg, #b85c38 0%, #83401f 100%); border-radius: 28px; padding: 26px; color: #fff; position: relative; overflow: hidden; cursor: pointer; transition: transform .18s, box-shadow .18s; box-shadow: 0 12px 28px -10px rgba(184,92,56,.4); }
+  .banner-card:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -12px rgba(184,92,56,.5); }
   .banner-card:active { transform: translateY(0) scale(.99); }
-  .banner-deco { position: absolute; right: -20px; top: -20px; width: 180px; height: 180px; background: rgba(255,255,255,.1); border-radius: 50%; pointer-events: none; }
-  .banner-deco2 { position: absolute; right: 40px; bottom: -60px; width: 120px; height: 120px; background: rgba(255,255,255,.08); border-radius: 50%; pointer-events: none; }
-  .h-card { flex-shrink: 0; width: 180px; background: #fff; border: 1px solid #e4dfd9; border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s; }
-  .h-card:hover { border-color: #b85c38; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(184,92,56,.1); }
+  .banner-deco { position: absolute; right: -30px; top: -30px; width: 200px; height: 200px; background: rgba(255,255,255,.12); border-radius: 50%; pointer-events: none; }
+  .banner-deco2 { position: absolute; right: 30px; bottom: -70px; width: 140px; height: 140px; background: rgba(255,255,255,.08); border-radius: 50%; pointer-events: none; }
+  .h-card { flex-shrink: 0; width: 190px; background: #fff; border: 1.5px solid #f1eeea; border-radius: 22px; overflow: hidden; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s; box-shadow: 0 1px 3px rgba(28,25,23,.04); }
+  .h-card:hover { border-color: #e6a88c; transform: translateY(-3px); box-shadow: 0 14px 30px -10px rgba(184,92,56,.25); }
   .h-card:active { transform: translateY(0) scale(.98); }
   .h-card-img { width: 100%; aspect-ratio: 4/3; background: #f1eeea; position: relative; overflow: hidden; }
   .h-card-img img { width: 100%; height: 100%; object-fit: cover; }
-  .h-card-body { padding: 10px 12px 12px; }
-  .h-card-title { font-size: 13px; font-weight: 700; color: #1c1917; line-height: 1.3; margin-bottom: 2px; }
-  .h-card-sub { font-size: 10px; color: #8a8078; margin-bottom: 6px; }
-  .h-card-price { font-size: 14px; font-weight: 700; color: #b85c38; }
-  .fab-btn { position: relative; top: -26px; width: 58px; height: 58px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(184,92,56,.45), 0 0 0 5px #f4f2ef; transition: transform .15s, background .15s; z-index: 42; cursor: pointer; border: none; margin: 0 auto; grid-column: 3; justify-self: center; align-self: end; }
+  .h-card-body { padding: 12px 14px 14px; }
+  .h-card-title { font-size: 13px; font-weight: 700; color: #1c1917; line-height: 1.3; margin-bottom: 3px; letter-spacing:-.01em; }
+  .h-card-sub { font-size: 10.5px; color: #8a8078; margin-bottom: 8px; }
+  .h-card-price { font-size: 15px; font-weight: 700; color: #a04d2c; letter-spacing:-.01em; }
+  .fab-btn { position: relative; top: -26px; width: 60px; height: 60px; border-radius: 50%; background: #b85c38; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(184,92,56,.45), 0 0 0 6px #f4f2ef; transition: transform .15s, background .15s; z-index: 42; cursor: pointer; border: none; margin: 0 auto; grid-column: 3; justify-self: center; align-self: end; }
   .fab-btn:hover { background: #a04d2c; }
   .fab-btn:active { transform: scale(.92); }
   .fab-btn svg { width: 28px; height: 28px; }
-  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e4dfd9; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,.04); }
+  .bottom-nav-new { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #f1eeea; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; z-index: 40; box-shadow: 0 -6px 24px rgba(28,25,23,.05); }
   .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; color: #8a8078; font-size: 10px; font-weight: 500; border-radius: 12px; transition: color .15s, background .15s; background: transparent; border: none; cursor: pointer; min-width: 0; }
-  .bottom-nav-item:hover { color: #a04d2c; background: #f1eeea; }
+  .bottom-nav-item:hover { color: #a04d2c; background: #fdf4ee; }
   .bottom-nav-item.active { color: #b85c38; }
   .bottom-nav-item.active svg { color: #b85c38; }
   .bottom-nav-item svg { width: 22px; height: 22px; }
   .app-header { background: #f4f2ef; padding: max(60px, env(safe-area-inset-top)) 20px 16px; }
   @media (min-width: 1024px) { .app-header { padding: 20px 24px 16px; } }
-  .bar-track { background:#f1eeea; border-radius:6px; height:6px; overflow:hidden; }
-  .bar-fill { background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); height:100%; transition: width .6s cubic-bezier(.2,.8,.2,1); border-radius:6px; }
+  .bar-track { background:#f1eeea; border-radius:8px; height:8px; overflow:hidden; }
+  .bar-fill { background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); height:100%; transition: width .6s cubic-bezier(.2,.8,.2,1); border-radius:8px; }
   .status-btn { cursor: pointer; transition: transform .12s, box-shadow .15s, filter .15s; }
-  .status-btn:hover { filter: brightness(1.08); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .status-btn:hover { filter: brightness(1.04); box-shadow: 0 2px 8px rgba(28,25,23,.08); }
   .status-btn:active { transform: scale(.94); }
-  .mini-photo { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f1eeea; }
-  .detail-view { position: fixed; inset: 0; background: rgba(28, 25, 23, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 44; opacity: 0; transition: opacity .3s ease; }
+  .mini-photo { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f1eeea; }
+  .detail-view { position: fixed; inset: 0; background: rgba(28,25,23, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 44; opacity: 0; transition: opacity .3s ease; }
   .detail-view.show { opacity: 1; }
   .detail-view-content { position: fixed; inset: 0; background: #f4f2ef; z-index: 45; overflow-y: auto; transform: translateY(20px); opacity: 0; transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
   .detail-view-content.show { transform: translateY(0); opacity: 1; }
-  @media (min-width: 1024px) { .detail-view-content { max-width: 900px; left: 50%; right: auto; transform: translate(-50%, 20px) scale(.98); box-shadow: 0 24px 60px -12px rgba(0,0,0,.25); } .detail-view-content.show { transform: translate(-50%, 0) scale(1); } }
+  @media (min-width: 1024px) { .detail-view-content { max-width: 900px; left: 50%; right: auto; transform: translate(-50%, 20px) scale(.98); box-shadow: 0 24px 60px -12px rgba(28,25,23,.25); } .detail-view-content.show { transform: translate(-50%, 0) scale(1); } }
   .dv-header { padding-top: max(60px, env(safe-area-inset-top)); padding-bottom: 12px; }
   @media (min-width: 1024px) { .dv-header { padding-top: 16px; padding-bottom: 12px; } }
-  .inline-edit { display: inline-block; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; cursor: text; transition: background .15s; border: 1px dashed transparent; min-width: 30px; }
-  .inline-edit:hover { background: rgba(184,92,56,.08); border-color: rgba(184,92,56,.2); }
-  .inline-edit.editing { background: #fff; border: 1px solid #b85c38; box-shadow: 0 0 0 3px rgba(184,92,56,.15); padding: 4px 8px; margin: -4px -8px; }
-  input.inline-input, select.inline-select, textarea.inline-textarea { background: #fff; border: 1px solid #b85c38; border-radius: 6px; padding: 4px 8px; font-size: inherit; font-family: inherit; color: inherit; font-weight: inherit; width: 100%; outline: none; box-shadow: 0 0 0 3px rgba(184,92,56,.15); }
+  .inline-edit { display: inline-block; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; cursor: text; transition: background .15s; border: 1px dashed transparent; min-width: 30px; }
+  .inline-edit:hover { background: rgba(184,92,56,.08); border-color: rgba(184,92,56,.25); }
+  .inline-edit.editing { background: #fff; border: 1.5px solid #b85c38; box-shadow: 0 0 0 4px rgba(184,92,56,.15); padding: 4px 8px; margin: -4px -8px; }
+  input.inline-input, select.inline-select, textarea.inline-textarea { background: #fff; border: 1.5px solid #b85c38; border-radius: 8px; padding: 4px 8px; font-size: inherit; font-family: inherit; color: inherit; font-weight: inherit; width: 100%; outline: none; box-shadow: 0 0 0 4px rgba(184,92,56,.15); }
   .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, #b85c38 0%, #cf7a56 100%); width: 0%; transition: width .3s ease, opacity .3s ease; opacity: 0; }
   .loading-bar.active { opacity: 1; }
-  .notes-box { min-height: 180px; font-size: 15px; line-height: 1.7; padding: 16px 18px !important; border-radius: 14px !important; background: #fafafa; border: 1px solid #e4dfd9; transition: all .15s; }
-  .notes-box:hover { background: #fff; border-color: #b85c38; box-shadow: 0 2px 8px rgba(184,92,56,.08); }
-  .notes-box.editing { min-height: 220px; background: #fff !important; border-color: #b85c38 !important; box-shadow: 0 0 0 3px rgba(184,92,56,.15) !important; }
+  .notes-box { min-height: 180px; font-size: 15px; line-height: 1.7; padding: 16px 18px !important; border-radius: 16px !important; background: #faf9f8; border: 1.5px solid #f1eeea; transition: all .15s; }
+  .notes-box:hover { background: #fff; border-color: #e6a88c; box-shadow: 0 4px 12px rgba(184,92,56,.08); }
+  .notes-box.editing { min-height: 220px; background: #fff !important; border-color: #b85c38 !important; box-shadow: 0 0 0 4px rgba(184,92,56,.15) !important; }
   textarea.inline-textarea { min-height: 180px; padding: 16px 18px; font-size: 15px; line-height: 1.7; resize: vertical; }
   textarea.form-notes { min-height: 320px; font-size: 15px; line-height: 1.7; padding: 16px 18px; resize: vertical; }
   textarea.form-internal-note { min-height: 160px; font-size: 14px; line-height: 1.6; padding: 14px 16px; resize: vertical; }
-  .expiry-modal-overlay { position: fixed; inset: 0; background: rgba(28, 25, 23, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 80; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .expiry-modal-overlay { position: fixed; inset: 0; background: rgba(28,25,23, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 80; display: none; align-items: center; justify-content: center; padding: 20px; }
   .expiry-modal-overlay.show { display: flex; }
-  .expiry-modal { background: #fff; border-radius: 24px; padding: 24px; max-width: 400px; width: 100%; box-shadow: 0 24px 60px -12px rgba(0,0,0,.3); transform: translateY(20px) scale(.95); opacity: 0; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+  .expiry-modal { background: #fff; border-radius: 28px; padding: 26px; max-width: 400px; width: 100%; box-shadow: 0 24px 60px -12px rgba(28,25,23,.3); transform: translateY(20px) scale(.95); opacity: 0; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s; }
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
 
   #overlay, #cfgOverlay, #galOverlay, #pickOverlay, #bkOverlay, #advFilterOverlay, #custOverlay, #custDetailOverlay, #custLinkOverlay, #custNoteOverlay, #notifOverlay, #profileOverlay { touch-action: manipulation; cursor: pointer; }
 
-  .cust-card { background:#fff; border:1px solid #e4dfd9; border-radius:18px; padding:16px; transition:border-color .15s, transform .15s, box-shadow .15s; cursor:pointer; }
-  .cust-card:hover { border-color:#b85c38; transform:translateY(-1px); box-shadow:0 4px 12px rgba(184,92,56,.1); }
+  .cust-card { background:#fff; border:1.5px solid #f1eeea; border-radius:22px; padding:16px; transition:border-color .18s, transform .18s, box-shadow .18s; cursor:pointer; box-shadow: 0 1px 3px rgba(28,25,23,.03); }
+  .cust-card:hover { border-color:#e6a88c; transform:translateY(-2px); box-shadow:0 12px 26px -8px rgba(184,92,56,.22); }
   .cust-card:active { transform:translateY(0) scale(.99); }
-  .pipe-status { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid; white-space:nowrap; }
-  .pipe-new { background:rgba(107,98,90,.1); color:#6b625a; border-color:rgba(107,98,90,.25); }
-  .pipe-talking { background:rgba(14,165,233,.1); color:#0284c7; border-color:rgba(14,165,233,.3); }
-  .pipe-viewing { background:rgba(168,85,247,.1); color:#9333ea; border-color:rgba(168,85,247,.3); }
-  .pipe-reserved { background:rgba(234,179,8,.1); color:#ca8a04; border-color:rgba(234,179,8,.35); }
-  .pipe-won { background:rgba(6,199,85,.1); color:#059669; border-color:rgba(6,199,85,.3); }
-  .pipe-lost { background:rgba(220,38,38,.1); color:#dc2626; border-color:rgba(220,38,38,.3); }
+  .pipe-status { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid; white-space:nowrap; }
+  .pipe-new { background:rgba(107,98,90,.1); color:#4b5563; border-color:rgba(107,98,90,.22); }
+  .pipe-talking { background:rgba(14,165,233,.1); color:#0284c7; border-color:rgba(14,165,233,.28); }
+  .pipe-viewing { background:rgba(139,92,246,.1); color:#7c3aed; border-color:rgba(139,92,246,.28); }
+  .pipe-reserved { background:rgba(245,158,11,.12); color:#b45309; border-color:rgba(245,158,11,.3); }
+  .pipe-won { background:rgba(16,185,129,.12); color:#059669; border-color:rgba(16,185,129,.28); }
+  .pipe-lost { background:rgba(239,68,68,.1); color:#dc2626; border-color:rgba(239,68,68,.28); }
   .timeline-item { position:relative; padding-left:26px; padding-bottom:14px; }
   .timeline-item::before { content:''; position:absolute; left:9px; top:18px; bottom:0; width:2px; background:#e4dfd9; }
   .timeline-item:last-child::before { display:none; }
   .timeline-dot { position:absolute; left:3px; top:6px; width:14px; height:14px; border-radius:50%; background:#b85c38; border:3px solid #fff; box-shadow:0 0 0 1px #e4dfd9; }
-  .kanban-col { flex-shrink:0; width:270px; background:#fafafa; border:1px solid #e4dfd9; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; max-height:70vh; }
+  .kanban-col { flex-shrink:0; width:270px; background:#faf9f8; border:1.5px solid #f1eeea; border-radius:20px; padding:12px; display:flex; flex-direction:column; gap:8px; max-height:70vh; }
   .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding-bottom:8px; border-bottom:1px solid #e4dfd9; margin-bottom:4px; }
   .kanban-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-  .link-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:600; background:rgba(184,92,56,.1); color:#a04d2c; }
+  .link-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:600; background:rgba(184,92,56,.12); color:#a04d2c; }
 
   @media (max-width: 1023px) {
     .mobile-header { position: fixed; top: 0; left: 0; right: 0; z-index: 40; }
-    .main-wrapper { padding-top: calc(max(60px, env(safe-area-inset-top)) + 150px); padding-bottom: 130px; }
+    .main-wrapper { padding-top: calc(max(60px, env(safe-area-inset-top)) + 200px); padding-bottom: 130px; }
   }
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
@@ -193,7 +202,7 @@ tailwind.config = { theme: { extend: { colors: {
     .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
     .room-grid { grid-template-columns: repeat(3, 1fr) !important; }
     .cust-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    .h-card { width: 200px; }
+    .h-card { width: 210px; }
   }
   @media (min-width: 640px) and (max-width: 1023px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -213,10 +222,10 @@ tailwind.config = { theme: { extend: { colors: {
 <div class="app-shell">
   <aside class="sidebar hidden flex-col bg-white border-r border-slate-700">
     <div class="p-5 border-b border-slate-700 flex-shrink-0">
-      <div class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-xl bg-brick-500 flex items-center justify-center text-white font-bold">S</div>
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-brick-500 flex items-center justify-center text-white font-bold shadow-md shadow-brick-500/25">S</div>
         <div>
-          <p class="text-xs font-semibold tracking-widest text-brick-600 uppercase">Staylow</p>
+          <p class="text-[10px] font-bold tracking-widest text-brick-600 uppercase">Staylow</p>
           <p class="text-sm font-bold text-ink -mt-0.5">Property Manager</p>
         </div>
       </div>
@@ -282,7 +291,7 @@ tailwind.config = { theme: { extend: { colors: {
       </button>
     </nav>
     <div class="p-3 border-t border-slate-700 flex-shrink-0">
-      <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-brick-500/25">
+      <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
       <p class="text-[10px] text-slate-500 text-center mt-2">v9.0 · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
@@ -290,35 +299,47 @@ tailwind.config = { theme: { extend: { colors: {
   </aside>
 
   <div class="main-wrapper bg-slate-950 relative">
-    <header class="mobile-header lg:hidden bg-slate-950 border-b border-slate-700/50 backdrop-blur-md" style="padding-top: max(60px, env(safe-area-inset-top));">
-      <div class="flex items-start justify-between px-5 pt-2 pb-3">
+
+    <!-- ============ MOBILE HERO HEADER ============ -->
+    <header class="mobile-header lg:hidden relative overflow-hidden" style="padding-top: max(60px, env(safe-area-inset-top));">
+      <!-- Hero cover background - tap to change -->
+      <div id="heroCover" onclick="document.getElementById('heroFile').click()" class="absolute inset-0 z-0 cursor-pointer active:opacity-90 transition-opacity" style="background-image: linear-gradient(135deg, #b85c38 0%, #83401f 100%); background-size: cover; background-position: center;">
+        <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(28,25,23,0.55) 0%, rgba(28,25,23,0.15) 45%, rgba(244,242,239,0.85) 78%, #f4f2ef 100%);"></div>
+      </div>
+      <input type="file" id="heroFile" accept="image/*" class="hidden" onchange="importHeroImage(this.files[0])">
+
+      <!-- Greeting row (over image) -->
+      <div class="relative z-10 flex items-start justify-between px-5 pt-3 pb-8">
         <div>
-          <div class="flex items-center gap-1.5 text-slate-500 mb-1">
+          <div class="flex items-center gap-1.5 text-white mb-1" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-            <span class="text-xs font-semibold tracking-wider uppercase">Staylow</span>
+            <span class="text-[10px] font-bold tracking-widest uppercase">Staylow</span>
           </div>
-          <h1 class="text-lg font-bold text-ink tracking-tight" id="greetingText">สวัสดี MAX 👋</h1>
-          <p class="text-xs text-slate-400 mt-0.5" id="headerDate"></p>
+          <h1 class="text-xl font-bold text-white tracking-tight" style="text-shadow: 0 2px 6px rgba(0,0,0,.4);" id="greetingText">สวัสดี MAX 👋</h1>
+          <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-1.5">
-          <button onclick="openNotifications()" class="w-10 h-10 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" aria-label="การแจ้งเตือน">
+          <button onclick="openNotifications()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
-            <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500"></span>
+            <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
           </button>
-          <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-sm active:scale-95 transition-transform">
-            M
+          <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-md active:scale-95 transition-transform overflow-hidden" id="headerAvatar">
+            <span id="headerAvatarText">M</span>
+            <img id="headerAvatarImg" class="w-full h-full object-cover hidden" alt="">
           </button>
         </div>
       </div>
-      <div class="px-5 pb-4">
+
+      <!-- Search bar row -->
+      <div class="relative z-10 px-5 pb-4">
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-white border border-slate-700 rounded-2xl py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 transition-all shadow-sm">
+            <input id="search" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-white border border-slate-700 rounded-full py-3 pl-11 pr-10 text-sm text-ink placeholder-slate-400 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15 transition-all shadow-sm">
             <button id="searchClear" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
-            <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
+            <div id="searchSuggest" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto hide-scrollbar"></div>
           </div>
-          <button onclick="openAdvancedFilter()" class="w-11 h-11 rounded-2xl bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm relative" title="ตัวกรองขั้นสูง">
+          <button onclick="openAdvancedFilter()" class="w-11 h-11 rounded-full bg-white border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all shrink-0 shadow-sm relative" title="ตัวกรองขั้นสูง">
             <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
             <span id="advFilterDot" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-brick-500 border-2 border-white"></span>
           </button>
@@ -326,18 +347,19 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </header>
 
+    <!-- ============ DESKTOP HEADER ============ -->
     <header class="hidden lg:flex items-center justify-between bg-white border-b border-slate-700 px-6 py-3 flex-shrink-0 z-40">
       <div class="loading-bar" id="desktopLoadingBar"></div>
       <div class="flex items-center gap-3 flex-1 max-w-xl">
         <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
-          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-10 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500">
-          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
-          <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-1 z-40 bg-white border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto hide-scrollbar"></div>
+          <i data-lucide="search" class="w-4 h-4 absolute left-4 top-3 text-slate-400"></i>
+          <input id="searchDesktop" type="text" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded-full py-2.5 pl-11 pr-10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brick-500 focus:ring-4 focus:ring-brick-500/15">
+          <button id="searchDesktopClear" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-slate-400 p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
+          <div id="searchSuggestDesktop" class="hidden absolute left-0 right-0 top-full mt-2 z-40 bg-white border border-slate-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto hide-scrollbar"></div>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="openAdvancedFilter()" class="w-10 h-10 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" title="ตัวกรองขั้นสูง">
+        <button onclick="openAdvancedFilter()" class="w-10 h-10 rounded-full bg-slate-950 border border-slate-700 flex items-center justify-center text-slate-500 hover:text-brick-600 hover:border-brick-500 transition-all relative" title="ตัวกรองขั้นสูง">
           <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
           <span id="advFilterDotDesktop" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-brick-500 border-2 border-white"></span>
         </button>
@@ -360,16 +382,16 @@ tailwind.config = { theme: { extend: { colors: {
               <i data-lucide="sparkles" class="w-3 h-3"></i>
               <span class="text-[10px] font-bold tracking-wider uppercase">Staylow Property</span>
             </div>
-            <h2 class="text-2xl lg:text-3xl font-bold leading-tight mb-1">เพิ่มห้องใหม่</h2>
-            <p class="text-sm text-white/80 mb-4">เริ่มจัดการห้องพักของคุณได้เลย</p>
-            <div class="inline-flex items-center gap-2 bg-white text-brick-600 rounded-full px-4 py-2 text-sm font-bold">
+            <h2 class="text-2xl lg:text-3xl font-bold leading-tight mb-1 tracking-tight">เพิ่มห้องใหม่</h2>
+            <p class="text-sm text-white/85 mb-5">เริ่มจัดการห้องพักของคุณได้เลย</p>
+            <div class="inline-flex items-center gap-2 bg-white text-brick-600 rounded-full px-5 py-2.5 text-sm font-bold shadow-lg">
               เริ่มต้น <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </div>
           </div>
         </button>
 
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-ink">ภาพรวม</h3>
+          <h3 class="text-base font-bold text-ink tracking-tight">ภาพรวม</h3>
           <button onclick="switchView('rooms')" class="text-xs text-brick-600 font-semibold flex items-center gap-1 hover:underline">
             ดูทั้งหมด <i data-lucide="chevron-right" class="w-3 h-3"></i>
           </button>
@@ -411,35 +433,35 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-ink">CRM ลูกค้า</h3>
+          <h3 class="text-base font-bold text-ink tracking-tight">CRM ลูกค้า</h3>
           <button onclick="switchView('customers')" class="text-xs text-brick-600 font-semibold flex items-center gap-1 hover:underline">
             ดูทั้งหมด <i data-lucide="chevron-right" class="w-3 h-3"></i>
           </button>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <button onclick="gotoCustFilter('all')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoCustFilter('all')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-brick-500/10 shrink-0"><i data-lucide="users" class="w-4 h-4 text-brick-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ลูกค้าทั้งหมด</p>
               <p class="text-lg font-bold text-brick-600" id="kpiCustTotal">0</p>
             </div>
           </button>
-          <button onclick="gotoCustFilter('NEED_FOLLOW')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoCustFilter('NEED_FOLLOW')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-rose-500/10 shrink-0"><i data-lucide="bell-ring" class="w-4 h-4 text-rose-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ต้องติดตาม</p>
               <p class="text-lg font-bold text-rose-600" id="kpiCustFollow">0</p>
             </div>
           </button>
-          <button onclick="gotoCustFilter('WON')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoCustFilter('WON')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-emerald-500/10 shrink-0"><i data-lucide="trophy" class="w-4 h-4 text-emerald-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ปิดการขาย</p>
               <p class="text-lg font-bold text-emerald-600" id="kpiCustWon">0</p>
             </div>
           </button>
-          <button onclick="gotoCustFilter('TALKING')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoCustFilter('TALKING')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-sky-500/10 shrink-0"><i data-lucide="messages-square" class="w-4 h-4 text-sky-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">กำลังคุย</p>
@@ -449,7 +471,7 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-ink">ห้องว่าง</h3>
+          <h3 class="text-base font-bold text-ink tracking-tight">ห้องว่าง</h3>
           <button onclick="gotoFilter('AVAILABLE')" class="text-xs text-brick-600 font-semibold flex items-center gap-1 hover:underline">
             ดูทั้งหมด <i data-lucide="chevron-right" class="w-3 h-3"></i>
           </button>
@@ -457,13 +479,13 @@ tailwind.config = { theme: { extend: { colors: {
         <div id="availableScroll" class="flex gap-3 overflow-x-auto hide-scrollbar pb-2 mb-6 -mx-5 px-5"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
-          <div class="bg-white border border-slate-700 rounded-2xl p-5">
+          <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">อัตราการเข้าพัก</h3>
               <i data-lucide="trending-up" class="w-4 h-4 text-brick-500"></i>
             </div>
             <div class="flex items-baseline gap-2 mb-3">
-              <span class="text-3xl font-bold text-ink" id="occupancyPct">0%</span>
+              <span class="text-3xl font-bold text-ink tracking-tight" id="occupancyPct">0%</span>
               <span class="text-xs text-slate-400" id="occupancyDetail">0/0 ห้อง</span>
             </div>
             <div class="bar-track"><div class="bar-fill" id="occupancyBar" style="width:0%"></div></div>
@@ -479,19 +501,19 @@ tailwind.config = { theme: { extend: { colors: {
             </div>
           </div>
 
-          <div class="bg-gradient-to-br from-brick-500 to-brick-600 rounded-2xl p-5 text-white relative overflow-hidden">
+          <div class="bg-gradient-to-br from-brick-500 to-brick-700 rounded-2xl p-5 text-white relative overflow-hidden shadow-lg shadow-brick-500/25">
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             <div class="absolute right-6 top-6 opacity-20"><i data-lucide="wallet" class="w-20 h-20"></i></div>
             <div class="relative z-10">
-              <p class="text-xs font-semibold text-brick-300 uppercase tracking-wider mb-1">รายได้รวมต่อเดือน</p>
-              <p class="text-3xl lg:text-4xl font-bold mb-3" id="totalRevenue">฿0</p>
+              <p class="text-xs font-semibold text-brick-100/90 uppercase tracking-wider mb-1">รายได้รวมต่อเดือน</p>
+              <p class="text-3xl lg:text-4xl font-bold mb-4 tracking-tight" id="totalRevenue">฿0</p>
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <button onclick="gotoFilter('OCCUPIED')" class="text-left hover:opacity-80">
-                  <p class="text-brick-200 text-xs">จากห้องที่มีผู้เช่า</p>
+                  <p class="text-white/70 text-xs">จากห้องที่มีผู้เช่า</p>
                   <p class="font-semibold text-white mt-0.5" id="revenueRented">฿0</p>
                 </button>
                 <button onclick="gotoFilter('EXPIRING')" class="text-left hover:opacity-80">
-                  <p class="text-brick-200 text-xs">หักสัญญาใกล้หมด</p>
+                  <p class="text-white/70 text-xs">หักสัญญาใกล้หมด</p>
                   <p class="font-semibold text-white mt-0.5" id="revenueAtRisk">฿0</p>
                 </button>
               </div>
@@ -500,28 +522,28 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <button onclick="gotoFilter('POSTED_TODAY')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoFilter('POSTED_TODAY')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-emerald-500/10 shrink-0"><i data-lucide="megaphone" class="w-4 h-4 text-emerald-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">โพสต์วันนี้</p>
               <p class="text-lg font-bold text-emerald-600" id="postedToday">0</p>
             </div>
           </button>
-          <button onclick="gotoFilter('UNPOSTED')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoFilter('UNPOSTED')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-amber-500/10 shrink-0"><i data-lucide="megaphone-off" class="w-4 h-4 text-amber-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ยังไม่โพสต์</p>
               <p class="text-lg font-bold text-amber-600" id="notPosted">0</p>
             </div>
           </button>
-          <button onclick="gotoFilter('EXPIRING')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoFilter('EXPIRING')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-amber-500/10 shrink-0"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">สัญญาใกล้หมด</p>
               <p class="text-lg font-bold text-amber-500" id="expiringCount">0</p>
             </div>
           </button>
-          <button onclick="gotoFilter('NO_NOTES')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98]">
+          <button onclick="gotoFilter('NO_NOTES')" class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 text-left hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
             <div class="kpi-icon bg-rose-500/10 shrink-0"><i data-lucide="file-question" class="w-4 h-4 text-rose-600"></i></div>
             <div class="min-w-0">
               <p class="text-xs text-slate-400">ไม่มีรายละเอียด</p>
@@ -531,7 +553,7 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
-          <div class="bg-white border border-slate-700 rounded-2xl p-5">
+          <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-semibold text-ink">รายได้แยกตามโครงการ</h3>
               <i data-lucide="building-2" class="w-4 h-4 text-brick-500"></i>
@@ -539,7 +561,7 @@ tailwind.config = { theme: { extend: { colors: {
             <div id="projectBreakdown" class="space-y-3"></div>
           </div>
 
-          <div class="bg-white border border-slate-700 rounded-2xl p-5">
+          <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-semibold text-ink">สัญญาใกล้หมดอายุ</h3>
               <button onclick="gotoFilter('EXPIRING')" class="text-[11px] text-brick-600 font-semibold hover:underline">ดูทั้งหมด</button>
@@ -549,7 +571,7 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
 
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-ink">ต้องติดตามวันนี้</h3>
+          <h3 class="text-base font-bold text-ink tracking-tight">ต้องติดตามวันนี้</h3>
           <button onclick="gotoCustFilter('NEED_FOLLOW')" class="text-xs text-brick-600 font-semibold flex items-center gap-1 hover:underline">
             ดูทั้งหมด <i data-lucide="chevron-right" class="w-3 h-3"></i>
           </button>
@@ -559,7 +581,7 @@ tailwind.config = { theme: { extend: { colors: {
 
       <!-- ============= VIEW: ROOMS ============= -->
       <div id="viewRooms" class="pt-4 lg:pt-6 hidden">
-        <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-800/60">
+        <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-700/60">
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="text-xl lg:text-2xl font-bold text-ink tracking-tight">ห้องพัก</h2>
@@ -572,19 +594,19 @@ tailwind.config = { theme: { extend: { colors: {
           </div>
 
           <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
-            <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
-            <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ว่าง</button>
-            <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีผู้เช่า</button>
-            <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
-            <button onclick="toggleFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">รอตรวจ</button>
-            <button onclick="toggleFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ขาย</button>
-            <button onclick="toggleFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใกล้หมดสัญญา</button>
-            <button onclick="toggleFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่โพสต์</button>
-            <button onclick="toggleFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">โพสต์เกิน 7 วัน</button>
-            <button onclick="toggleFilter('NO_NOTES')" data-f="NO_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรายละเอียด</button>
-            <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรายละเอียด</button>
-            <button onclick="toggleFilter('HAS_PHOTOS')" data-f="HAS_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">มีรูป</button>
-            <button onclick="toggleFilter('NO_PHOTOS')" data-f="NO_PHOTOS" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ไม่มีรูป</button>
+            <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5">ทั้งหมด</button>
+            <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5">ว่าง</button>
+            <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5">มีผู้เช่า</button>
+            <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5">จอง</button>
+            <button onclick="toggleFilter('PENDING')" data-f="PENDING" class="filter-btn px-3 py-1.5">รอตรวจ</button>
+            <button onclick="toggleFilter('FOR_SALE')" data-f="FOR_SALE" class="filter-btn px-3 py-1.5">ขาย</button>
+            <button onclick="toggleFilter('EXPIRING')" data-f="EXPIRING" class="filter-btn px-3 py-1.5">ใกล้หมดสัญญา</button>
+            <button onclick="toggleFilter('UNPOSTED')" data-f="UNPOSTED" class="filter-btn px-3 py-1.5">ยังไม่โพสต์</button>
+            <button onclick="toggleFilter('STALE')" data-f="STALE" class="filter-btn px-3 py-1.5">โพสต์เกิน 7 วัน</button>
+            <button onclick="toggleFilter('NO_NOTES')" data-f="NO_NOTES" class="filter-btn px-3 py-1.5">ไม่มีรายละเอียด</button>
+            <button onclick="toggleFilter('HAS_NOTES')" data-f="HAS_NOTES" class="filter-btn px-3 py-1.5">มีรายละเอียด</button>
+            <button onclick="toggleFilter('HAS_PHOTOS')" data-f="HAS_PHOTOS" class="filter-btn px-3 py-1.5">มีรูป</button>
+            <button onclick="toggleFilter('NO_PHOTOS')" data-f="NO_PHOTOS" class="filter-btn px-3 py-1.5">ไม่มีรูป</button>
           </div>
 
           <div class="flex items-center gap-2 mb-3 text-[11px] overflow-x-auto hide-scrollbar pb-1">
@@ -607,7 +629,7 @@ tailwind.config = { theme: { extend: { colors: {
 
       <!-- ============= VIEW: CUSTOMERS ============= -->
       <div id="viewCustomers" class="pt-4 lg:pt-6 hidden">
-        <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-800/60">
+        <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-700/60">
           <div class="flex items-center justify-between mb-4">
             <div>
               <h2 class="text-xl lg:text-2xl font-bold text-ink tracking-tight">ลูกค้า (CRM)</h2>
@@ -618,23 +640,23 @@ tailwind.config = { theme: { extend: { colors: {
                 <button onclick="setCustView('grid')" id="cvGrid" title="การ์ด"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
                 <button onclick="setCustView('kanban')" id="cvKanban" title="Kanban"><i data-lucide="columns-3" class="w-3.5 h-3.5"></i></button>
               </div>
-              <button onclick="openCustSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-brick-500/25">
+              <button onclick="openCustSheet('add')" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs px-3 py-2 rounded-full flex items-center gap-1.5 shadow-md shadow-brick-500/25">
                 <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>เพิ่ม
               </button>
             </div>
           </div>
 
           <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
-            <button onclick="toggleCustFilter('all')" data-cf="all" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ทั้งหมด</button>
-            <button onclick="toggleCustFilter('NEW')" data-cf="NEW" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ใหม่</button>
-            <button onclick="toggleCustFilter('TALKING')" data-cf="TALKING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">กำลังคุย</button>
-            <button onclick="toggleCustFilter('VIEWING')" data-cf="VIEWING" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">นัดดู</button>
-            <button onclick="toggleCustFilter('RESERVED')" data-cf="RESERVED" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">จอง</button>
-            <button onclick="toggleCustFilter('WON')" data-cf="WON" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ปิดการขาย</button>
-            <button onclick="toggleCustFilter('LOST')" data-cf="LOST" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ปิดไม่สำเร็จ</button>
-            <button onclick="toggleCustFilter('NEED_FOLLOW')" data-cf="NEED_FOLLOW" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ต้องติดตาม</button>
-            <button onclick="toggleCustFilter('HAS_UNIT')" data-cf="HAS_UNIT" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">สนใจห้องแล้ว</button>
-            <button onclick="toggleCustFilter('NO_UNIT')" data-cf="NO_UNIT" class="filter-btn px-3 py-1.5 rounded-full border border-slate-700 bg-white">ยังไม่ผูกห้อง</button>
+            <button onclick="toggleCustFilter('all')" data-cf="all" class="filter-btn px-3 py-1.5">ทั้งหมด</button>
+            <button onclick="toggleCustFilter('NEW')" data-cf="NEW" class="filter-btn px-3 py-1.5">ใหม่</button>
+            <button onclick="toggleCustFilter('TALKING')" data-cf="TALKING" class="filter-btn px-3 py-1.5">กำลังคุย</button>
+            <button onclick="toggleCustFilter('VIEWING')" data-cf="VIEWING" class="filter-btn px-3 py-1.5">นัดดู</button>
+            <button onclick="toggleCustFilter('RESERVED')" data-cf="RESERVED" class="filter-btn px-3 py-1.5">จอง</button>
+            <button onclick="toggleCustFilter('WON')" data-cf="WON" class="filter-btn px-3 py-1.5">ปิดการขาย</button>
+            <button onclick="toggleCustFilter('LOST')" data-cf="LOST" class="filter-btn px-3 py-1.5">ปิดไม่สำเร็จ</button>
+            <button onclick="toggleCustFilter('NEED_FOLLOW')" data-cf="NEED_FOLLOW" class="filter-btn px-3 py-1.5">ต้องติดตาม</button>
+            <button onclick="toggleCustFilter('HAS_UNIT')" data-cf="HAS_UNIT" class="filter-btn px-3 py-1.5">สนใจห้องแล้ว</button>
+            <button onclick="toggleCustFilter('NO_UNIT')" data-cf="NO_UNIT" class="filter-btn px-3 py-1.5">ยังไม่ผูกห้อง</button>
           </div>
 
           <div class="flex items-center gap-2 mb-3 text-[11px]">
@@ -759,7 +781,7 @@ tailwind.config = { theme: { extend: { colors: {
 
   <div class="flex gap-2 mt-6">
     <button onclick="clearAdvancedFilter()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ล้างค่า</button>
-    <button onclick="applyAdvancedFilter()" class="flex-[2] bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">ใช้ตัวกรอง</button>
+    <button onclick="applyAdvancedFilter()" class="flex-[2] bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">ใช้ตัวกรอง</button>
   </div>
 </div>
 
@@ -832,7 +854,7 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="flex gap-2 mt-5">
     <button id="custDeleteBtn" onclick="deleteCustomer()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
     <button onclick="closeCustSheet()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
-    <button onclick="saveCustomer()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
+    <button onclick="saveCustomer()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 </div>
 
@@ -879,7 +901,7 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
   <div class="flex gap-2 mt-5">
     <button onclick="closeCustNote()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
-    <button onclick="saveCustNote()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
+    <button onclick="saveCustNote()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 </div>
 
@@ -924,6 +946,33 @@ tailwind.config = { theme: { extend: { colors: {
   <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
   <input type="hidden" id="f_id">
   <input type="hidden" id="f_isTemp" value="">
+
+  <!-- ======= AUTO PARSE PANEL ======= -->
+  <div class="bg-gradient-to-br from-brick-50 to-brick-100 border border-brick-200 rounded-2xl p-4 mb-4">
+    <div class="flex items-center gap-2 mb-1.5">
+      <div class="w-7 h-7 rounded-lg bg-brick-500 flex items-center justify-center"><i data-lucide="wand-2" class="w-3.5 h-3.5 text-white"></i></div>
+      <div>
+        <p class="text-xs font-bold text-brick-800">แยกรายละเอียดอัตโนมัติ</p>
+        <p class="text-[10px] text-brick-600 leading-tight">วางข้อความ แล้วระบบจะกรอกช่องให้</p>
+      </div>
+    </div>
+    <textarea id="parseInput" rows="4" class="inp !mt-2 !text-xs !bg-white/95 !border-brick-200 focus:!border-brick-500" placeholder="ตัวอย่าง:
+The Excel Sukhumvit 50
+ห้อง 1203 ชั้น 3 อาคาร Tower A
+ราคา 13,000 บาท/เดือน
+1 ห้องนอน 1 ห้องน้ำ 30 ตร.ม.
+วิว Pool
+เจ้าของ คุณสมชาย โทร 081-234-5678
+LINE: somchai88"></textarea>
+    <div class="flex gap-2 mt-2">
+      <button type="button" onclick="clearParseInput()" class="bg-white text-brick-700 border border-brick-200 text-xs py-2 px-3 rounded-full font-semibold active:scale-95">ล้าง</button>
+      <button type="button" onclick="parseAndFill()" class="flex-1 bg-brick-500 hover:bg-brick-600 text-white text-xs py-2 rounded-full font-semibold shadow-md shadow-brick-500/25 flex items-center justify-center gap-1.5 active:scale-95">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>แยกและเติมข้อมูล
+      </button>
+    </div>
+    <p class="text-[10px] text-brick-600 mt-2" id="parseStatus"></p>
+  </div>
+
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
       <label class="col-span-2 relative">โครงการ *<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
@@ -981,7 +1030,7 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="flex gap-2 mt-5">
     <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
     <button onclick="closeSheet()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
-    <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
+    <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 </div>
 
@@ -990,8 +1039,16 @@ tailwind.config = { theme: { extend: { colors: {
 <div id="cfgSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[460px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[53] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
 
+  <input type="file" id="avatarFile" accept="image/*" class="hidden" onchange="importAvatarImage(this.files[0])">
+
   <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-200">
-    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shadow-md">M</div>
+    <button onclick="document.getElementById('avatarFile').click()" class="relative w-14 h-14 rounded-full overflow-hidden shadow-md active:scale-95 transition-transform bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
+      <span id="settingsAvatarText">M</span>
+      <img id="settingsAvatarImg" class="absolute inset-0 w-full h-full object-cover hidden" alt="">
+      <span class="absolute -bottom-0 -right-0 w-5 h-5 rounded-full bg-brick-500 border-2 border-white flex items-center justify-center">
+        <i data-lucide="camera" class="w-2.5 h-2.5 text-white"></i>
+      </span>
+    </button>
     <div class="flex-1 min-w-0">
       <p class="text-base font-bold text-ink">MAX</p>
       <p class="text-xs text-slate-500">Staylow Agent</p>
@@ -1001,19 +1058,34 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 
   <div class="space-y-1 mb-4">
-    <button onclick="switchView('rooms'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+    <button onclick="switchView('rooms'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการห้องพัก</p><p class="text-[11px] text-slate-400">ดูทั้งหมด / ค้นหา / กรอง</p></div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
     </button>
-    <button onclick="switchView('customers'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+    <button onclick="switchView('customers'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5 text-brick-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการลูกค้า</p><p class="text-[11px] text-slate-400">CRM / pipeline / ประวัติ</p></div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
     </button>
-    <button onclick="openBackup(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+    <button onclick="openBackup(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0"><i data-lucide="database" class="w-5 h-5 text-emerald-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">สำรอง / กู้คืนข้อมูล</p><p class="text-[11px] text-slate-400">ไฟล์ JSON, นำเข้า Excel</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="document.getElementById('heroFile').click(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0"><i data-lucide="image" class="w-5 h-5 text-purple-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">เปลี่ยนภาพปก</p><p class="text-[11px] text-slate-400">รูปหัว Dashboard</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="resetHeroImage();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><i data-lucide="rotate-ccw" class="w-5 h-5 text-slate-500"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รีเซ็ตภาพปก</p><p class="text-[11px] text-slate-400">กลับเป็นสีอิฐเริ่มต้น</p></div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+    </button>
+    <button onclick="resetAvatar();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0"><i data-lucide="user-x" class="w-5 h-5 text-rose-600"></i></div>
+      <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รีเซ็ตรูปโปรไฟล์</p><p class="text-[11px] text-slate-400">กลับเป็นตัวอักษร M</p></div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
     </button>
   </div>
@@ -1033,7 +1105,7 @@ tailwind.config = { theme: { extend: { colors: {
 
   <div class="flex gap-2 mt-5">
     <button onclick="closeSettings()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ปิด</button>
-    <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold">บันทึก</button>
+    <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
   <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.0 (CRM)</p>
@@ -1045,10 +1117,10 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div class="flex justify-between items-center mb-4"><h2 id="galTitle" class="text-base font-bold text-ink">รูปห้อง</h2><button onclick="closeGallery()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <div class="grid grid-cols-2 gap-2 mb-4">
-    <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
+    <button onclick="pickPhotos('album')" class="bg-brick-500 active:scale-95 text-white font-semibold text-xs py-2.5 rounded-full flex items-center justify-center gap-2 shadow-md shadow-brick-500/25"><i data-lucide="images" class="w-4 h-4"></i>เลือกจากอัลบั้ม</button>
     <button onclick="pickPhotos('camera')" class="bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
   </div>
-  <label class="flex items-center justify-between text-xs text-slate-600 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#cf5f37]"></label>
+  <label class="flex items-center justify-between text-xs text-slate-600 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#b85c38]"></label>
   <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
   <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
   <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
@@ -1073,7 +1145,7 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
   <div id="pickGrid" class="grid grid-cols-3 gap-1.5 mb-3"></div>
   <p id="pickCount" class="text-xs text-slate-400 text-center mb-3">เลือกแล้ว 0 รูป</p>
-  <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40"><i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span></button>
+  <button id="pickConfirm" onclick="confirmPhotoPicker()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-40 shadow-md shadow-brick-500/25"><i data-lucide="check" class="w-4 h-4"></i><span id="pickConfirmLabel">ยืนยัน</span></button>
 </div>
 
 <!-- ====== BACKUP ====== -->
@@ -1083,7 +1155,7 @@ tailwind.config = { theme: { extend: { colors: {
   <h2 class="text-base font-bold text-ink mb-1">สำรอง / กู้คืนข้อมูล</h2>
   <p class="text-xs text-slate-400 mb-4">ไฟล์สำรองรวมข้อมูลห้อง ลูกค้า และรูปทั้งหมด</p>
   <div class="space-y-2">
-    <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล</button>
+    <button onclick="exportData()" class="w-full bg-brick-500 active:scale-95 text-white font-semibold text-sm py-3 rounded-full flex items-center justify-center gap-2 shadow-md shadow-brick-500/25"><i data-lucide="download" class="w-4 h-4"></i>สำรองข้อมูล</button>
     <button onclick="document.getElementById('bkFile').click()" class="w-full bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-sm py-3 rounded-full flex items-center justify-center gap-2"><i data-lucide="upload" class="w-4 h-4 text-brick-600"></i>กู้คืนจากไฟล์</button>
     <input type="file" id="bkFile" accept=".json,application/json" class="hidden" onchange="importData(this.files[0])">
   </div>
@@ -1099,7 +1171,7 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="flex justify-between items-center p-4 pt-[max(16px,env(safe-area-inset-top))] text-slate-300">
     <span id="lbCount" class="text-xs"></span>
     <div class="flex gap-4">
-      <button onclick="deleteCurrentPhoto()" class="text-rose-600"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+      <button onclick="deleteCurrentPhoto()" class="text-rose-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
       <button onclick="closeLightbox()"><i data-lucide="x" class="w-6 h-6"></i></button>
     </div>
   </div>
@@ -1108,12 +1180,12 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
   <div class="flex justify-between p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
     <button onclick="stepPhoto(-1)" class="text-slate-300 p-2"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-    <button onclick="setCover()" class="text-xs text-brick-600 px-3 py-2 border border-brick-500/30 rounded-lg">ตั้งเป็นรูปหน้าปก</button>
+    <button onclick="setCover()" class="text-xs text-brick-300 px-3 py-2 border border-brick-400/40 rounded-full">ตั้งเป็นรูปหน้าปก</button>
     <button onclick="stepPhoto(1)" class="text-slate-300 p-2"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
   </div>
 </div>
 
-<div id="toast" class="toast bg-ink border border-ink text-white text-xs px-4 py-2.5 rounded-xl shadow-xl max-w-[360px] text-center"></div>
+<div id="toast" class="toast"></div>
 <script>
 // ============= DATA LAYER =============
 const KEY = 'staylow_units_v1';
@@ -1123,6 +1195,8 @@ const LAST_BK_KEY = 'staylow_last_backup';
 const VIEW_KEY = 'staylow_view';
 const NAV_KEY = 'staylow_nav_view';
 const CUST_VIEW_KEY = 'staylow_cust_view';
+const HERO_KEY = 'staylow_hero_img';
+const AVATAR_KEY = 'staylow_avatar';
 
 const seed = [
   { id:'u1', project:'The Excel Sukhumvit 50', building:'Tower A', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' },
@@ -1195,6 +1269,298 @@ function setCustView(mode) { custViewMode = mode; try { localStorage.setItem(CUS
 function load(key, fallback) { try { const s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(fallback)); }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 function persistCust() { try { localStorage.setItem(CUST_KEY, JSON.stringify(customers)); } catch (e) {} }
+
+// ============= HERO COVER IMAGE =============
+function loadHeroImage() {
+  try {
+    const dataUrl = localStorage.getItem(HERO_KEY);
+    const el = document.getElementById('heroCover');
+    if (el && dataUrl) el.style.backgroundImage = `url(${dataUrl})`;
+  } catch (e) {}
+}
+
+async function importHeroImage(file) {
+  if (!file) return;
+  const input = document.getElementById('heroFile');
+  try {
+    const img = await decodeImage(file);
+    const trySizes = [
+      { max: 1400, q: 0.78 },
+      { max: 1100, q: 0.72 },
+      { max: 800,  q: 0.65 },
+      { max: 600,  q: 0.6 }
+    ];
+    let saved = false;
+    for (const s of trySizes) {
+      const r = Math.min(1, s.max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width  = Math.round(img.width  * r);
+      c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const blob = await toJpeg(c, s.q);
+      const b64  = await blobToB64(blob);
+      const dataUrl = 'data:image/jpeg;base64,' + b64;
+      try { localStorage.setItem(HERO_KEY, dataUrl); saved = true; break; }
+      catch (e) { /* quota – ลองขนาดเล็กลง */ }
+    }
+    if (!saved) throw new Error('ไฟล์ใหญ่เกินไป');
+    loadHeroImage();
+    toast('เปลี่ยนภาพปกแล้ว');
+  } catch (e) {
+    toast('อัปโหลดไม่สำเร็จ: ' + e.message);
+  }
+  if (input) input.value = '';
+}
+
+function resetHeroImage() {
+  try {
+    localStorage.removeItem(HERO_KEY);
+    const el = document.getElementById('heroCover');
+    if (el) el.style.backgroundImage = 'linear-gradient(135deg, #b85c38 0%, #83401f 100%)';
+    toast('รีเซ็ตภาพปกแล้ว');
+  } catch (e) {}
+}
+
+// ============= AVATAR =============
+function loadAvatar() {
+  try {
+    const dataUrl = localStorage.getItem(AVATAR_KEY);
+    const headerImg = document.getElementById('headerAvatarImg');
+    const headerText = document.getElementById('headerAvatarText');
+    const settingsImg = document.getElementById('settingsAvatarImg');
+    const settingsText = document.getElementById('settingsAvatarText');
+    if (dataUrl) {
+      if (headerImg) { headerImg.src = dataUrl; headerImg.classList.remove('hidden'); }
+      if (headerText) headerText.classList.add('hidden');
+      if (settingsImg) { settingsImg.src = dataUrl; settingsImg.classList.remove('hidden'); }
+      if (settingsText) settingsText.classList.add('hidden');
+    } else {
+      if (headerImg) { headerImg.classList.add('hidden'); headerImg.removeAttribute('src'); }
+      if (headerText) headerText.classList.remove('hidden');
+      if (settingsImg) { settingsImg.classList.add('hidden'); settingsImg.removeAttribute('src'); }
+      if (settingsText) settingsText.classList.remove('hidden');
+    }
+  } catch (e) {}
+}
+
+async function importAvatarImage(file) {
+  if (!file) return;
+  const input = document.getElementById('avatarFile');
+  try {
+    const img = await decodeImage(file);
+    const trySizes = [
+      { max: 400, q: 0.85 },
+      { max: 300, q: 0.8 },
+      { max: 200, q: 0.75 }
+    ];
+    let saved = false;
+    for (const s of trySizes) {
+      const r = Math.min(1, s.max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width  = Math.round(img.width  * r);
+      c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const blob = await toJpeg(c, s.q);
+      const b64  = await blobToB64(blob);
+      const dataUrl = 'data:image/jpeg;base64,' + b64;
+      try { localStorage.setItem(AVATAR_KEY, dataUrl); saved = true; break; }
+      catch (e) { /* quota */ }
+    }
+    if (!saved) throw new Error('ไฟล์ใหญ่เกินไป');
+    loadAvatar();
+    toast('เปลี่ยนรูปโปรไฟล์แล้ว');
+  } catch (e) {
+    toast('อัปโหลดไม่สำเร็จ: ' + e.message);
+  }
+  if (input) input.value = '';
+}
+
+function resetAvatar() {
+  try {
+    localStorage.removeItem(AVATAR_KEY);
+    loadAvatar();
+    toast('รีเซ็ตรูปโปรไฟล์แล้ว');
+  } catch (e) {}
+}
+
+// ============= AUTO PARSE ROOM TEXT =============
+function parseRoomText(raw) {
+  const out = {};
+  if (!raw) return out;
+  // Normalize
+  let t = raw.replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ');
+
+  // === ROOM NUMBER ===
+  // patterns: "ห้อง 1203", "Room 1203", "unit A1203", "1203" (if just number line)
+  let m = t.match(/(?:ห้อง|room|unit|no\.?|เลขที่)\s*[:：#]?\s*([A-Za-z]?[\d][\d\/\-]*)/i);
+  if (m) out.room = m[1];
+
+  // === FLOOR ===
+  m = t.match(/(?:ชั้น|floor|fl\.?)\s*[:：]?\s*(\d{1,3})/i);
+  if (m) out.floor = m[1];
+
+  // === BUILDING ===
+  m = t.match(/(?:อาคาร|ตึก|building|tower)\s*[:：]?\s*([A-Za-z0-9ก-๙]+(?:\s+[A-Za-z0-9ก-๙]+){0,2})/i);
+  if (m) {
+    const b = m[1].trim().replace(/\s+(ห้อง|ชั้น|ราคา|ขนาด|วิว|โทร|เบอร์)$/i, '').trim();
+    if (b && b.length < 30) out.building = b;
+  }
+
+  // === RENT (ราคา/ค่าเช่า) ===
+  // Thai number with comma
+  m = t.match(/(?:ราคา|ค่าเช่า|ค่า\s*เช่า|rent|เช่า)\s*[:：]?\s*([\d,]+(?:\.\d+)?)\s*(?:บาท|฿|thb|baht|\/เดือน|\/month|ต่อเดือน|เดือน)?/i);
+  if (m) out.rent = m[1].replace(/,/g, '');
+  else {
+    // fallback: any number followed by บาท/เดือน
+    m = t.match(/([\d,]{4,}(?:\.\d+)?)\s*(?:บาท|฿)\s*(?:\/|ต่อ)?\s*เดือน/i);
+    if (m) out.rent = m[1].replace(/,/g, '');
+  }
+
+  // === SIZE (ตร.ม.) ===
+  m = t.match(/(?:ขนาด|พื้นที่|size|sqm)\s*[:：]?\s*([\d.]+)\s*(?:ตร\.?ม\.?|sqm|sq\.?m|m²|m2)?/i);
+  if (m) out.size = m[1];
+  else {
+    m = t.match(/([\d.]+)\s*(?:ตร\.?ม\.?|sqm|sq\.?m|m²|m2)/i);
+    if (m) out.size = m[1];
+  }
+
+  // === BEDROOM / TYPE ===
+  const bedMatch = t.match(/(\d+)\s*(?:ห้องนอน|bed(?:room)?s?)/i);
+  const thaiBedMatch = t.match(/(?:นอน|bed(?:room)?s?)\s*[:：]?\s*(\d+)/i);
+  if (/studio|สตูดิโอ/i.test(t)) out.type = 'Studio';
+  else if (bedMatch) out.type = bedMatch[1] + ' Bed';
+  else if (thaiBedMatch) out.type = thaiBedMatch[1] + ' Bed';
+  else {
+    const singleBed = t.match(/\b(one|1)\s*(?:bed|ห้องนอน)/i);
+    if (singleBed) out.type = '1 Bed';
+  }
+
+  // === BATHROOM ===
+  const bathMatch = t.match(/(\d+)\s*(?:ห้องน้ำ|bath(?:room)?s?)/i) || t.match(/(?:ห้องน้ำ|bath(?:room)?s?)\s*[:：]?\s*(\d+)/i);
+  if (bathMatch) out.bath = bathMatch[1];
+
+  // === VIEW ===
+  m = t.match(/(?:วิว|view)\s*[:：]?\s*([A-Za-zก-๙][A-Za-zก-๙\s]{0,25})/i);
+  if (m) {
+    const v = m[1].trim().replace(/\s+(ชั้น|ห้อง|ราคา|โทร|เบอร์|ขนาด).*$/i, '').trim();
+    if (v && v.length < 30) out.view = v;
+  } else {
+    // common view keywords
+    if (/\bpool\s*view\b|\bสระว่ายน้ำ\b|\bวิวสระ\b/i.test(t)) out.view = 'Pool';
+    else if (/\bcity\s*view\b|\bวิวเมือง\b/i.test(t)) out.view = 'City';
+    else if (/\bgarden\s*view\b|\bวิวสวน\b/i.test(t)) out.view = 'Garden';
+  }
+
+  // === PHONE ===
+  m = t.match(/(?:โทร|tel|phone|เบอร์|tel\.)\s*[:：]?\s*((?:\+?66|0)[\d\-\s]{7,15})/i);
+  if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
+  else {
+    m = t.match(/((?:\+?66|0)\d{1,2}[\-\s]?\d{3}[\-\s]?\d{3,4})/);
+    if (m) out.ownerPhone = m[1].trim().replace(/\s+/g, '').replace(/^\+66/, '0');
+  }
+
+  // === LINE ===
+  m = t.match(/(?:line|ไลน์|line\s*id)\s*[:：]?\s*(@?[A-Za-z0-9._\-]{3,})/i);
+  if (m) out.ownerLine = m[1].replace(/^@/, '');
+  else {
+    m = t.match(/(?:line\.me\/ti\/p\/~?|line:\/\/ti\/p\/~?)([A-Za-z0-9._\-]+)/i);
+    if (m) out.ownerLine = m[1];
+  }
+
+  // === OWNER NAME ===
+  m = t.match(/(?:เจ้าของ|owner)\s*[:：]?\s*([ก-๙A-Za-z][ก-๙A-Za-z\s.]{0,30})/i);
+  if (m) {
+    const o = m[1].trim().replace(/\s+(โทร|tel|phone|เบอร์|line|ไลน์).*$/i, '').trim();
+    if (o && o.length < 40) out.owner = o;
+  } else {
+    m = t.match(/(?:คุณ|khun|mr\.?|mrs\.?|ms\.?)\s*([ก-๙A-Za-z][ก-๙A-Za-z\s.]{1,30})/i);
+    if (m) {
+      const o = ('คุณ' + m[1]).trim().replace(/\s+(โทร|tel|phone|เบอร์|line|ไลน์|ห้อง).*$/i, '').trim();
+      if (o && o.length < 40) out.owner = o;
+    }
+  }
+
+  // === STATUS ===
+  if (/มีผู้เช่า|occupied|มีคนเช่า|เช่าอยู่/i.test(t)) out.status = 'OCCUPIED';
+  else if (/\bจอง\b|reserved|booked/i.test(t)) out.status = 'RESERVED';
+  else if (/รอตรวจ|pending/i.test(t)) out.status = 'PENDING';
+  else if (/\bว่าง\b|available|ให้เช่า|ปล่อยเช่า/i.test(t)) out.status = 'AVAILABLE';
+
+  // === PROJECT ===
+  // Priority 1: explicit label
+  m = t.match(/(?:โครงการ|คอนโด|คอนโดมิเนียม|project|condo)\s*[:：]?\s*([^\n\r,;]{3,60})/i);
+  if (m) {
+    out.project = m[1].trim().replace(/\s+(ห้อง|ชั้น|อาคาร|ราคา|ขนาด).*$/i, '').trim();
+  } else {
+    // Priority 2: first non-empty line that looks like a project name
+    const lines = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      // skip lines that are clearly labels
+      if (/^(ห้อง|ชั้น|ราคา|ค่าเช่า|ขนาด|วิว|เจ้าของ|โทร|line|เบอร์|สถานะ|อาคาร|type|room|floor|rent|size|view|owner|tel|phone|status|building)/i.test(line)) continue;
+      // skip lines with only numbers
+      if (/^[\d\s,.\/\-]+$/.test(line)) continue;
+      // project name usually has letters
+      if (/[A-Za-zก-๙]/.test(line) && line.length >= 3 && line.length <= 80) {
+        out.project = line.replace(/^[•\-*]\s*/, '').trim();
+        break;
+      }
+    }
+  }
+
+  // === NOTES (fallback = whole text if not too long) ===
+  if (raw.length < 800) out.notes = raw.trim();
+
+  return out;
+}
+
+function parseAndFill() {
+  const input = document.getElementById('parseInput');
+  const status = document.getElementById('parseStatus');
+  const raw = (input.value || '').trim();
+  if (!raw) {
+    status.textContent = '⚠ กรุณาวางข้อความก่อน';
+    status.className = 'text-[10px] text-rose-600 mt-2';
+    return;
+  }
+  const parsed = parseRoomText(raw);
+  const filled = [];
+  const setF = (id, val) => { if (val !== undefined && val !== null && String(val).trim() !== '') { document.getElementById('f_' + id).value = val; filled.push(id); } };
+
+  setF('project', parsed.project);
+  setF('room', parsed.room);
+  setF('floor', parsed.floor);
+  setF('building', parsed.building);
+  setF('rent', parsed.rent);
+  setF('size', parsed.size);
+  setF('type', parsed.type);
+  setF('bath', parsed.bath);
+  setF('view', parsed.view);
+  setF('status', parsed.status);
+  setF('owner', parsed.owner);
+  setF('ownerPhone', parsed.ownerPhone);
+  setF('ownerLine', parsed.ownerLine);
+
+  if (filled.length === 0) {
+    status.textContent = '⚠ ไม่พบข้อมูลที่แยกได้ ลองตรวจสอบรูปแบบ';
+    status.className = 'text-[10px] text-rose-600 mt-2';
+    return;
+  }
+
+  // Auto scroll to first filled field
+  const firstEl = document.getElementById('f_' + filled[0]);
+  if (firstEl) firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  status.textContent = `✓ เติมข้อมูล ${filled.length} ช่อง: ${filled.join(', ')}`;
+  status.className = 'text-[10px] text-emerald-600 mt-2 font-medium';
+  toast(`แยกข้อมูล ${filled.length} ช่องแล้ว`);
+}
+
+function clearParseInput() {
+  const el = document.getElementById('parseInput');
+  if (el) el.value = '';
+  const st = document.getElementById('parseStatus');
+  if (st) { st.textContent = ''; st.className = 'text-[10px] text-brick-600 mt-2'; }
+}
 
 // ============= ADVANCED FILTER =============
 function openAdvancedFilter() {
@@ -1571,9 +1937,9 @@ function renderNotifications() {
     const iconColor = isCust ? 'text-brick-600' : (isExpired ? 'text-rose-600' : (n.days <= 7 ? 'text-amber-600' : 'text-sky-600'));
     const iconBg = isCust ? 'bg-brick-500/10' : (isExpired ? 'bg-rose-500/10' : (n.days <= 7 ? 'bg-amber-500/10' : 'bg-sky-500/10'));
     const iconName = isCust ? 'user-check' : (isExpired ? 'alert-octagon' : 'clock');
-    return `<button onclick="${n.link}" class="w-full text-left p-3 rounded-xl border ${bgColor} hover:brightness-95 active:scale-[0.98] transition-all">
+    return `<button onclick="${n.link}" class="w-full text-left p-3 rounded-2xl border ${bgColor} hover:brightness-95 active:scale-[0.98] transition-all">
       <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center shrink-0"><i data-lucide="${iconName}" class="w-5 h-5 ${iconColor}"></i></div>
+        <div class="w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0"><i data-lucide="${iconName}" class="w-5 h-5 ${iconColor}"></i></div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-ink truncate">${esc(n.title)}</p>
           <p class="text-[11px] text-slate-500 mt-0.5 truncate">${esc(n.sub)}</p>
@@ -1601,6 +1967,7 @@ function openSettings() {
   document.getElementById('cfg_custFollowDays').checked = c.custFollowDays;
   const lineEl = document.getElementById('cfgProfileLine');
   if (lineEl) lineEl.textContent = 'LINE: ' + c.lineId;
+  loadAvatar();
   document.getElementById('cfgOverlay').classList.remove('hidden');
   const sheetEl = document.getElementById('cfgSheet');
   sheetEl.classList.add('open');
@@ -1675,12 +2042,12 @@ function renderDetailView() {
 
   document.getElementById('detailContent').innerHTML = `
     <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;"><img id="dvCoverImg" class="w-full h-full object-cover" alt=""></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
           <p class="text-xs text-slate-400 mb-1 inline-edit" onclick="startInlineEdit(this, 'building')">${u.building ? '🏬 ' + esc(u.building) : 'แตะเพื่อใส่อาคาร'}</p>
-          <h2 class="text-2xl font-bold text-ink">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
+          <h2 class="text-2xl font-bold text-ink tracking-tight">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
         </div>
         <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
       </div>
@@ -1697,16 +2064,16 @@ function renderDetailView() {
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
+      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 shadow-sm"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between">
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
       <div><p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p><p class="text-sm font-semibold ${ps.cls}">${ps.label}</p></div>
       <button onclick="markAsPosted('${u.id}')" class="bg-[#06C755]/10 hover:bg-[#06C755]/20 text-[#06C755] font-semibold text-xs px-3 py-2 rounded-full border border-[#06C755]/25 active:scale-95">✓ ทำเครื่องหมายว่าโพสต์แล้ว</button>
     </div>
@@ -1726,7 +2093,7 @@ function renderDetailView() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีลูกค้าที่สนใจห้องนี้</p>'}
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
       <div class="flex items-center gap-3 mb-3">
         <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
         <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
@@ -1740,7 +2107,7 @@ function renderDetailView() {
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน')}</div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
       <div class="flex justify-between items-center mb-3"><div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-brick-600"></i><p class="text-sm font-semibold text-ink">สัญญาเช่า</p></div>${contractBadge}</div>
       <div class="text-sm text-slate-500 space-y-2">
         <div class="flex items-center gap-2"><span class="w-16">เริ่ม:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span></div>
@@ -1748,14 +2115,14 @@ function renderDetailView() {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5">
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
       <div class="flex items-center justify-between mb-3"><p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
       <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
 
-    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all">
+    <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all shadow-sm">
       <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p><p class="text-xs text-slate-400">${pic} รูป</p></div></div>
       <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
     </button>
@@ -1887,6 +2254,9 @@ function openSheet(mode, id) {
   toggleSalePrice(hasSale);
   updateUrlBtn();
   renderFormPhotos();
+  // Reset parse panel
+  const pi = document.getElementById('parseInput'); if (pi) pi.value = '';
+  const ps = document.getElementById('parseStatus'); if (ps) { ps.textContent = ''; ps.className = 'text-[10px] text-brick-600 mt-2'; }
   document.getElementById('overlay').classList.remove('hidden');
   const sheetEl = document.getElementById('sheet');
   sheetEl.classList.add('open');
@@ -1989,7 +2359,6 @@ async function copyAndSharePhotos(id) {
 
   const files = photos.map((p, i) => new File([p.full], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' }));
 
-  // คัดลอกเฉพาะรูป ไม่แนบข้อความ
   if (navigator.canShare && navigator.canShare({ files })) {
     try {
       await navigator.share({ files });
@@ -2076,7 +2445,7 @@ function renderDashboard() {
     const d = daysLeft(u.end);
     const cls = d < 0 ? 'text-rose-600' : d <= 7 ? 'text-rose-500' : 'text-amber-600';
     return `<button onclick="openDetailView('${u.id}')" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-      <div class="shrink-0 w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4 text-amber-600"></i></div>
+      <div class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4 text-amber-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p><p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p></div>
       <span class="text-xs font-bold ${cls} shrink-0">${d < 0 ? 'หมดแล้ว' : d + ' วัน'}</span>
     </button>`;
@@ -2089,7 +2458,7 @@ function renderDashboard() {
       followList.innerHTML = follow.map(c => {
         const cm = CUST_STATUS_META[c.status];
         const overdue = c.nextFollow && new Date(c.nextFollow) < new Date(new Date().toDateString());
-        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-700 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98]">
+        return `<button onclick="openCustDetail('${c.id}')" class="w-full text-left flex items-center gap-3 p-3 bg-white border border-slate-700 rounded-2xl hover:border-brick-500 transition-all active:scale-[0.98] shadow-sm">
           <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center text-brick-700 font-bold text-sm shrink-0">${esc((c.name||'?').slice(0,1))}</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink truncate">${esc(c.name)}</p>
@@ -2115,7 +2484,7 @@ function renderAvailableScroll() {
   container.innerHTML = available.map(u => {
     const pic = photoCount[u.id] || 0;
     return `<div class="h-card" onclick="openDetailView('${u.id}')">
-      <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${pic} รูป</span>` : ''}</div>
+      <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full">${pic} รูป</span>` : ''}</div>
       <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">${u.building ? esc(u.building) + ' · ' : ''}ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p></div>
     </div>`;
   }).join('');
@@ -2215,7 +2584,7 @@ function render() {
     } else if (q) {
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
-        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
+        ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left shadow-sm"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
       } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
     } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
   }
@@ -2236,14 +2605,14 @@ function cardRowHTML(x) {
   return `<div class="unit-card bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="p-4">
       <div class="flex items-start gap-3 mb-2">
-        <div class="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
+        <div class="shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
           ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
-          ${pic ? `<span class="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded-tl">${pic}</span>` : ''}
+          ${pic ? `<span class="absolute bottom-0 right-0 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-1 py-0.5 rounded-tl">${pic}</span>` : ''}
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
           ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}
-          <h3 class="text-base font-bold text-ink truncate">ห้อง ${esc(x.room)}</h3>
+          <h3 class="text-base font-bold text-ink truncate tracking-tight">ห้อง ${esc(x.room)}</h3>
           <div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>
         </div>
         <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</button>
@@ -2255,9 +2624,9 @@ function cardRowHTML(x) {
       </div>
       <p class="text-[10px] ${ps.cls} mb-3">${ps.label}</p>
       <div class="grid grid-cols-3 gap-1.5 mb-2" onclick="event.stopPropagation()">
-        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
-        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
-        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
+        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
+        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
+        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-xl flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
       </div>
       ${ownerBtnCount > 0 ? `<div class="grid gap-1.5" style="grid-template-columns: repeat(${ownerBtnCount}, minmax(0, 1fr));" onclick="event.stopPropagation()">
         ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
@@ -2277,7 +2646,7 @@ function listRowHTML(x) {
   const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
   return `<div class="unit-row bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="flex items-center gap-3 p-3">
-      <div class="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
+      <div class="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
         ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
       </div>
       <div class="flex-1 text-left min-w-0">
@@ -2442,9 +2811,9 @@ function custCardHTML(c) {
   const overdue = c.nextFollow && new Date(c.nextFollow) < new Date(new Date().toDateString());
   return `<div class="cust-card" onclick="openCustDetail('${c.id}')">
     <div class="flex items-start gap-3 mb-3">
-      <div class="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-base shadow-sm">${esc((c.name||'?').slice(0,1))}</div>
+      <div class="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 flex items-center justify-center text-white font-bold text-base shadow-md">${esc((c.name||'?').slice(0,1))}</div>
       <div class="flex-1 min-w-0">
-        <h3 class="text-base font-bold text-ink truncate">${esc(c.name)}</h3>
+        <h3 class="text-base font-bold text-ink truncate tracking-tight">${esc(c.name)}</h3>
         <p class="text-[11px] text-slate-500 mt-0.5 truncate">${c.phone ? `📞 ${esc(c.phone)}` : ''}${c.phone && c.line ? ' · ' : ''}${c.line ? `💬 ${esc(c.line)}` : ''}</p>
       </div>
       <button onclick="event.stopPropagation(); cycleCustStatus('${c.id}')" class="pipe-status ${cm.cls} shrink-0">${cm.label}</button>
@@ -2548,7 +2917,7 @@ function renderCustDetail() {
       </div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3 space-y-2 text-sm">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3 space-y-2 text-sm shadow-sm">
       ${c.phone ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="phone" class="w-4 h-4 text-brick-600 shrink-0"></i><span class="text-ink font-medium">${esc(c.phone)}</span></div>` : ''}
       ${c.line ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755] shrink-0"></i><span class="text-ink font-medium">${esc(c.line)}</span></div>` : ''}
       ${c.email ? `<div class="flex items-center gap-2 text-slate-600"><i data-lucide="mail" class="w-4 h-4 text-purple-600 shrink-0"></i><span class="text-ink font-medium break-all">${esc(c.email)}</span></div>` : ''}
@@ -2567,7 +2936,7 @@ function renderCustDetail() {
       </div>
     </div>` : ''}
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3 shadow-sm">
       <div class="flex items-center justify-between mb-2.5">
         <p class="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5 text-brick-600"></i>ห้องที่สนใจ (${linkedUnits.length})</p>
         <button onclick="openCustLinkPicker(null, '${c.id}')" class="text-[10px] bg-brick-500 text-white font-semibold px-2.5 py-1 rounded-full active:scale-95 hover:bg-brick-600"><i data-lucide="plus" class="w-3 h-3 inline"></i> ผูกห้อง</button>
@@ -2582,7 +2951,7 @@ function renderCustDetail() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่ได้ผูกห้อง</p>'}
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3.5 mb-3 shadow-sm">
       <p class="text-[11px] font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5 text-brick-600"></i>ประวัติติดต่อ (${timeline.length})</p>
       ${timeline.length ? timeline.map(t => `
         <div class="timeline-item">
@@ -2595,7 +2964,7 @@ function renderCustDetail() {
             </div>
           </div>
         </div>`).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีประวัติ</p>'}
-      <button onclick="openCustNote('${c.id}')" class="w-full mt-2 bg-brick-500 hover:bg-brick-600 text-white text-xs font-semibold py-2 rounded-full active:scale-95 flex items-center justify-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i>เพิ่มบันทึก</button>
+      <button onclick="openCustNote('${c.id}')" class="w-full mt-2 bg-brick-500 hover:bg-brick-600 text-white text-xs font-semibold py-2 rounded-full active:scale-95 flex items-center justify-center gap-1 shadow-md shadow-brick-500/25"><i data-lucide="plus" class="w-3.5 h-3.5"></i>เพิ่มบันทึก</button>
     </div>
 
     <div class="grid grid-cols-2 gap-2 mb-2">
@@ -2720,7 +3089,9 @@ async function exportData() {
   const photos = [];
   if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, full:await blobToB64(p.full), thumb:await blobToB64(p.thumb) }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
   const cfg = getPostConfig();
-  const payload = { app:'staylow', version:30, exportedAt:new Date().toISOString(), units, customers, photos, cfg };
+  const heroImg = (() => { try { return localStorage.getItem(HERO_KEY) || ''; } catch (e) { return ''; } })();
+  const avatarImg = (() => { try { return localStorage.getItem(AVATAR_KEY) || ''; } catch (e) { return ''; } })();
+  const payload = { app:'staylow', version:31, exportedAt:new Date().toISOString(), units, customers, photos, cfg, heroImg, avatarImg };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
@@ -2744,6 +3115,8 @@ async function importData(file) {
     inCusts.forEach(c => { const i = customers.findIndex(x => x.id === c.id); if (i >= 0) { customers[i] = { ...customers[i], ...c }; cUpd++; } else { customers.push(c); cAdd++; } });
     persist(); persistCust();
     if (data.cfg) savePostConfig({ ...DEFAULT_CFG, ...data.cfg });
+    if (data.heroImg) { try { localStorage.setItem(HERO_KEY, data.heroImg); loadHeroImage(); } catch (e) {} }
+    if (data.avatarImg) { try { localStorage.setItem(AVATAR_KEY, data.avatarImg); loadAvatar(); } catch (e) {} }
     let pAdded = 0;
     if (db && inPhotos.length) {
       const existing = new Set((await req(tx('readonly').getAllKeys())));
@@ -2854,7 +3227,7 @@ async function makeCollage(selectedPhotos) {
     const H = headH + rows * cell + (rows - 1) * gap + pad + footH;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const ctx = c.getContext('2d');
-    const Fn = 'Inter, "Noto Sans Thai", -apple-system, sans-serif';
+    const Fn = 'Poppins, "Noto Sans Thai", -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
     let textMax = W - pad * 2;
     if (logoImg) { const lh = 150, lw = lh * logoImg.width / logoImg.height; ctx.drawImage(logoImg, W - pad - lw, 40, lw, lh); textMax = W - pad * 2 - lw - 30; }
@@ -2862,7 +3235,7 @@ async function makeCollage(selectedPhotos) {
     ctx.fillStyle = '#1c1917'; ctx.font = `bold 52px ${Fn}`;
     ctx.fillText(fit(u.project + (u.building ? ' · ' + u.building : ''), `bold 52px ${Fn}`), pad, 96);
     const specs = [(u.type === 'Studio' ? 'สตูดิโอ' : u.type), u.bath ? `${u.bath} ห้องน้ำ` : '', u.size ? `${u.size} ตร.ม.` : '', u.floor ? `ชั้น ${u.floor}` : ''].filter(Boolean).join('  ·  ');
-    ctx.fillStyle = '#6b6058'; ctx.font = `34px ${Fn}`;
+    ctx.fillStyle = '#6b625a'; ctx.font = `34px ${Fn}`;
     ctx.fillText(fit(specs, `34px ${Fn}`), pad, 152);
     ctx.fillStyle = '#b85c38'; ctx.font = `bold 46px ${Fn}`;
     ctx.fillText(`฿${fmtNum(u.rent)} / เดือน`, pad, 212);
@@ -2925,7 +3298,7 @@ function closeGallery() { document.getElementById('galOverlay').classList.add('h
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
-  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800" data-id="${p.id}" onclick="openLightboxById('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ปก</span>' : ''}</div>`).join('');
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-xl overflow-hidden bg-slate-100" data-id="${p.id}" onclick="openLightboxById('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">ปก</span>' : ''}</div>`).join('');
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
@@ -2973,7 +3346,7 @@ function renderPicker() {
   const grid = document.getElementById('pickGrid');
   grid.innerHTML = galleryPhotos.map(p => {
     const idx = pickerSelected.indexOf(p.id), isSel = idx >= 0;
-    return `<div class="pick-cell relative aspect-square rounded-lg overflow-hidden bg-slate-800 ${isSel ? 'selected' : ''}" onclick="togglePick('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${isSel ? `<div class="order-badge">${idx + 1}</div>` : ''}</div>`;
+    return `<div class="pick-cell relative aspect-square rounded-xl overflow-hidden bg-slate-100 ${isSel ? 'selected' : ''}" onclick="togglePick('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${isSel ? `<div class="order-badge">${idx + 1}</div>` : ''}</div>`;
   }).join('');
   const c = pickerSelected.length;
   document.getElementById('pickCount').textContent = `เลือกแล้ว ${c} รูป${pickerMode === 'collage' ? ' / สูงสุด 6' : ''}`;
@@ -3041,23 +3414,29 @@ function toast(msg) { const t = document.getElementById('toast'); t.textContent 
 // ============== BOOT ==============
 openDB().then(async () => {
   await refreshCounts();
+  loadHeroImage();
+  loadAvatar();
   render();
   renderCustomers();
   switchView(currentView);
   setTimeout(() => checkExpiredContracts(), 800);
 }).catch(() => {
+  loadHeroImage();
+  loadAvatar();
   render();
   renderCustomers();
   switchView(currentView);
   setTimeout(() => checkExpiredContracts(), 800);
 });
 
+loadHeroImage();
+loadAvatar();
 render();
 renderCustomers();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '9.0';
+const APP_VERSION = '9.1';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
