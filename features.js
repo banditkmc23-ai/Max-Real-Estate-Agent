@@ -493,5 +493,54 @@ FX.doRenew = function (id) {
 FX.addTool({ label: 'สัญญาใกล้หมด', icon: 'alarm-clock', view: 'expiring', action: "FX.show('expiring')", badge: () => FX.expiringCount() });
 })();
 
+/* ===================== 6) MONTHLY REVENUE REPORT ===================== */
+(function () {
+const { $, E, B, T, icons, ymOf, thMonth, addMonths, units_, unitName, TH_M } = FX.u;
+let endYm = ymOf(new Date()), selYm = null;
+const occ = (u, ym) => (ym === ymOf(new Date()) && typeof isOccupiedIn === 'function') ? isOccupiedIn(u, ym) : FX.occIn(u, ym);
+FX.revOcc = occ;
+function series(end) {
+  const months = Array.from({ length: 12 }, (_, i) => addMonths(end, i - 11));
+  const us = units_();
+  return months.map(ym => { const o = us.filter(u => occ(u, ym)); return { ym, rev: o.reduce((s, u) => s + Number(u.rent || 0), 0), occ: o.length, total: us.length, pct: us.length ? Math.round(o.length / us.length * 100) : 0 }; });
+}
+FX.revenueSeries = series;
+function chart(data, sel) {
+  const W = 360, H = 170, P = 22, max = Math.max(...data.map(d => d.rev), 1), bw = (W - P) / data.length;
+  const bars = data.map((d, i) => { const h = Math.round(d.rev / max * (H - 40)); const x = P + i * bw + 3; return `<g onclick="FX.revSel('${d.ym}')" style="cursor:pointer"><rect x="${x}" y="${H - 20 - h}" width="${bw - 6}" height="${Math.max(h, 1)}" rx="4" fill="${d.ym === sel ? '#b85c38' : '#f0c4a8'}"><title>${thMonth(d.ym)}: ${B(d.rev)}</title></rect><text x="${x + (bw - 6) / 2}" y="${H - 6}" font-size="8" text-anchor="middle" fill="#8a8078">${TH_M[Number(d.ym.slice(5)) - 1]}</text></g>`; }).join('');
+  const pts = data.map((d, i) => `${P + i * bw + bw / 2},${H - 20 - d.pct / 100 * (H - 40)}`).join(' ');
+  const grid = [0, 0.5, 1].map(f => `<line x1="${P}" x2="${W}" y1="${H - 20 - f * (H - 40)}" y2="${H - 20 - f * (H - 40)}" stroke="#f1eeea"/><text x="0" y="${H - 17 - f * (H - 40)}" font-size="7" fill="#8a8078">${Math.round(max * f / 1000)}K</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="กราฟรายได้ 12 เดือน">${grid}${bars}<polyline points="${pts}" fill="none" stroke="#1c1917" stroke-width="1.2" stroke-dasharray="3 2"/>${data.map((d, i) => `<circle cx="${P + i * bw + bw / 2}" cy="${H - 20 - d.pct / 100 * (H - 40)}" r="1.8" fill="#1c1917"/>`).join('')}</svg>`;
+}
+FX.registerView('revenue', { title: 'รายงานรายได้', render() {
+  const data = series(endYm); const sel = selYm && data.some(d => d.ym === selYm) ? selYm : endYm;
+  const cur = data.find(d => d.ym === sel), prev = data[data.indexOf(cur) - 1];
+  const diff = prev && prev.rev ? Math.round((cur.rev - prev.rev) / prev.rev * 1000) / 10 : null;
+  const year = data.reduce((s, d) => s + d.rev, 0);
+  const by = {}; units_().forEach(u => { const p = u.project || '(ไม่ระบุ)'; by[p] = by[p] || { rev: 0, occ: 0, n: 0 }; by[p].n++; if (occ(u, sel)) { by[p].rev += Number(u.rent || 0); by[p].occ++; } });
+  const projs = Object.entries(by).sort((a, b) => b[1].rev - a[1].rev); const pmax = Math.max(...projs.map(p => p[1].rev), 1);
+  if (!units_().length) return (typeof emptyStateHTML === 'function' ? '<div class="mt-4">' + emptyStateHTML('bar-chart-3', 'ยังไม่มีข้อมูลรายได้', 'เพิ่มห้องและติ๊กมีผู้เช่ารายเดือน เพื่อดูรายงาน', 'เพิ่มห้อง', "openSheet('add')") + '</div>' : '');
+  return `<div class="flex items-center justify-between mb-4 gap-2"><p class="text-xs text-slate-400">12 เดือน ถึง ${thMonth(endYm)}</p><div class="flex items-center gap-1"><button onclick="FX.revNav(-12)" class="w-8 h-8 rounded-full bg-white border border-slate-700 flex items-center justify-center" aria-label="ก่อนหน้า"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button onclick="FX.revNav(12)" class="w-8 h-8 rounded-full bg-white border border-slate-700 flex items-center justify-center" aria-label="ถัดไป"><i data-lucide="chevron-right" class="w-4 h-4"></i></button><button onclick="FX.revExcel()" class="text-xs bg-white border border-slate-700 px-3 py-2 rounded-full flex items-center gap-1 font-semibold"><i data-lucide="download" class="w-3.5 h-3.5"></i>Excel</button></div></div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+  <div class="space-y-3"><div class="bg-gradient-to-br from-brick-500 to-brick-700 rounded-2xl p-4 text-white shadow-lg shadow-brick-500/25"><p class="text-[11px] text-white/80">รายได้ ${thMonth(sel)}</p><p class="text-3xl font-bold">${B(cur.rev)}</p><p class="text-xs text-white/80 mt-1">${diff === null ? '' : (diff >= 0 ? '▲ ' : '▼ ') + Math.abs(diff) + '% จากเดือนก่อน · '}เข้าพัก ${cur.occ}/${cur.total} ห้อง (${cur.pct}%) · 12 เดือน ${B(year)}</p></div>
+  <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm"><h3 class="text-sm font-semibold mb-2">รายได้และอัตราเข้าพัก</h3>${chart(data, sel)}<div class="flex gap-3 mt-2 text-[10px] text-slate-400"><span class="flex items-center gap-1"><span class="w-3 h-2 rounded bg-brick-200"></span>รายได้ (แตะแท่งเพื่อเลือกเดือน)</span><span class="flex items-center gap-1"><span class="w-3 border-t border-dashed border-ink"></span>อัตราเข้าพัก</span></div></div></div>
+  <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm space-y-3"><h3 class="text-sm font-semibold">แยกตามโครงการ (${thMonth(sel)})</h3>${projs.map(([n, d]) => `<button onclick="gotoProject(${E(JSON.stringify(n))})" class="w-full text-left"><div class="flex justify-between text-xs mb-1 gap-2"><span class="font-medium truncate">${E(n)}</span><span class="font-bold text-brick-600 shrink-0">${B(d.rev)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.rev / pmax * 100)}%"></div></div><p class="text-[10px] text-slate-400 mt-1">${d.occ}/${d.n} ห้องมีผู้เช่า</p></button>`).join('')}
+  <p class="text-[10px] text-slate-400 pt-1">คำนวณจากการติ๊ก "มีผู้เช่า" รายเดือนบนแดชบอร์ด ถ้าเดือนไหนไม่ได้ติ๊ก จะใช้วันเริ่ม/สิ้นสุดสัญญา</p></div></div>`;
+} });
+FX.revSel = ym => { selYm = ym; FX.refresh(); };
+FX.revNav = n => { endYm = addMonths(endYm, n); if (endYm > addMonths(ymOf(new Date()), 12)) endYm = addMonths(ymOf(new Date()), 12); selYm = null; FX.refresh(); };
+FX.revExcel = function () {
+  if (typeof XLSX === 'undefined') return T('กำลังโหลดตัวสร้าง Excel ลองอีกครั้ง');
+  const data = series(endYm), us = units_();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['เดือน', 'รายได้ (บาท)', 'ห้องมีผู้เช่า', 'ห้องทั้งหมด', 'อัตราเข้าพัก %'], ...data.map(d => [thMonth(d.ym), d.rev, d.occ, d.total, d.pct])]), 'รายเดือน');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['โครงการ', 'ห้อง', 'ค่าเช่า', ...data.map(d => thMonth(d.ym))], ...us.map(u => [u.project || '', u.room || '', Number(u.rent) || 0, ...data.map(d => occ(u, d.ym) ? Number(u.rent) || 0 : 0)])]), 'รายห้อง');
+  const by = {}; us.forEach(u => { const p = u.project || '(ไม่ระบุ)'; by[p] = by[p] || data.map(() => 0); data.forEach((d, i) => { if (occ(u, d.ym)) by[p][i] += Number(u.rent) || 0; }); });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['โครงการ', ...data.map(d => thMonth(d.ym)), 'รวม'], ...Object.entries(by).map(([p, a]) => [p, ...a, a.reduce((s, x) => s + x, 0)])]), 'รายโครงการ');
+  XLSX.writeFile(wb, `max-agent-revenue-${endYm}.xlsx`); T('ส่งออก Excel แล้ว');
+};
+FX.addTool({ label: 'รายงานรายได้', icon: 'bar-chart-3', view: 'revenue', action: "FX.show('revenue')" });
+})();
+
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
