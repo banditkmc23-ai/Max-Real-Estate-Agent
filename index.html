@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=10">
+<link rel="stylesheet" href="tailwind.min.css?v=11">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -3152,7 +3152,7 @@ async function exportData() {
   const cfg = getPostConfig();
   const heroImg = (() => { try { return localStorage.getItem(HERO_KEY) || ''; } catch (e) { return ''; } })();
   const avatarImg = (() => { try { return localStorage.getItem(AVATAR_KEY) || ''; } catch (e) { return ''; } })();
-  const payload = { app:'staylow', version:31, exportedAt:new Date().toISOString(), units, customers, photos, cfg, heroImg, avatarImg, monthlyOcc };
+  const payload = { app:'staylow', version:31, exportedAt:new Date().toISOString(), units, customers, photos, cfg, heroImg, avatarImg, monthlyOcc, fx: (window.FX && FX.exportAll) ? FX.exportAll() : undefined };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
@@ -3171,6 +3171,7 @@ async function importData(file) {
     const inCusts = Array.isArray(data) ? [] : (data.customers || []);
     const inPhotos = Array.isArray(data) ? [] : (data.photos || []);
     if (!inUnits.length && !inCusts.length) throw new Error('ไม่พบข้อมูล');
+    if (data.fx && window.FX && FX.importAll) { try { FX.importAll(data.fx); } catch (e) {} }
     if (data.monthlyOcc && typeof data.monthlyOcc === 'object') { Object.entries(data.monthlyOcc).forEach(([ym, m]) => { monthlyOcc[ym] = { ...(monthlyOcc[ym] || {}), ...m }; }); persistOcc(); }
     let added = 0, updated = 0, cAdd = 0, cUpd = 0;
     inUnits.forEach(u => { const i = units.findIndex(x => x.id === u.id); if (i >= 0) { units[i] = { ...units[i], ...u }; updated++; } else { units.push(u); added++; } });
@@ -3559,6 +3560,6 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=10"></script>
+<script src="features.js?v=11"></script>
 </body>
 </html>

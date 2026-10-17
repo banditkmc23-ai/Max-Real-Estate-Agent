@@ -209,5 +209,119 @@ if (_rdv) window.renderDetailView = function () {
 };
 })();
 
+/* ===================== 2) APPOINTMENTS + CALENDAR ===================== */
+(function () {
+const { $, E, T, ls, icons, pad, ymd, ymOf, thDate, thMonth, addMonths, units_, custs_, unitName, TH_M } = FX.u;
+const KEY = 'staylow_appointments_v1';
+let appts = ls.get(KEY, []);
+if (!Array.isArray(appts)) appts = [];
+const save = () => { ls.set(KEY, appts); };
+const TYPES = { VIEW: ['นัดดูห้อง', 'bg-brick-500'], SIGN: ['เซ็นสัญญา', 'bg-sky-500'], HANDOVER: ['ส่งมอบห้อง', 'bg-amber-500'], FOLLOW: ['ติดตาม', 'bg-emerald-500'] };
+const REM = [[0, 'ไม่เตือน'], [15, '15 นาที'], [60, '1 ชม.'], [1440, '1 วัน']];
+let calMonth = ymOf(new Date()), selDay = ymd(new Date());
+FX.appts = () => appts;
+FX.addBackup('appointments', () => appts, v => { if (!Array.isArray(v)) return; v.forEach(a => { const i = appts.findIndex(x => x.id === a.id); if (i >= 0) appts[i] = { ...appts[i], ...a }; else appts.push(a); }); save(); });
+const cust = id => custs_().find(c => c.id === id);
+const unit = id => units_().find(u => u.id === id);
+const sorted = list => list.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+const todayCount = () => appts.filter(a => a.date === ymd(new Date()) && !a.done).length;
+
+function apptCard(a) {
+  const c = cust(a.custId), u = unit(a.unitId), t = TYPES[a.type] || TYPES.VIEW;
+  const rem = REM.find(r => r[0] === Number(a.reminder));
+  return `<div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-700 flex gap-3 ${a.done ? 'opacity-60' : ''}">
+    <div class="text-center w-12 shrink-0"><p class="text-sm font-bold">${E(a.time || '--:--')}</p><p class="text-[10px] text-slate-400">${E(a.endTime || '')}</p></div>
+    <div class="w-1 rounded-full ${t[1]}"></div>
+    <div class="flex-1 min-w-0" onclick="FX.editAppt('${a.id}')"><p class="text-sm font-semibold truncate ${a.done ? 'line-through' : ''}">${E(c ? c.name : (a.custName || 'ไม่ระบุลูกค้า'))}</p><p class="text-[11px] text-slate-400 truncate">${E(unitName(u))}</p>
+      <div class="flex flex-wrap gap-1.5 mt-2"><span class="text-[10px] px-2 py-0.5 rounded-full bg-brick-50 text-brick-700">${t[0]}</span>${rem && rem[0] ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">เตือน ${rem[1]} ก่อน</span>` : ''}${a.done ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700">เสร็จแล้ว</span>' : ''}</div>${a.note ? `<p class="text-[11px] text-slate-400 mt-1.5 line-clamp-2">${E(a.note)}</p>` : ''}</div>
+    <div class="flex flex-col gap-1.5 shrink-0">
+      ${c && c.phone ? `<a href="tel:${E(String(c.phone).replace(/[^0-9+]/g, ''))}" class="w-8 h-8 rounded-full bg-brick-500/10 text-brick-600 flex items-center justify-center" aria-label="โทร"><i data-lucide="phone" class="w-3.5 h-3.5"></i></a>` : ''}
+      <button onclick="FX.apptLine('${a.id}')" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:#06C7551a;color:#06C755" aria-label="ส่ง LINE"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i></button>
+      <button onclick="FX.toggleAppt('${a.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center" aria-label="เสร็จ"><i data-lucide="${a.done ? 'rotate-ccw' : 'check'}" class="w-3.5 h-3.5"></i></button>
+    </div></div>`;
+}
+FX.apptCard = apptCard;
+function calendar() {
+  const [y, m] = calMonth.split('-').map(Number);
+  const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const today = ymd(new Date());
+  let cells = '';
+  for (let i = 0; i < first; i++) cells += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    const ds = `${calMonth}-${pad(d)}`, on = ds === selDay, isT = ds === today;
+    const dots = appts.filter(a => a.date === ds).slice(0, 3).map(a => `<span class="w-1 h-1 rounded-full ${on ? 'bg-white' : (TYPES[a.type] || TYPES.VIEW)[1]}"></span>`).join('');
+    cells += `<button onclick="FX.selDay('${ds}')" class="flex flex-col items-center py-1.5 rounded-xl ${on ? 'bg-brick-500 text-white' : isT ? 'bg-brick-50 text-brick-700' : 'hover:bg-slate-100'}"><span class="text-xs ${on || isT ? 'font-bold' : ''}">${d}</span><span class="flex gap-0.5 h-1 mt-1">${dots}</span></button>`;
+  }
+  return `<div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-700"><div class="flex items-center justify-between mb-3"><button onclick="FX.calNav(-1)" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" aria-label="เดือนก่อน"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><p class="text-sm font-semibold">${thMonth(calMonth)}</p><button onclick="FX.calNav(1)" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" aria-label="เดือนถัดไป"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div>
+  <div class="grid grid-cols-7 text-center text-[10px] text-slate-400 mb-1"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div><div class="grid grid-cols-7 gap-y-1 text-center">${cells}</div>
+  <div class="flex flex-wrap gap-3 mt-3 text-[10px] text-slate-400">${Object.values(TYPES).map(t => `<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full ${t[1]}"></span>${t[0]}</span>`).join('')}</div></div>`;
+}
+FX.registerView('appts', { title: 'นัดดูห้อง', render() {
+  const mCount = appts.filter(a => a.date.startsWith(calMonth)).length;
+  const day = sorted(appts.filter(a => a.date === selDay));
+  const d = new Date(selDay + 'T00:00:00');
+  const upcoming = sorted(appts.filter(a => a.date > selDay && !a.done)).slice(0, 5);
+  return `<div class="flex items-center justify-between mb-4"><p class="text-xs text-slate-400">${thMonth(calMonth)} ${mCount} นัด · วันนี้ ${todayCount()} นัด</p><button onclick="FX.editAppt()" class="bg-brick-500 hover:bg-brick-400 text-white text-xs font-semibold px-3 py-2 rounded-full flex items-center gap-1.5 shadow-md shadow-brick-500/25"><i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>เพิ่มนัด</button></div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4"><div>${calendar()}</div><div class="space-y-2">
+  <div class="flex items-center justify-between"><h3 class="text-sm font-semibold">${['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][d.getDay()]} ${thDate(selDay)}</h3><span class="text-[11px] text-slate-400">${day.length} นัด</span></div>
+  ${day.length ? day.map(apptCard).join('') : (typeof emptyStateHTML === 'function' ? emptyStateHTML('calendar-days', 'ไม่มีนัดในวันนี้', 'เพิ่มนัดดูห้อง เซ็นสัญญา หรือส่งมอบห้อง แล้วระบบจะเตือนในแอป', 'เพิ่มนัด', `FX.editAppt(null,'${selDay}')`) : '')}
+  ${upcoming.length ? `<h3 class="text-sm font-semibold pt-3">นัดถัดไป</h3>${upcoming.map(a => `<button onclick="FX.selDay('${a.date}')" class="w-full text-left flex items-center gap-3 p-2.5 bg-white border border-slate-700 rounded-xl"><span class="w-1.5 h-8 rounded-full ${(TYPES[a.type] || TYPES.VIEW)[1]}"></span><span class="flex-1 min-w-0"><span class="block text-xs font-semibold truncate">${E((cust(a.custId) || {}).name || a.custName || 'ไม่ระบุลูกค้า')}</span><span class="block text-[10px] text-slate-400 truncate">${E(unitName(unit(a.unitId)))}</span></span><span class="text-[11px] text-slate-500 shrink-0">${thDate(a.date)} ${E(a.time || '')}</span></button>`).join('')}` : ''}
+  </div></div>`;
+} });
+FX.selDay = d => { selDay = d; calMonth = d.slice(0, 7); FX.refresh(); };
+FX.calNav = n => { calMonth = addMonths(calMonth, n); selDay = calMonth + '-01'; FX.refresh(); };
+FX.toggleAppt = id => { const a = appts.find(x => x.id === id); if (!a) return; a.done = !a.done; save(); FX.refresh(); FX.injectTools(); };
+FX.apptLine = id => {
+  const a = appts.find(x => x.id === id); if (!a) return; const c = cust(a.custId), u = unit(a.unitId), cf = FX.u.cfg();
+  const t = (TYPES[a.type] || TYPES.VIEW)[0];
+  FX.lineShare(`สวัสดีค่ะ${c ? ' ' + c.name : ''} ขอยืนยัน${t}\n🏢 ${unitName(u)}\n📅 ${thDate(a.date)} เวลา ${a.time || '-'}${a.note ? '\n📝 ' + a.note : ''}${u && u.project ? '\n📍 https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(u.project) : ''}\n— ${cf.agentName || ''}${cf.phone ? ' ' + cf.phone : ''}`);
+};
+const opt = (list, val) => list.map(([v, l]) => `<option value="${E(v)}" ${String(v) === String(val) ? 'selected' : ''}>${E(l)}</option>`).join('');
+FX.editAppt = function (id, date, preset) {
+  const a = id ? appts.find(x => x.id === id) : { id: '', date: date || selDay, time: '10:00', endTime: '', type: 'VIEW', reminder: 60, custId: '', unitId: '', note: '', ...(preset || {}) };
+  if (!a) return;
+  const cOpts = [['', '— เลือกลูกค้า —'], ...custs_().map(c => [c.id, c.name || '(ไม่มีชื่อ)'])];
+  const uOpts = [['', '— เลือกห้อง —'], ...units_().map(u => [u.id, unitName(u)])];
+  const chip = (name, v, l, cur) => `<label class="cursor-pointer"><input type="radio" name="${name}" value="${v}" ${String(v) === String(cur) ? 'checked' : ''} class="peer hidden"><span class="inline-block px-3 py-1.5 rounded-full text-[11px] bg-slate-100 text-slate-500 peer-checked:bg-brick-500 peer-checked:text-white peer-checked:font-semibold">${l}</span></label>`;
+  FX.open(FX.sheetHead(id ? 'แก้ไขนัด' : 'เพิ่มนัดดูห้อง') + `<div class="space-y-3 text-[11px] text-slate-500">
+    <label class="block">ลูกค้า<select id="fxA_c" class="inp">${opt(cOpts, a.custId)}</select></label>
+    <label class="block">ห้อง<select id="fxA_u" class="inp">${opt(uOpts, a.unitId)}</select></label>
+    <div class="grid grid-cols-3 gap-2"><label>วันที่<input id="fxA_d" type="date" class="inp" value="${E(a.date)}"></label><label>เริ่ม<input id="fxA_t" type="time" class="inp" value="${E(a.time)}"></label><label>ถึง<input id="fxA_e" type="time" class="inp" value="${E(a.endTime || '')}"></label></div>
+    <div>ประเภท<div class="flex flex-wrap gap-1.5 mt-1.5">${Object.entries(TYPES).map(([k, t]) => chip('fxA_type', k, t[0], a.type)).join('')}</div></div>
+    <div>แจ้งเตือนในแอป<div class="flex flex-wrap gap-1.5 mt-1.5">${REM.map(([v, l]) => chip('fxA_rem', v, l, a.reminder)).join('')}</div></div>
+    <label class="block">หมายเหตุ<textarea id="fxA_n" rows="2" class="inp" placeholder="เช่น เจอกันที่ล็อบบี้">${E(a.note || '')}</textarea></label>
+    <p class="text-[10px] text-slate-400">การแจ้งเตือนจะขึ้นในแอปเมื่อเปิดแอปอยู่ (ไม่มีระบบส่งแจ้งเตือนจากเซิร์ฟเวอร์) · ส่ง LINE ยืนยันให้ลูกค้าได้จากปุ่ม LINE</p>
+  </div>
+  <div class="grid ${id ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mt-5">${id ? `<button onclick="FX.delAppt('${id}')" class="py-2.5 rounded-full bg-rose-500/10 text-rose-600 text-sm font-semibold">ลบ</button>` : ''}<button onclick="FX.close()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-semibold">ยกเลิก</button><button onclick="FX.saveAppt('${id || ''}')" class="py-2.5 rounded-full bg-brick-500 text-white text-sm font-semibold">บันทึกนัด</button></div>`);
+};
+FX.saveAppt = function (id) {
+  const v = s => ($(s) || {}).value || '';
+  const r = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
+  const date = v('fxA_d'); if (!date) return T('เลือกวันที่');
+  const data = { custId: v('fxA_c'), unitId: v('fxA_u'), date, time: v('fxA_t'), endTime: v('fxA_e'), type: r('fxA_type') || 'VIEW', reminder: Number(r('fxA_rem') || 0), note: v('fxA_n').trim() };
+  if (id) { const a = appts.find(x => x.id === id); Object.assign(a, data, { notified: false }); }
+  else appts.push({ id: 'a' + Date.now().toString(36), done: false, createdAt: Date.now(), ...data });
+  save(); FX.close(); selDay = date; calMonth = date.slice(0, 7); T('บันทึกนัดแล้ว');
+  if (!$('viewFx') || $('viewFx').classList.contains('hidden')) FX.show('appts'); else FX.refresh();
+  FX.injectTools();
+};
+FX.delAppt = id => { if (!confirm('ลบนัดนี้?')) return; appts = appts.filter(a => a.id !== id); save(); FX.close(); FX.refresh(); FX.injectTools(); };
+FX.addTool({ label: 'นัดดูห้อง', icon: 'calendar-days', view: 'appts', action: "FX.show('appts')", badge: () => todayCount() });
+// in-app reminders
+function checkReminders() {
+  const now = Date.now(); let changed = false;
+  appts.forEach(a => {
+    if (a.done || a.notified || !Number(a.reminder) || !a.date) return;
+    const at = new Date(`${a.date}T${a.time || '09:00'}:00`).getTime();
+    if (now >= at - a.reminder * 60000 && now < at + 3600000) {
+      const c = cust(a.custId); a.notified = true; changed = true;
+      T(`⏰ ${(TYPES[a.type] || TYPES.VIEW)[0]} ${a.time || ''} · ${c ? c.name : ''} ${unitName(unit(a.unitId))}`);
+    }
+  });
+  if (changed) save();
+}
+setTimeout(checkReminders, 3000); setInterval(checkReminders, 60000);
+})();
+
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
