@@ -175,7 +175,7 @@ async function cloudLink(u, o, withPhotos) {
   const fresh = sorted.filter(p => !(p.url && !p.full));
   const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
   const init = await call({ action: 'init', count: fresh.length, og: sorted.length > 0, ...(sh ? { id: sh.id, secret: sh.secret } : {}) });
-  const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
+  const failedUp = new Set(); const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
   const jobs = sorted.map(p => { if (p.url && !p.full) { images.push({ url: p.url }); sent.push(null); return null; }
     const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
     return async () => {
@@ -185,7 +185,7 @@ async function cloudLink(u, o, withPhotos) {
         const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null);
         if (r && r.ok) { prog(++done, fresh.length); return; }
       }
-      throw new Error('upload failed');
+      failedUp.add(up.url); prog(++done, fresh.length);
     }; }).filter(Boolean);
   // 4 parallel uploads; resizing of the next photo overlaps with uploads in flight
   if (init.og && sorted[0]) jobs.push(async () => {
@@ -197,8 +197,11 @@ async function cloudLink(u, o, withPhotos) {
   });
   let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
   const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
-  const j = await call({ action: 'commit', id: init.id, data: o, images, secret, v: init.v });
-  u.share = { id: j.id, secret, sig, at: Date.now() }; try { (window.persist || (() => {}))(); } catch (e) {}
+  if (failedUp.size && failedUp.size === fresh.length && fresh.length) throw new Error('อัปโหลดรูปไม่สำเร็จ');
+  const keepIdx = images.map((x, i) => failedUp.has(x.url) ? -1 : i).filter(i => i >= 0);
+  const j = await call({ action: 'commit', id: init.id, data: o, images: keepIdx.map(i => images[i]), secret, v: init.v });
+  if (failedUp.size) { sorted.splice(0, sorted.length, ...keepIdx.map(i => sorted[i])); const s2 = keepIdx.map(i => sent[i]); sent.splice(0, sent.length, ...s2); shareNote = `อัปโหลดรูปไม่สำเร็จ ${failedUp.size} รูป แชร์ใหม่อีกครั้งเพื่อลองเพิ่ม`; }
+  u.share = { id: j.id, secret, sig: failedUp.size ? '' : sig, at: Date.now() }; try { (window.persist || (() => {}))(); } catch (e) {}
   setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const id = j.id;
   const link = linkOf(id);
@@ -213,7 +216,12 @@ async function cloudLink(u, o, withPhotos) {
 async function buildLink(u, opts) {
   const c = cfg();
   const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').replace(new RegExp('(?:ห้อง(?:เลขที่)?|room|unit|no\\.?|#)?\\s*[:：#]?\\s*' + String(u.room).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').replace(/[ \t]{2,}/g, ' ').trim() : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
-  try { return await cloudLink(u, o, !!opts.photo); } catch (e) { console.warn('cloud share failed, using long link', e); }
+  if (!opts.long) {
+    let err;
+    for (let t = 0; t < 2; t++) { try { return await cloudLink(u, o, !!opts.photo); } catch (e) { err = e; console.warn('cloud share failed', e); if (!navigator.onLine) break; await new Promise(r => setTimeout(r, 1500)); } }
+    const m = String(err && err.message || err || '');
+    const e2 = new Error(!navigator.onLine || m === 'offline' ? 'ไม่มีอินเทอร์เน็ต' : / 429/.test(m) ? 'แชร์ถี่เกินไป รอสักครู่แล้วลองใหม่' : / 403/.test(m) ? 'ลิงก์นี้แก้ไขจากเครื่องนี้ไม่ได้' : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ'); e2.detail = m; throw e2;
+  }
   let link = BASE() + '#' + await encode(o);
   if (opts.photo) {
     for (const [w, q] of [[360, 0.5], [260, 0.45], [200, 0.4]]) {
@@ -231,12 +239,25 @@ async function renderShare() {
   const u = units_().find(x => x.id === shareState.id); if (!u) return;
   const el = $('fxShareBody'); if (!el) return;
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
-  shareNote = ''; shareState.link = await buildLink(u, shareState);
+  shareNote = ''; shareState.link = '';
+  try { shareState.link = await buildLink(u, shareState); }
+  catch (e) {
+    el.querySelector('#fxShareLink').innerHTML = `<span class="text-rose-600 font-semibold">สร้างลิงก์สั้นไม่สำเร็จ: ${E(e.message)}</span><br><span class="text-[10px] text-slate-400">${E(e.detail || '')}</span>`;
+    el.querySelector('#fxShareLen').innerHTML = `<span class="flex gap-2 mt-1"><button onclick="FX.shareRetry()" class="px-3 py-1.5 rounded-full bg-brick-500 text-white text-[11px] font-semibold">ลองใหม่</button><button onclick="FX.shareLong()" class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">ใช้ลิงก์ยาวแทน</button></span>`;
+    return;
+  }
   el.querySelector('#fxShareLink').textContent = shareState.link;
   el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์ถาวรของห้องนี้ · แก้ข้อมูลแล้วแชร์อีกครั้ง ลิงก์เดิมจะอัปเดตให้') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
+FX.shareRetry = () => renderShare();
+FX.shareLong = async function () {
+  const u = units_().find(x => x.id === shareState.id); if (!u) return; const el = $('fxShareBody');
+  shareState.link = await buildLink(u, { ...shareState, long: true });
+  el.querySelector('#fxShareLink').textContent = shareState.link;
+  el.querySelector('#fxShareLen').textContent = `ลิงก์ยาว (สำรอง) ${shareState.link.length.toLocaleString()} ตัวอักษร · ไม่ใช่ลิงก์ถาวร`;
+};
 FX.shareNew = function () {
   const u = units_().find(x => x.id === shareState.id); if (!u || !u.share) return renderShare();
   if (!confirm('สร้างลิงก์ใหม่ให้ห้องนี้? ลิงก์เดิมจะยังเปิดได้ แต่จะไม่อัปเดตข้อมูลอีก')) return;
@@ -461,7 +482,7 @@ FX.sendMatches = async function (cid) {
   const top = FX.matchesFor(c).slice(0, 3); if (!top.length) return;
   T('กำลังสร้างลิงก์...');
   const lines = [];
-  for (const m of top) { const link = FX.buildRoomLink ? await FX.buildRoomLink(m.u, { photo: false, showPhone: true, hideRoom: false }) : ''; lines.push(`🏢 ${unitName(m.u)} · ${m.u.type || ''} ${m.u.size ? m.u.size + ' ตร.ม.' : ''}\n💰 ${B(m.u.rent)}/เดือน\n${link}`); }
+  for (const m of top) { let link = ''; try { link = FX.buildRoomLink ? await FX.buildRoomLink(m.u, { photo: false, showPhone: true, hideRoom: false }) : ''; } catch (e) { T('สร้างลิงก์ไม่สำเร็จ: ' + e.message); return; } lines.push(`🏢 ${unitName(m.u)} · ${m.u.type || ''} ${m.u.size ? m.u.size + ' ตร.ม.' : ''}\n💰 ${B(m.u.rent)}/เดือน\n${link}`); }
   FX.lineShare(`สวัสดีค่ะ ${c.name || ''} ห้องที่น่าจะตรงกับที่มองหาค่ะ\n\n${lines.join('\n\n')}`);
 };
 const _rcd = window.renderCustDetail;

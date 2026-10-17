@@ -4,7 +4,7 @@ const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 const PUB = Deno.env.get("SUPABASE_URL") + "/storage/v1/object/public/room-photos/";
 const MAX_IMG = 2 * 1024 * 1024, MAX_N = 12, MAX_BODY = 30 * 1024 * 1024;
 const hits = new Map<string, number[]>();
-function limited(ip: string) { const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < 3600_000); a.push(now); hits.set(ip, a); return a.length > 30; }
+function limited(ip: string, max = 120) { const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < 3600_000); a.push(now); hits.set(ip, a); return a.length > max; }
 function cors(req: Request) { const o = req.headers.get("origin") || ""; return { "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin" }; }
 const J = (req: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json" } });
 function sniff(b: Uint8Array): [string, string] | null {
