@@ -394,5 +394,53 @@ if (_rcd) window.renderCustDetail = function () {
 };
 })();
 
+/* ===================== 4) AVAILABILITY CALENDAR ===================== */
+(function () {
+const { $, E, B, icons, ymOf, thMonth, addMonths, units_, unitName, TH_M } = FX.u;
+const mStart = ym => ym + '-01';
+const mEnd = ym => { const [y, m] = ym.split('-').map(Number); return ymOf(new Date(y, m - 1, 1)) + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0'); };
+const marks = () => (typeof monthlyOcc !== 'undefined' && monthlyOcc) || {};
+/* State of a room in a month: 'O' occupied, 'V' vacant, 'R' reserved.
+   Priority: monthly mark (dashboard toggle) > contract dates > current status (current/future months only). */
+FX.occState = function (u, ym) {
+  const m = marks()[ym];
+  if (m && Object.prototype.hasOwnProperty.call(m, u.id)) return m[u.id] ? 'O' : 'V';
+  const cur = ymOf(new Date());
+  if (u.start || u.end) {
+    const s = u.start || '0000-01-01', e = u.end || '9999-12-31';
+    if (s <= mEnd(ym) && e >= mStart(ym)) return 'O';
+    if (ym < cur) return 'V';
+    if (u.status === 'RESERVED' && ym <= addMonths(cur, 1)) return 'R';
+    return u.end && u.end < mStart(ym) ? 'V' : (u.status === 'OCCUPIED' && !u.end ? 'O' : 'V');
+  }
+  if (ym < cur) return 'V';
+  if (u.status === 'OCCUPIED') return 'O';
+  if (u.status === 'RESERVED') return ym <= addMonths(cur, 1) ? 'R' : 'V';
+  return 'V';
+};
+FX.occIn = (u, ym) => FX.occState(u, ym) === 'O';
+const COL = { O: 'bg-brick-500', V: 'bg-emerald-400', R: 'bg-amber-400' };
+const LBL = { O: 'มีผู้เช่า', V: 'ว่าง', R: 'จอง' };
+let startOff = 0, span = 6;
+FX.registerView('avail', { title: 'ปฏิทินห้องว่าง', render() {
+  const cur = ymOf(new Date()); const first = addMonths(cur, startOff);
+  const months = Array.from({ length: span }, (_, i) => addMonths(first, i));
+  const us = units_().slice().sort((a, b) => (a.project || '').localeCompare(b.project || '') || String(a.room).localeCompare(String(b.room)));
+  const nowCounts = { O: 0, V: 0, R: 0 }; us.forEach(u => nowCounts[FX.occState(u, cur)]++);
+  const soon = us.map(u => { const i = months.findIndex((ym, k) => k > 0 && FX.occState(u, ym) === 'V' && FX.occState(u, months[k - 1]) === 'O'); return i > 0 && months[i] > cur ? { u, ym: months[i] } : null; }).filter(Boolean).slice(0, 3);
+  const head = `<div class="grid gap-0.5 text-[10px] text-slate-400 mb-1" style="grid-template-columns:repeat(${span},1fr)">${months.map(ym => `<span class="text-center ${ym === cur ? 'text-brick-600 font-bold' : ''}">${TH_M[Number(ym.slice(5)) - 1]}${ym.endsWith('-01') ? ' ' + String(Number(ym.slice(0, 4)) + 543).slice(2) : ''}</span>`).join('')}</div>`;
+  const row = u => `<div class="py-2.5 border-b border-slate-800 last:border-0"><button onclick="openDetailView('${u.id}')" class="w-full text-left flex justify-between gap-2 mb-1.5"><p class="text-xs font-semibold truncate">${E(unitName(u))}</p><span class="text-[10px] text-slate-400 shrink-0">${B(u.rent)}</span></button><div class="grid gap-0.5" style="grid-template-columns:repeat(${span},1fr)">${months.map((ym, i) => { const s = FX.occState(u, ym); const prev = i ? FX.occState(u, months[i - 1]) : null, next = i < span - 1 ? FX.occState(u, months[i + 1]) : null; return `<div title="${thMonth(ym)}: ${LBL[s]}" class="h-5 ${COL[s]} ${prev !== s ? 'rounded-l-full' : ''} ${next !== s ? 'rounded-r-full' : ''}"></div>`; }).join('')}</div></div>`;
+  return `<p class="text-xs text-slate-400 mb-4">ดูล่วงหน้า ${span} เดือน · ${us.length} ห้อง · คำนวณจากวันสัญญาและการติ๊กมีผู้เช่ารายเดือน</p>
+  <div class="grid grid-cols-3 gap-2 text-center mb-3">${['O', 'V', 'R'].map(k => `<div class="bg-white border border-slate-700 rounded-2xl p-3 shadow-sm"><p class="text-[10px] text-slate-400">${LBL[k]} (เดือนนี้)</p><p class="text-lg font-bold ${k === 'O' ? 'text-brick-600' : k === 'V' ? 'text-emerald-600' : 'text-amber-600'}">${nowCounts[k]}</p></div>`).join('')}</div>
+  ${us.length ? `<div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm"><div class="flex items-center justify-between mb-3"><button onclick="FX.availNav(-${span})" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" aria-label="ก่อนหน้า"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><div class="flex gap-1 text-[11px]">${[6, 12].map(n => `<button onclick="FX.availSpan(${n})" class="px-3 py-1 rounded-full ${span === n ? 'bg-brick-500 text-white font-semibold' : 'bg-slate-100 text-slate-500'}">${n} เดือน</button>`).join('')}${startOff ? `<button onclick="FX.availNav(0)" class="px-3 py-1 rounded-full bg-brick-50 text-brick-700">เดือนนี้</button>` : ''}</div><button onclick="FX.availNav(${span})" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" aria-label="ถัดไป"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div>${head}${us.map(row).join('')}
+  <div class="flex gap-3 mt-3 text-[10px] text-slate-400">${['O', 'V', 'R'].map(k => `<span class="flex items-center gap-1"><span class="w-3 h-2 rounded-full ${COL[k]}"></span>${LBL[k]}</span>`).join('')}</div></div>
+  ${soon.map(s => `<div class="bg-white border border-slate-700 rounded-2xl p-3 shadow-sm flex items-center gap-3 mt-3"><div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0"><i data-lucide="megaphone" class="w-4 h-4 text-emerald-600"></i></div><p class="text-xs flex-1">${E(unitName(s.u))} จะว่างตั้งแต่ ${thMonth(s.ym)} — เริ่มหาผู้เช่าได้เลย</p><button onclick="FX.openShare('${s.u.id}')" class="text-[11px] bg-brick-500 text-white px-3 py-1.5 rounded-full font-semibold shrink-0">แชร์</button></div>`).join('')}`
+  : (typeof emptyStateHTML === 'function' ? emptyStateHTML('calendar-range', 'ยังไม่มีห้อง', 'เพิ่มห้องพร้อมวันเริ่ม/สิ้นสุดสัญญา เพื่อดูช่วงว่างล่วงหน้า', 'เพิ่มห้อง', "openSheet('add')") : '')}`;
+} });
+FX.availNav = n => { startOff = n === 0 ? 0 : startOff + n; FX.refresh(); };
+FX.availSpan = n => { span = n; FX.refresh(); };
+FX.addTool({ label: 'ปฏิทินห้องว่าง', icon: 'calendar-range', view: 'avail', action: "FX.show('avail')" });
+})();
+
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
