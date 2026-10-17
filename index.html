@@ -3,15 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f4f2ef">
+<!-- iOS 26+: no apple-mobile-web-app-capable / status-bar-style and no manifest on iOS.
+     With that markup iOS uses a legacy home-screen layout path that leaves an unpaintable strip
+     (about one status-bar height) below the page. iOS 26 opens home-screen icons standalone without it. -->
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="MAX Agent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>MAX Agent — Property Dashboard</title>
 <meta name="description" content="MAX Agent แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
-<link rel="manifest" href="manifest.json">
+<script>
+(function () {
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (!isIOS) { var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.json'; document.head.appendChild(l); }
+})();
+</script>
 <meta property="og:type" content="website">
 <meta property="og:title" content="MAX Agent — Property Dashboard">
 <meta property="og:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
@@ -21,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=6">
+<link rel="stylesheet" href="tailwind.min.css?v=7">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -3505,6 +3512,52 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !swReloaded) { swReloaded = true; location.reload(); } });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {}));
 }
+</script>
+<script>
+// Viewport debug overlay: tap the greeting ("สวัสดี MAX") 5 times quickly to toggle.
+(function () {
+  var taps = 0, timer = null;
+  function px(prop) { var d = document.createElement('div'); d.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;' + prop + ':env(safe-area-inset-' + prop.split('-')[1] + ',0px)'; document.body.appendChild(d); var v = getComputedStyle(d)[prop.replace(/-(.)/g, function (m, c) { return c.toUpperCase(); })]; d.remove(); return v; }
+  async function info() {
+    var nav = document.querySelector('.bottom-nav-new'), r = nav ? nav.getBoundingClientRect() : null;
+    var vv = window.visualViewport;
+    var mode = ['standalone', 'fullscreen', 'minimal-ui', 'browser'].find(function (m) { return matchMedia('(display-mode: ' + m + ')').matches; }) || '?';
+    var sw = '-'; try { sw = (await caches.keys()).join(', ') || 'none'; } catch (e) {}
+    var ctrl = navigator.serviceWorker && navigator.serviceWorker.controller ? 'yes' : 'no';
+    return [
+      'innerHeight: ' + innerHeight + '  innerWidth: ' + innerWidth,
+      'outerHeight: ' + outerHeight,
+      'visualViewport: ' + (vv ? Math.round(vv.height) + ' (offsetTop ' + Math.round(vv.offsetTop) + ', scale ' + vv.scale + ')' : 'n/a'),
+      'screen: ' + screen.width + 'x' + screen.height + '  dpr ' + devicePixelRatio,
+      'docEl.clientHeight: ' + document.documentElement.clientHeight,
+      'safe-area top/bottom: ' + px('padding-top') + ' / ' + px('padding-bottom'),
+      'safe-area left/right: ' + px('padding-left') + ' / ' + px('padding-right'),
+      'nav rect: ' + (r ? 'top ' + Math.round(r.top) + ' bottom ' + Math.round(r.bottom) + ' h ' + Math.round(r.height) : 'n/a'),
+      'gap below nav (innerHeight-bottom): ' + (r ? Math.round(innerHeight - r.bottom) : 'n/a'),
+      'screen.height - innerHeight: ' + (screen.height - innerHeight),
+      'display-mode: ' + mode + '  navigator.standalone: ' + String(navigator.standalone),
+      'manifest linked: ' + (document.querySelector('link[rel=manifest]') ? 'yes' : 'no'),
+      'SW caches: ' + sw + '  controlled: ' + ctrl,
+      'APP_VERSION: ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?'),
+      'UA: ' + navigator.userAgent
+    ].join('\n');
+  }
+  async function toggle() {
+    var el = document.getElementById('vpDebug');
+    if (el) { el.remove(); return; }
+    el = document.createElement('pre'); el.id = 'vpDebug';
+    el.style.cssText = 'position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:9999;background:rgba(28,25,23,.92);color:#fff;font:11px/1.45 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;white-space:pre-wrap;word-break:break-all;margin:0';
+    el.textContent = await info(); el.title = 'แตะเพื่อรีเฟรช · แตะสองครั้งเพื่อปิด';
+    el.addEventListener('click', async function () { el.textContent = await info(); });
+    el.addEventListener('dblclick', function () { el.remove(); });
+    document.body.appendChild(el);
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#greetingText')) return;
+    taps++; clearTimeout(timer); timer = setTimeout(function () { taps = 0; }, 1500);
+    if (taps >= 5) { taps = 0; toggle(); }
+  });
+})();
 </script>
 </body>
 </html>
