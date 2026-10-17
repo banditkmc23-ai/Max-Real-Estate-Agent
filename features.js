@@ -147,7 +147,7 @@ async function toJpeg(blob, max) {
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
-  const key = JSON.stringify(o) + '|' + ps.map(p => p.id).join(',');
+  const key = JSON.stringify(o) + '|hide:' + !!o.hr + '|' + ps.map(p => p.id).join(',');
   if (cloudCache[key]) return cloudCache[key];
   const id = rid(); const imgs = [];
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
@@ -164,7 +164,7 @@ async function cloudLink(u, o, withPhotos) {
 }
 async function buildLink(u, opts) {
   const c = cfg();
-  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (u.notes || '').slice(0, 900), a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').split(String(u.room)).join('') : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
   try { return await cloudLink(u, o, !!opts.photo); } catch (e) { console.warn('cloud share failed, using long link', e); }
   let link = BASE() + '#' + await encode(o);
   if (opts.photo) {
@@ -189,16 +189,17 @@ async function renderShare() {
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
-FX.shareOpt = (k, v) => { shareState[k] = v; renderShare(); };
+FX.shareOpt = (k, v) => { shareState[k] = v; try { const o = JSON.parse(localStorage.getItem('max_share_opts') || '{}'); o[k] = v; localStorage.setItem('max_share_opts', JSON.stringify(o)); } catch (e) {} renderShare(); };
 FX.openShare = function (id) {
   const u = units_().find(x => x.id === id); if (!u) return;
-  shareState = { id, hideRoom: false, showPhone: true, photo: true, link: '' };
+  let so = {}; try { so = JSON.parse(localStorage.getItem('max_share_opts') || '{}'); } catch (e) {}
+  shareState = { hideRoom: false, showPhone: true, photo: true, ...so, id, link: '' };
   FX.open(FX.sheetHead('แชร์ห้องให้ลูกค้า', 'ลูกค้าเปิดดูรูป ราคา และทักไลน์ได้ทันที ไม่ต้องติดตั้งแอป') + `<div id="fxShareBody">
     <div class="flex gap-3 p-3 bg-slate-950 rounded-2xl mb-4"><div class="w-14 h-14 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-6 h-6 text-brick-500"></i></div><div class="min-w-0"><p class="text-sm font-semibold truncate">${E(u.project || '-')}${u.room ? ' · ' + E(u.room) : ''}</p><p class="text-xs text-brick-600 font-bold">${B(u.rent)}/เดือน</p><p class="text-[11px] text-slate-400">${E(u.type || '')}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.floor ? ' · ชั้น ' + E(u.floor) : ''}</p></div></div>
     <p class="text-[11px] text-slate-500 mb-1">ลิงก์สำหรับลูกค้า</p>
     <div class="bg-white border border-slate-700 rounded-2xl p-3"><p id="fxShareLink" class="text-[11px] text-slate-400 break-all max-h-16 overflow-hidden"></p></div>
     <p id="fxShareLen" class="text-[10px] text-slate-400 mt-1"></p>
-    <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ซ่อนเลขห้อง')}</div>
+    <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div>
     <p class="text-[10px] text-slate-400 mt-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
     <div class="grid grid-cols-3 gap-2 mt-4">
       <button onclick="FX.shareDo('line')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>LINE</button>
