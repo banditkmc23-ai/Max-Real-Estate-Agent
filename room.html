@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tailwind.min.css?v=19">
+<link rel="stylesheet" href="tailwind.min.css?v=20">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <style>
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -46,7 +46,7 @@
     let d;
     if (qid) {
       document.getElementById('app').innerHTML = '<p class="text-center text-xs text-slate-400 mt-24">กำลังโหลด...</p>';
-      try { const r = await fetch(`${SB_URL}/rest/v1/shared_rooms?id=eq.${encodeURIComponent(qid)}&select=data`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.length) throw 0; d = j[0].data; }
+      try { const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(qid)}`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.data) throw 0; d = j.data; }
       catch (e) { return fail('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่'); }
     } else if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
     if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }

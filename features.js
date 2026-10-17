@@ -137,29 +137,31 @@ const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
 const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
 const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
 const cloudCache = {};
-const rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(6)); return Array.from(r, x => a[x % a.length]).join(''); };
-async function toJpeg(blob, max) {
+// eslint-disable-next-line
+const _rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(6)); return Array.from(r, x => a[x % a.length]).join(''); };
+async function toJpeg(blob, max, q) {
   const bmp = await createImageBitmap(blob); const r = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas'); c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  return await new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+  return await new Promise(res => c.toBlob(res, 'image/jpeg', q || 0.8));
 }
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
   const key = JSON.stringify(o) + '|hide:' + !!o.hr + '|' + ps.map(p => p.id).join(',');
   if (cloudCache[key]) return cloudCache[key];
-  const id = rid(); const imgs = [];
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
-  for (let i = 0; i < sorted.length; i++) {
-    const jpg = await toJpeg(sorted[i].full || sorted[i].thumb, 1280);
-    const path = `${id}/${i + 1}.jpg`;
-    const r = await fetch(`${SB_URL}/storage/v1/object/room-photos/${path}`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'false' }, body: jpg });
-    if (!r.ok) throw new Error('upload ' + r.status);
-    imgs.push(`${SB_URL}/storage/v1/object/public/room-photos/${path}`);
+  const images = [];
+  for (const p of sorted) {
+    let jpg = null;
+    for (const [m, q] of [[1280, 0.8], [1280, 0.6], [1024, 0.6]]) { jpg = await toJpeg(p.full || p.thumb, m, q); if (jpg.size <= 1900000) break; }
+    const buf = new Uint8Array(await jpg.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+    images.push(btoa(bin));
   }
-  const r = await fetch(`${SB_URL}/rest/v1/shared_rooms`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, data: { ...o, imgs } }) });
-  if (!r.ok) throw new Error('insert ' + r.status);
+  const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify({ data: o, images }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || ''));
+  const id = j.id;
   return (cloudCache[key] = BASE().replace(/room\.html$/, 'r/') + id);
 }
 async function buildLink(u, opts) {
