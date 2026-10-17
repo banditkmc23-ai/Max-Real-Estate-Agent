@@ -164,7 +164,7 @@ async function cloudLink(u, o, withPhotos) {
 }
 async function buildLink(u, opts) {
   const c = cfg();
-  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').split(String(u.room)).join('') : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').replace(new RegExp('(?:ห้อง(?:เลขที่)?|room|unit|no\\.?|#)?\\s*[:：#]?\\s*' + String(u.room).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').replace(/[ \t]{2,}/g, ' ').trim() : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
   try { return await cloudLink(u, o, !!opts.photo); } catch (e) { console.warn('cloud share failed, using long link', e); }
   let link = BASE() + '#' + await encode(o);
   if (opts.photo) {
