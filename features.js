@@ -132,7 +132,7 @@ async function tinyThumb(unitId, w, q) {
   } catch (e) { return null; }
 }
 const BASE = () => location.origin + location.pathname.replace(/[^/]*$/, '') + 'room.html';
-let shareState = {};
+let shareState = {}; let shareNote = '';
 const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
 const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
 const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
@@ -171,7 +171,7 @@ async function cloudLink(u, o, withPhotos) {
   const prog = (d, n) => { const el = $('fxShareLink'); if (el && n) el.textContent = `กำลังอัปโหลดรูป ${d}/${n}...`; };
   const fresh = sorted.filter(p => !(p.url && !p.full));
   const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
-  const init = await call({ action: 'init', count: fresh.length });
+  const init = await call({ action: 'init', count: fresh.length, og: sorted.length > 0 });
   const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
   const jobs = sorted.map(p => { if (p.url && !p.full) { images.push({ url: p.url }); sent.push(null); return null; }
     const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
@@ -185,11 +185,25 @@ async function cloudLink(u, o, withPhotos) {
       throw new Error('upload failed');
     }; }).filter(Boolean);
   // 4 parallel uploads; resizing of the next photo overlaps with uploads in flight
+  if (init.og && sorted[0]) jobs.push(async () => {
+    try { const bmp = await createImageBitmap(sorted[0].full || sorted[0].thumb || await (await fetch(sorted[0].url)).blob()); const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
+      const sc = Math.max(1200 / bmp.width, 630 / bmp.height), w = bmp.width * sc, h = bmp.height * sc; c.getContext('2d').drawImage(bmp, (1200 - w) / 2, (630 - h) / 2, w, h);
+      const jpg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
+      await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${init.og.path}?token=${encodeURIComponent(init.og.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg });
+    } catch (e) { console.warn('og image skipped', e); }
+  });
   let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
   const j = await call({ action: 'commit', id: init.id, data: o, images });
   setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const id = j.id;
-  return (cloudCache[key] = BASE().replace(/room\.html$/, 'r/') + id);
+  const link = BASE().replace(/room\.html$/, 'r/') + id + '/';
+  if (j.page && withPhotos) {
+    const el = $('fxShareLink'); if (el) el.textContent = 'กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)';
+    const t0 = Date.now(); let ok = false;
+    while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok && (await r.text()).includes('og:title')) { ok = true; break; } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); if (el) el.textContent = `กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`; }
+    if (!ok) shareNote = 'พรีวิว LINE ยังไม่พร้อม ลิงก์ใช้ได้แล้ว แต่ถ้าส่งตอนนี้ LINE อาจไม่แสดงรูป รอสักครู่แล้วค่อยส่ง';
+  }
+  return (cloudCache[key] = link);
 }
 async function buildLink(u, opts) {
   const c = cfg();
@@ -212,9 +226,9 @@ async function renderShare() {
   const u = units_().find(x => x.id === shareState.id); if (!u) return;
   const el = $('fxShareBody'); if (!el) return;
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
-  shareState.link = await buildLink(u, shareState);
+  shareNote = ''; shareState.link = await buildLink(u, shareState);
   el.querySelector('#fxShareLink').textContent = shareState.link;
-  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? 'ลิงก์สั้น พร้อมรูปทั้งหมดของห้อง' : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์สั้น พร้อมรูป และพรีวิว LINE') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
