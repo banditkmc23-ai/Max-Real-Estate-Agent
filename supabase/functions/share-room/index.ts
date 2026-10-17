@@ -21,18 +21,24 @@ function clean(d: any) {
   d = d && typeof d === "object" ? d : {}; const a = d.a && typeof d.a === "object" ? d.a : {};
   return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), st: str(d.st, 20), d: str(d.d, 900), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
 }
+const sha256 = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t))), b => b.toString(16).padStart(2, "0")).join("");
+async function canEdit(id: string, secret: unknown) {
+  if (typeof secret !== "string" || secret.length < 16 || secret.length > 128) return false;
+  const { data } = await sb.from("shared_rooms").select("edit_hash").eq("id", id).maybeSingle();
+  return !!(data && data.edit_hash && data.edit_hash === await sha256(secret));
+}
 const GH = Deno.env.get("GITHUB_OG_TOKEN") || "";
 const SITE = "https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/";
 const H = (x: unknown) => String(x ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as any)[c]);
 const fmt = (n: number) => "฿" + Number(n || 0).toLocaleString("en-US");
-function ogHtml(id: string, d: any, img: string) {
+function ogHtml(id: string, d: any, img: string, rev = "") {
   const title = [d.p || "ห้องให้เช่า", d.r ? "ห้อง " + d.r : ""].filter(Boolean).join(" · ");
   const bits = [d.rent ? fmt(d.rent) + "/เดือน" : "", d.sale ? "ขาย " + fmt(d.sale) : "", d.t, d.sz ? d.sz + " ตร.ม." : "", d.f ? "ชั้น " + d.f : "", d.a && d.a.ph ? "โทร " + d.a.ph : ""].filter(Boolean).join(" · ");
   const desc = (bits + (d.d ? " — " + String(d.d).replace(/\s+/g, " ").slice(0, 110) : "")).slice(0, 200);
   const url = SITE + "r/" + id + "/", to = "../../room.html?id=" + id;
   return `<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${H(title)} — MAX Agent</title><meta name="description" content="${H(desc)}">
-<meta property="og:type" content="website"><meta property="og:site_name" content="MAX Agent"><meta property="og:title" content="${H(title)}">
+<meta name="x-rev" content="${H(rev)}"><meta property="og:type" content="website"><meta property="og:site_name" content="MAX Agent"><meta property="og:title" content="${H(title)}">
 <meta property="og:description" content="${H(desc)}"><meta property="og:url" content="${H(url)}">
 ${img ? `<meta property="og:image" content="${H(img)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}
 <meta name="twitter:card" content="${img ? "summary_large_image" : "summary"}"><meta name="twitter:title" content="${H(title)}"><meta name="twitter:description" content="${H(desc)}">${img ? `<meta name="twitter:image" content="${H(img)}">` : ""}
@@ -40,15 +46,19 @@ ${img ? `<meta property="og:image" content="${H(img)}"><meta property="og:image:
 </head><body><a href="${to}">เปิดดูห้อง</a></body></html>`;
 }
 let lastGh = "";
-async function writeOgPage(id: string, d: any, img: string) {
+async function writeOgPage(id: string, d: any, img: string, rev = "") {
   if (!GH) { lastGh = "no token"; return false; }
-  const content = btoa(String.fromCharCode(...new TextEncoder().encode(ogHtml(id, d, img))));
+  const content = btoa(String.fromCharCode(...new TextEncoder().encode(ogHtml(id, d, img, rev))));
+  const api = `https://api.github.com/repos/banditkmc23-ai/Max-Real-Estate-Agent/contents/r/${id}/index.html`;
+  const hdr = { Authorization: "Bearer " + GH, Accept: "application/vnd.github+json", "User-Agent": "max-agent-share", "X-GitHub-Api-Version": "2022-11-28" };
   for (let t = 0; t < 5; t++) {
-    const r = await fetch(`https://api.github.com/repos/banditkmc23-ai/Max-Real-Estate-Agent/contents/r/${id}/index.html`, { method: "PUT", headers: { Authorization: "Bearer " + GH, Accept: "application/vnd.github+json", "User-Agent": "max-agent-share", "X-GitHub-Api-Version": "2022-11-28" }, body: JSON.stringify({ message: `share: room page r/${id}`, content, branch: "main" }) });
+    let sha: string | undefined;
+    const g = await fetch(api + "?ref=main", { headers: hdr }); if (g.ok) sha = (await g.json()).sha; else await g.body?.cancel();
+    const r = await fetch(api, { method: "PUT", headers: hdr, body: JSON.stringify({ message: `share: room page r/${id}${sha ? " (update)" : ""}`, content, branch: "main", ...(sha ? { sha } : {}) }) });
     lastGh = String(r.status);
     if (r.ok) return true;
-    if (r.status === 422) return true; // already exists
-    if (r.status === 409 || r.status >= 500 || r.status === 403) { await new Promise(res => setTimeout(res, 400 * (t + 1) + Math.random() * 600)); continue; }
+    if (r.status === 422 && !sha) continue; // created concurrently; retry with sha
+    if (r.status === 409 || r.status === 422 || r.status >= 500 || r.status === 403) { await new Promise(res => setTimeout(res, 400 * (t + 1) + Math.random() * 600)); continue; }
     console.error("gh", r.status, (await r.text()).slice(0, 200)); return false;
   }
   return false;
@@ -70,30 +80,39 @@ Deno.serve(async req => {
   if (Number(req.headers.get("content-length") || 0) > MAX_BODY) return J(req, { error: "payload too large" }, 413);
   let body: any; try { const t = await req.text(); if (t.length > MAX_BODY) return J(req, { error: "payload too large" }, 413); body = JSON.parse(t); } catch { return J(req, { error: "bad json" }, 400); }
   if (body && body.action === "init") {
-    const n = Math.max(0, Math.min(MAX_N, Number(body.count) || 0)); const id = rid();
+    const n = Math.max(0, Math.min(MAX_N, Number(body.count) || 0));
+    let id = rid();
+    if (body.id) { if (!/^[A-Za-z0-9]{6}$/.test(String(body.id)) || !(await canEdit(String(body.id), body.secret))) return J(req, { error: "not allowed" }, 403); id = String(body.id); }
+    const v = Date.now().toString(36);
     const ups = await Promise.all(Array.from({ length: n }, async (_, k) => {
-      const path = `${id}/${k + 1}.jpg`; const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path);
+      const path = `${id}/${v}-${k + 1}.jpg`; const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path);
       if (error || !data) throw error; return { path, token: data.token, url: PUB + path };
     })).catch(() => null);
     if (!ups) return J(req, { error: "sign failed" }, 500);
     let og = null;
-    if (body.og) { const { data } = await sb.storage.from("room-photos").createSignedUploadUrl(`${id}/og.jpg`); if (data) og = { path: `${id}/og.jpg`, token: data.token, url: PUB + `${id}/og.jpg` }; }
-    return J(req, { id, uploads: ups, og });
+    if (body.og) { const { data } = await sb.storage.from("room-photos").createSignedUploadUrl(`${id}/og-${v}.jpg`); if (data) og = { path: `${id}/og-${v}.jpg`, token: data.token, url: PUB + `${id}/og-${v}.jpg` }; }
+    return J(req, { id, uploads: ups, og, v });
   }
   if (body && body.action === "commit") {
     const id = String(body.id || ""); if (!/^[A-Za-z0-9]{6}$/.test(id)) return J(req, { error: "bad id" }, 400);
     const list: unknown[] = Array.isArray(body.images) ? body.images.slice(0, MAX_N) : [];
-    const PUBRE2 = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/\\d{1,2}\\.(jpg|png|webp)$");
+    const PUBRE2 = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/[A-Za-z0-9-]{1,30}\\.(jpg|png|webp)$");
+    const { data: existing } = await sb.from("shared_rooms").select("id").eq("id", id).maybeSingle();
+    const isUpdate = !!existing;
+    if (isUpdate && !(await canEdit(id, body.secret))) return J(req, { error: "not allowed" }, 403);
+    if (!isUpdate && (typeof body.secret !== "string" || body.secret.length < 16 || body.secret.length > 128)) return J(req, { error: "secret required" }, 400);
     const urls = list.map(x => (x && typeof x === "object" ? String((x as any).url || "") : "")).filter(u => PUBRE2.test(u));
     const own = urls.filter(u => u.startsWith(PUB + id + "/")).map(u => u.slice(PUB.length + id.length + 1));
     if (own.length) { const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 20 }); const have = new Set((objs || []).map(o => o.name)); if (own.some(n => !have.has(n))) return J(req, { error: "photo missing" }, 400); }
     const { data: objs2 } = await sb.storage.from("room-photos").list(id, { limit: 20 });
-    const hasOg = (objs2 || []).some(o => o.name === "og.jpg");
+    const v = /^[a-z0-9]{4,12}$/.test(String(body.v || "")) ? String(body.v) : "";
+    const ogName = v && (objs2 || []).some(o => o.name === `og-${v}.jpg`) ? `og-${v}.jpg` : ((objs2 || []).some(o => o.name === "og.jpg") ? "og.jpg" : "");
     const cd = clean(body.data);
-    const { error } = await sb.from("shared_rooms").insert({ id, data: { ...cd, imgs: urls } });
-    if (error) return J(req, { error: "insert failed" }, 500);
-    const page = await writeOgPage(id, cd, hasOg ? PUB + id + "/og.jpg" : (urls[0] || ""));
-    return J(req, { id, imgs: urls, page, ...(page ? {} : { pageErr: lastGh }) });
+    const row = { data: { ...cd, imgs: urls }, updated_at: new Date().toISOString() };
+    const { error } = isUpdate ? await sb.from("shared_rooms").update(row).eq("id", id) : await sb.from("shared_rooms").insert({ id, ...row, edit_hash: await sha256(body.secret) });
+    if (error) return J(req, { error: "save failed" }, 500);
+    const page = await writeOgPage(id, cd, ogName ? PUB + id + "/" + ogName : (urls[0] || ""), v);
+    return J(req, { id, imgs: urls, page, updated: isUpdate, ...(page ? {} : { pageErr: lastGh }) });
   }
   const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
   if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);

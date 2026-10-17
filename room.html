@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tailwind.min.css?v=24">
+<link rel="stylesheet" href="tailwind.min.css?v=25">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <style>
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -70,13 +70,13 @@
     document.getElementById('app').innerHTML = `
       <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-6 lg:p-6 lg:items-start">
         <div>
-          <div class="relative h-72 lg:h-[520px] overflow-hidden lg:rounded-3xl ${imgs.length ? 'cursor-zoom-in' : ''}" ${imgs.length ? 'data-lb="0"' : ''}>
-            ${imgs.length ? `<img src="${esc(imgs[0])}" class="absolute inset-0 w-full h-full object-cover" alt="">` : ph}
+          <div class="relative h-72 lg:h-[520px] overflow-hidden lg:rounded-3xl ${imgs.length ? 'cursor-zoom-in' : ''}" ${imgs.length ? 'data-lb="0" id="heroBox"' : ''}>
+            ${imgs.length ? `<img id="heroImg" src="${esc(imgs[0])}" class="absolute inset-0 w-full h-full object-cover" alt="">` : ph}
             <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(28,25,23,.35),transparent 40%,rgba(28,25,23,.55))"></div>
             <div class="absolute top-[max(16px,env(safe-area-inset-top))] left-4 right-4 flex justify-between pointer-events-none"><span class="bg-white/90 text-brick-700 text-xs font-semibold px-3 py-1.5 rounded-full">${d.sale && !d.rent ? 'ขาย' : 'ให้เช่า'}</span>${imgs.length > 1 ? `<span class="bg-black/50 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1"><i data-lucide="images" class="w-3.5 h-3.5"></i>${imgs.length} รูป</span>` : ''}</div>
             <div class="absolute bottom-4 left-4 right-4 text-white pointer-events-none lg:hidden"><p class="text-xs opacity-90">${esc(d.b || '')}</p><h1 class="text-2xl font-bold leading-tight">${esc(title || 'ห้องให้เช่า')}</h1></div>
           </div>
-          ${imgs.length > 1 ? `<div class="flex gap-2 overflow-x-auto px-4 lg:px-0 mt-3 snap-x">${imgs.map((u, i) => `<button data-lb="${i}" class="shrink-0 snap-start" aria-label="ดูรูป ${i + 1}"><img src="${esc(u)}" loading="lazy" class="h-24 w-32 lg:h-28 lg:w-40 object-cover rounded-xl" alt=""></button>`).join('')}</div>` : ''}
+          ${imgs.length > 1 ? `<div id="thumbRow" class="flex gap-2 overflow-x-auto px-4 lg:px-0 mt-3 pb-1 snap-x snap-mandatory" style="-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x">${imgs.map((u, i) => `<button data-th="${i}" class="shrink-0 snap-start rounded-xl ring-2 ring-offset-2 ${i === 0 ? 'ring-brick-500' : 'ring-transparent opacity-80'} transition" aria-label="ดูรูป ${i + 1}"><img src="${esc(u)}" loading="lazy" class="h-24 w-32 lg:h-28 lg:w-40 object-cover rounded-xl" alt=""></button>`).join('')}</div>` : ''}
           <div class="hidden lg:block mt-4 space-y-3">${descCard}${mapA}</div>
         </div>
         <aside class="px-4 lg:px-0 space-y-3 mt-3 lg:mt-0 lg:sticky lg:top-6">
@@ -115,7 +115,13 @@
       const show = i => { cur = (i + imgs.length) % imgs.length; im.src = imgs[cur]; cnt.textContent = `${cur + 1} / ${imgs.length}`; ['lbPrev', 'lbNext'].forEach(id => document.getElementById(id).classList.toggle('hidden', imgs.length < 2)); };
       const open = i => { show(i); lb.classList.remove('hidden'); document.documentElement.style.overflow = document.body.style.overflow = 'hidden'; };
       const close = () => { lb.classList.add('hidden'); document.documentElement.style.overflow = document.body.style.overflow = ''; };
-      document.querySelectorAll('[data-lb]').forEach(el => el.addEventListener('click', () => open(+el.dataset.lb)));
+      const hero = document.getElementById('heroBox'), heroImg = document.getElementById('heroImg');
+      hero.addEventListener('click', () => open(+hero.dataset.lb));
+      document.querySelectorAll('[data-th]').forEach(el => el.addEventListener('click', () => {
+        const i = +el.dataset.th; heroImg.src = imgs[i]; hero.dataset.lb = i;
+        document.querySelectorAll('[data-th]').forEach(b => { const on = +b.dataset.th === i; b.classList.toggle('ring-brick-500', on); b.classList.toggle('ring-transparent', !on); b.classList.toggle('opacity-80', !on); });
+        el.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+      }));
       document.getElementById('lbPrev').onclick = e => { e.stopPropagation(); show(cur - 1); };
       document.getElementById('lbNext').onclick = e => { e.stopPropagation(); show(cur + 1); };
       document.getElementById('lbClose').onclick = close;

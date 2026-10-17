@@ -165,13 +165,16 @@ async function offloadUploaded(sorted, sent, urls) {
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
-  const key = JSON.stringify(o) + '|hide:' + !!o.hr + '|' + ps.map(p => p.id).join(',');
-  if (cloudCache[key]) return cloudCache[key];
+  const sig = JSON.stringify(o) + '|' + ps.map(p => p.id).join(',');
+  const linkOf = id => BASE().replace(/room\.html$/, 'r/') + id + '/';
+  const sh = u.share && u.share.id && u.share.secret ? u.share : null;
+  // one permanent link per room: reuse it as-is when nothing changed (or when only a text link is needed)
+  if (sh && (sh.sig === sig || !withPhotos)) return linkOf(sh.id);
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
   const prog = (d, n) => { const el = $('fxShareLink'); if (el && n) el.textContent = `กำลังอัปโหลดรูป ${d}/${n}...`; };
   const fresh = sorted.filter(p => !(p.url && !p.full));
   const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
-  const init = await call({ action: 'init', count: fresh.length, og: sorted.length > 0 });
+  const init = await call({ action: 'init', count: fresh.length, og: sorted.length > 0, ...(sh ? { id: sh.id, secret: sh.secret } : {}) });
   const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
   const jobs = sorted.map(p => { if (p.url && !p.full) { images.push({ url: p.url }); sent.push(null); return null; }
     const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
@@ -193,17 +196,19 @@ async function cloudLink(u, o, withPhotos) {
     } catch (e) { console.warn('og image skipped', e); }
   });
   let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
-  const j = await call({ action: 'commit', id: init.id, data: o, images });
+  const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
+  const j = await call({ action: 'commit', id: init.id, data: o, images, secret, v: init.v });
+  u.share = { id: j.id, secret, sig, at: Date.now() }; try { (window.persist || (() => {}))(); } catch (e) {}
   setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const id = j.id;
-  const link = BASE().replace(/room\.html$/, 'r/') + id + '/';
+  const link = linkOf(id);
   if (j.page && withPhotos) {
     const el = $('fxShareLink'); if (el) el.textContent = 'กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)';
     const t0 = Date.now(); let ok = false;
-    while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok && (await r.text()).includes('og:title')) { ok = true; break; } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); if (el) el.textContent = `กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`; }
+    while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const t = await r.text(); if (t.includes('og:title') && (!init.v || t.includes('content="' + init.v + '"'))) { ok = true; break; } } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); if (el) el.textContent = `กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`; }
     if (!ok) shareNote = 'พรีวิว LINE ยังไม่พร้อม ลิงก์ใช้ได้แล้ว แต่ถ้าส่งตอนนี้ LINE อาจไม่แสดงรูป รอสักครู่แล้วค่อยส่ง';
   }
-  return (cloudCache[key] = link);
+  return link;
 }
 async function buildLink(u, opts) {
   const c = cfg();
@@ -228,10 +233,15 @@ async function renderShare() {
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
   shareNote = ''; shareState.link = await buildLink(u, shareState);
   el.querySelector('#fxShareLink').textContent = shareState.link;
-  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์สั้น พร้อมรูป และพรีวิว LINE') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์ถาวรของห้องนี้ · แก้ข้อมูลแล้วแชร์อีกครั้ง ลิงก์เดิมจะอัปเดตให้') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
+FX.shareNew = function () {
+  const u = units_().find(x => x.id === shareState.id); if (!u || !u.share) return renderShare();
+  if (!confirm('สร้างลิงก์ใหม่ให้ห้องนี้? ลิงก์เดิมจะยังเปิดได้ แต่จะไม่อัปเดตข้อมูลอีก')) return;
+  delete u.share; try { window.persist(); } catch (e) {} renderShare();
+};
 FX.shareOpt = (k, v) => { shareState[k] = v; try { const o = JSON.parse(localStorage.getItem('max_share_opts') || '{}'); o[k] = v; localStorage.setItem('max_share_opts', JSON.stringify(o)); } catch (e) {} renderShare(); };
 FX.openShare = function (id) {
   const u = units_().find(x => x.id === id); if (!u) return;
@@ -243,6 +253,7 @@ FX.openShare = function (id) {
     <div class="bg-white border border-slate-700 rounded-2xl p-3"><p id="fxShareLink" class="text-[11px] text-slate-400 break-all max-h-16 overflow-hidden"></p></div>
     <p id="fxShareLen" class="text-[10px] text-slate-400 mt-1"></p>
     <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div>
+    <button onclick="FX.shareNew()" class="mt-2 text-[11px] text-brick-600 font-semibold flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i>สร้างลิงก์ใหม่</button>
     <p class="text-[10px] text-slate-400 mt-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
     <div class="grid grid-cols-3 gap-2 mt-4">
       <button onclick="FX.shareDo('line')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>LINE</button>
