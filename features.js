@@ -145,6 +145,23 @@ async function toJpeg(blob, max, q) {
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   return await new Promise(res => c.toBlob(res, 'image/jpeg', q || 0.8));
 }
+// After a confirmed upload, swap the local full-size blob for the cloud URL (thumb kept for fast/offline previews).
+// Each photo is only changed if: the server returned its URL, that URL answers 200 with an image, and the record is unchanged locally.
+async function offloadUploaded(sorted, sent, urls) {
+  if (urls.length !== sorted.length) return;
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i], url = urls[i];
+    if (typeof sent[i] !== 'string' || !p.full || !url || !url.startsWith(SB_URL + '/storage/v1/object/public/room-photos/')) continue;
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok || !(r.headers.get('content-type') || '').startsWith('image/') || (await r.blob()).size < 100) continue;
+      const cur = await new Promise((res, rej) => { const q = db.transaction('photos', 'readonly').objectStore('photos').get(p.id); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+      if (!cur || !cur.full) continue;
+      const rec = { ...cur, url }; delete rec.full; if (!rec.thumb) rec.thumb = cur.full;
+      await new Promise((res, rej) => { const t = db.transaction('photos', 'readwrite'); t.objectStore('photos').put(rec); t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+    } catch (e) { console.warn('keep local photo', p.id, e); }
+  }
+}
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
@@ -153,6 +170,7 @@ async function cloudLink(u, o, withPhotos) {
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
   const images = [];
   for (const p of sorted) {
+    if (p.url && !p.full) { images.push({ url: p.url }); continue; }
     let jpg = null;
     for (const [m, q] of [[1280, 0.8], [1280, 0.6], [1024, 0.6]]) { jpg = await toJpeg(p.full || p.thumb, m, q); if (jpg.size <= 1900000) break; }
     const buf = new Uint8Array(await jpg.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
@@ -161,6 +179,7 @@ async function cloudLink(u, o, withPhotos) {
   const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify({ data: o, images }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || ''));
+  try { await offloadUploaded(sorted, images, j.imgs || []); } catch (e) { console.warn('offload skipped', e); }
   const id = j.id;
   return (cloudCache[key] = BASE().replace(/room\.html$/, 'r/') + id);
 }

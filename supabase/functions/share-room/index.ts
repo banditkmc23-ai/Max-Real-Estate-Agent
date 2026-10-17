@@ -39,8 +39,10 @@ Deno.serve(async req => {
   let body: any; try { const t = await req.text(); if (t.length > MAX_BODY) return J(req, { error: "payload too large" }, 413); body = JSON.parse(t); } catch { return J(req, { error: "bad json" }, 400); }
   const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
   if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);
-  const files: [Uint8Array, string, string][] = [];
+  const files: ([Uint8Array, string, string] | string)[] = [];
+  const PUBRE = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/\\d{1,2}\\.(jpg|png|webp)$");
   for (const s of imgs) {
+    if (s && typeof s === "object" && typeof (s as any).url === "string") { if (!PUBRE.test((s as any).url)) return J(req, { error: "bad image url" }, 400); files.push((s as any).url); continue; }
     if (typeof s !== "string" || s.length > MAX_IMG * 1.4) return J(req, { error: "image too large (max 2MB)" }, 413);
     let b: Uint8Array; try { b = Uint8Array.from(atob(s.replace(/^data:[^,]*,/, "")), c => c.charCodeAt(0)); } catch { return J(req, { error: "bad image encoding" }, 400); }
     if (b.length > MAX_IMG) return J(req, { error: "image too large (max 2MB)" }, 413);
@@ -49,12 +51,14 @@ Deno.serve(async req => {
   }
   const data = clean(body.data); const id = rid(); const urls: string[] = [];
   for (let i = 0; i < files.length; i++) {
-    const path = `${id}/${i + 1}.${files[i][2]}`;
-    const { error } = await sb.storage.from("room-photos").upload(path, files[i][0], { contentType: files[i][1], upsert: false });
+    const f = files[i];
+    if (typeof f === "string") { urls.push(f); continue; }
+    const path = `${id}/${i + 1}.${f[2]}`;
+    const { error } = await sb.storage.from("room-photos").upload(path, f[0], { contentType: f[1], upsert: false });
     if (error) return J(req, { error: "upload failed" }, 500);
     urls.push(PUB + path);
   }
   const { error } = await sb.from("shared_rooms").insert({ id, data: { ...data, imgs: urls } });
   if (error) return J(req, { error: "insert failed" }, 500);
-  return J(req, { id });
+  return J(req, { id, imgs: urls });
 });
