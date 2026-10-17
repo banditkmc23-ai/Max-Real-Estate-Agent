@@ -518,7 +518,7 @@
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             <div class="absolute right-6 top-6 opacity-20"><i data-lucide="wallet" class="w-20 h-20"></i></div>
             <div class="relative z-10">
-              <p class="text-xs font-semibold text-brick-100/90 uppercase tracking-wider mb-1">รายได้รวมต่อเดือน</p>
+              <p class="text-xs font-semibold text-brick-100/90 uppercase tracking-wider mb-1">รายได้รวมต่อเดือน · <span id="revMonthLabel" class="normal-case"></span></p>
               <p class="text-3xl lg:text-4xl font-bold mb-4 tracking-tight" id="totalRevenue">฿0</p>
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <button onclick="gotoFilter('OCCUPIED')" class="text-left hover:opacity-80">
@@ -532,6 +532,19 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div id="monthlyPanel" class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm mb-6">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <h3 class="text-sm font-semibold text-ink flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-brick-500"></i>รายได้รายเดือน</h3>
+            <div class="flex items-center gap-1">
+              <button onclick="shiftRevMonth(-1)" aria-label="เดือนก่อนหน้า" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-brick-500/10 flex items-center justify-center active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4 text-slate-600"></i></button>
+              <span id="monthlyLabel" class="text-xs font-semibold text-ink min-w-[96px] text-center"></span>
+              <button onclick="shiftRevMonth(1)" aria-label="เดือนถัดไป" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-brick-500/10 flex items-center justify-center active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4 text-slate-600"></i></button>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-3">แตะเพื่อสลับ มีผู้เช่า / ไม่มีผู้เช่า ของแต่ละห้องในเดือนนี้ · รวม <span id="monthlyTotal" class="font-bold text-brick-600">฿0</span> (<span id="monthlyCount">0</span> ห้อง)</p>
+          <div id="monthlyList" class="grid grid-cols-1 lg:grid-cols-2 gap-2 max-h-80 overflow-y-auto"></div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -1194,29 +1207,16 @@ const NAV_KEY = 'staylow_nav_view';
 const CUST_VIEW_KEY = 'staylow_cust_view';
 const HERO_KEY = 'staylow_hero_img';
 const AVATAR_KEY = 'staylow_avatar';
+const OCC_KEY = 'staylow_monthly_occupancy_v1';
 
-const seed = [
-  { id:'u1', project:'The Excel Sukhumvit 50', building:'Tower A', room:'1203', floor:'3', rent:13000, size:30, type:'1 Bed', bath:'1', view:'Pool', status:'AVAILABLE', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' },
-  { id:'u2', project:'The Base Park West', building:'Building B', room:'89/57', floor:'12', rent:15000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณวิภา', ownerPhone:'089-XXX-XXXX', sourceUrl:'', start:'2025-10-01', end:'2026-09-30', notes:'' },
-  { id:'u3', project:'Rhythm Sukhumvit 42', building:'Tower 1', room:'2108', floor:'21', rent:22000, size:35, type:'1 Bed', bath:'1', view:'City', status:'RESERVED', owner:'คุณเกียรติ', ownerPhone:'062-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'ลูกค้าจีนจอง รอเซ็นสัญญา' },
-  { id:'u4', project:'The Excel Sukhumvit 50', building:'Tower A', room:'1508', floor:'15', rent:14000, size:30, type:'1 Bed', bath:'1', view:'City', status:'OCCUPIED', owner:'คุณสมชาย', ownerPhone:'081-XXX-XXXX', sourceUrl:'', start:'2025-01-01', end:'2026-01-15', notes:'' },
-  { id:'u5', project:'Life Asoke', building:'Tower C', room:'2301', floor:'23', rent:18000, size:28, type:'Studio', bath:'1', view:'City', status:'AVAILABLE', owner:'คุณปรีชา', ownerPhone:'086-XXX-XXXX', sourceUrl:'', start:'', end:'', notes:'' }
-];
-
-const custSeed = [
-  { id:'c1', name:'คุณสมชาย ใจดี', phone:'081-234-5678', line:'somchai88', email:'', interestProject:'The Excel', interestBuilding:'Tower A', interestType:'1 Bed', budgetMin:12000, budgetMax:18000, status:'TALKING', source:'Facebook', nextFollow:new Date(Date.now()+86400000).toISOString().slice(0,10), note:'สนใจชั้นสูง วิวเมือง', linkedUnits:['u1'], timeline:[{ ts:Date.now()-172800000, type:'call', text:'โทรสอบถามรายละเอียดครั้งแรก' }], createdAt: Date.now()-172800000 },
-  { id:'c2', name:'คุณวิภา รักดี', phone:'089-876-5432', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'Studio', budgetMin:10000, budgetMax:15000, status:'NEW', source:'LINE', nextFollow:new Date().toISOString().slice(0,10), note:'', linkedUnits:[], timeline:[], createdAt: Date.now()-86400000 },
-  { id:'c3', name:'คุณเกียรติ มั่นคง', phone:'062-345-6789', line:'kiat_m', email:'kiat@example.com', interestProject:'Rhythm', interestBuilding:'Tower 1', interestType:'1 Bed', budgetMin:20000, budgetMax:25000, status:'RESERVED', source:'Referral', nextFollow:'', note:'จองห้อง 2108 แล้ว รอสัญญา', linkedUnits:['u3'], timeline:[{ ts:Date.now()-604800000, type:'viewing', text:'นัดดูห้อง 2108 ลูกค้าชอบมาก' }], createdAt: Date.now()-604800000 }
-];
-
-let units = load(KEY, seed).map((u, i) => ({
+let units = load(KEY, []).map((u, i) => ({
   bath: '1', building: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
   lastPosted: null, postCount: 0, expiredNotified: false,
   createdAt: Date.now() - (9999 - i) * 1000, ...u
 }));
 units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
 
-let customers = load(CUST_KEY, custSeed).map(c => ({
+let customers = load(CUST_KEY, []).map(c => ({
   name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'',
   budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'',
   linkedUnits:[], timeline:[], createdAt: Date.now(), ...c
@@ -2384,6 +2384,39 @@ function contactOwner(id) {
 }
 
 // ============= DASHBOARD =============
+// ============= EMPTY STATES =============
+function emptyStateHTML(icon, title, msg, ctaLabel, ctaOnclick, extraCls = '') {
+  return `<div class="col-span-full flex flex-col items-center text-center px-6 py-8 border border-dashed border-slate-300 rounded-2xl bg-white/60 ${extraCls}">
+    <div class="w-14 h-14 rounded-2xl bg-brick-500/10 flex items-center justify-center mb-3"><i data-lucide="${icon}" class="w-7 h-7 text-brick-500"></i></div>
+    <p class="text-sm font-semibold text-ink mb-1">${title}</p>
+    <p class="text-xs text-slate-400 mb-4 max-w-xs">${msg}</p>
+    ${ctaLabel ? `<button onclick="${ctaOnclick}" class="bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs px-4 py-2 rounded-full flex items-center gap-1.5 shadow-md shadow-brick-500/25"><i data-lucide="plus" class="w-3.5 h-3.5"></i>${ctaLabel}</button>` : ''}
+  </div>`;
+}
+
+// ============= MONTHLY OCCUPANCY / REVENUE =============
+let monthlyOcc = load(OCC_KEY, {});
+let revMonth = new Date().toISOString().slice(0, 7);
+function persistOcc() { try { localStorage.setItem(OCC_KEY, JSON.stringify(monthlyOcc)); } catch (e) {} }
+function isOccupiedIn(u, ym) { const m = monthlyOcc[ym]; return m && Object.prototype.hasOwnProperty.call(m, u.id) ? !!m[u.id] : u.status === 'OCCUPIED'; }
+function monthlyRevenue(ym) { return units.filter(u => isOccupiedIn(u, ym)).reduce((s, u) => s + Number(u.rent || 0), 0); }
+function monthLabel(ym) { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString('th-TH', { month:'long', year:'numeric' }); }
+function shiftRevMonth(d) { const [y, m] = revMonth.split('-').map(Number); const t = new Date(y, m - 1 + d, 1); revMonth = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'); renderDashboard(); }
+function toggleMonthOcc(id) { const u = units.find(x => x.id === id); if (!u) return; const cur = isOccupiedIn(u, revMonth); (monthlyOcc[revMonth] = monthlyOcc[revMonth] || {})[id] = !cur; persistOcc(); renderDashboard(); }
+function renderMonthly() {
+  setText('monthlyLabel', monthLabel(revMonth)); setText('revMonthLabel', monthLabel(revMonth));
+  const occ = units.filter(u => isOccupiedIn(u, revMonth));
+  setText('monthlyTotal', baht(monthlyRevenue(revMonth))); setText('monthlyCount', occ.length);
+  const el = document.getElementById('monthlyList'); if (!el) return;
+  if (!units.length) { el.innerHTML = emptyStateHTML('calendar-plus', 'ยังไม่มีห้องให้คำนวณรายได้', 'เพิ่มห้องแรกของคุณ แล้วเลือกได้ว่าเดือนไหนมีผู้เช่า', 'เพิ่มห้อง', "openSheet('add')"); return; }
+  el.innerHTML = units.slice().sort((a, b) => (a.project || '').localeCompare(b.project || '') || String(a.room).localeCompare(String(b.room))).map(u => {
+    const on = isOccupiedIn(u, revMonth);
+    return `<button onclick="toggleMonthOcc('${u.id}')" aria-pressed="${on}" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl border ${on ? 'border-brick-300 bg-brick-50' : 'border-slate-700 bg-white'} hover:border-brick-500 transition-all active:scale-[0.98]">
+      <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project || '(ไม่ระบุ)')} · ${esc(u.room || '')}</p><p class="text-[10px] text-slate-400">${baht(Number(u.rent || 0))}/เดือน</p></div>
+      <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${on ? 'bg-brick-500 text-white' : 'bg-slate-100 text-slate-500'}">${on ? 'มีผู้เช่า' : 'ไม่มีผู้เช่า'}</span>
+    </button>`;
+  }).join('');
+}
 function computeStats() {
   const cnt = s => units.filter(u => u.status === s).length;
   const available = cnt('AVAILABLE'), occupied = cnt('OCCUPIED'), reserved = cnt('RESERVED'), pending = cnt('PENDING');
@@ -2403,7 +2436,7 @@ function renderDashboard() {
   setText('kpiAvailable', s.available); setText('kpiOccupied', s.occupied); setText('kpiReserved', s.reserved); setText('kpiPending', s.pending);
   setText('occupancyPct', s.occupancy + '%'); setText('occupancyDetail', s.occupied + '/' + s.total + ' ห้อง');
   const bar = document.getElementById('occupancyBar'); if (bar) bar.style.width = s.occupancy + '%';
-  setText('totalRevenue', baht(s.totalRevenue)); setText('revenueRented', baht(s.totalRevenue)); setText('revenueFromRented', baht(s.totalRevenue));
+  const mRev = monthlyRevenue(revMonth); setText('totalRevenue', baht(mRev)); setText('revenueRented', baht(mRev)); setText('revenueFromRented', baht(s.totalRevenue));
   setText('revenueFromVacant', baht(s.vacantRevenue)); setText('revenueAtRisk', baht(s.atRisk));
   setText('postedToday', s.postedToday); setText('notPosted', s.unposted); setText('expiringCount', s.expiring.length); setText('noNotesCount', s.noNotes);
   setText('navAvail', s.available); setText('navOcc', s.occupied); setText('navReserved', s.reserved); setText('navPend', s.pending);
@@ -2423,6 +2456,7 @@ function renderDashboard() {
   const hd = document.getElementById('headerDate');
   if (hd) { const now = new Date(); hd.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
   renderAvailableScroll();
+  renderMonthly();
 
   const byProject = {};
   units.forEach(u => { const p = u.project || '(ไม่ระบุ)'; if (!byProject[p]) byProject[p] = { count: 0, revenue: 0, occupied: 0 }; byProject[p].count++; if (u.status === 'OCCUPIED') { byProject[p].revenue += Number(u.rent || 0); byProject[p].occupied++; } });
@@ -2434,7 +2468,7 @@ function renderDashboard() {
       <div class="flex justify-between items-baseline mb-1.5 gap-2"><span class="text-xs font-medium text-ink truncate group-hover:text-brick-600 transition-colors">${esc(name)}</span><span class="text-xs font-bold text-brick-600 shrink-0">${baht(d.revenue)}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((d.revenue / maxRevenue) * 100)}%"></div></div>
       <p class="text-[10px] text-slate-400 mt-1">${d.occupied}/${d.count} ห้องมีผู้เช่า</p>
-    </button>`).join('') : '<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีข้อมูล</p>';
+    </button>`).join('') : emptyStateHTML('building-2', 'ยังไม่มีข้อมูลรายได้', 'เพิ่มห้องและตั้งสถานะมีผู้เช่า เพื่อดูรายได้แยกตามโครงการ', 'เพิ่มห้อง', "openSheet('add')");
 
   const expiringSorted = s.expiring.slice().sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   const el = document.getElementById('expiringList');
@@ -2446,7 +2480,7 @@ function renderDashboard() {
       <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-ink truncate">${esc(u.project)}${u.building ? ' · ' + esc(u.building) : ''} · ${esc(u.room)}</p><p class="text-[10px] text-slate-400">${fmtDate(u.end)}</p></div>
       <span class="text-xs font-bold ${cls} shrink-0">${d < 0 ? 'หมดแล้ว' : d + ' วัน'}</span>
     </button>`;
-  }).join('') : '<p class="text-xs text-slate-400 text-center py-6">ไม่มีสัญญาใกล้หมด 🎉</p>';
+  }).join('') : (units.length ? emptyStateHTML('calendar-check', 'ไม่มีสัญญาใกล้หมด 🎉', 'สัญญาเช่าทั้งหมดยังไม่ใกล้วันหมดอายุ', 'ดูห้องที่มีผู้เช่า', "gotoFilter('OCCUPIED')").replace('data-lucide="plus"', 'data-lucide="arrow-right"') : emptyStateHTML('file-clock', 'ยังไม่มีสัญญาเช่า', 'เพิ่มห้องพร้อมวันเริ่มและวันสิ้นสุดสัญญา ระบบจะเตือนเมื่อใกล้หมด', 'เพิ่มห้อง', "openSheet('add')"));
 
   const followList = document.getElementById('dashFollowList');
   if (followList) {
@@ -2576,6 +2610,8 @@ function render() {
       ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)}</p></div><p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>`;
     } else if (selectedProject) {
       ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p></div>${viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('')}`;
+    } else if (!units.length) {
+      ul.innerHTML = emptyStateHTML('home', 'ยังไม่มีห้องในระบบ', 'เริ่มต้นด้วยการเพิ่มห้องแรก แล้วจัดการสถานะ รูป และการโพสต์ได้ที่นี่', 'เพิ่มห้องแรก', "openSheet('add')");
     } else if (list.length === 0) {
       ul.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">ไม่พบห้องที่ตรงกับเงื่อนไข</p>`;
     } else if (q) {
@@ -2795,7 +2831,8 @@ function renderCustomers() {
     renderKanban(list);
   } else {
     grid.classList.remove('hidden'); kanban.classList.add('hidden');
-    if (!list.length) grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบลูกค้าที่ตรงกับเงื่อนไข</p>`;
+    if (!customers.length) grid.innerHTML = emptyStateHTML('users', 'ยังไม่มีลูกค้า', 'เพิ่มลูกค้าเพื่อเก็บความต้องการ งบประมาณ และนัดติดตาม', 'เพิ่มลูกค้า', "openCustSheet('add')");
+    else if (!list.length) grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบลูกค้าที่ตรงกับเงื่อนไข</p>`;
     else grid.innerHTML = list.map(custCardHTML).join('');
   }
   lucide.createIcons();
@@ -2835,6 +2872,7 @@ function custCardHTML(c) {
 function renderKanban(list) {
   const wrap = document.getElementById('kanbanWrap');
   const columns = ['NEW','TALKING','VIEWING','RESERVED','WON','LOST'];
+  if (!customers.length) { wrap.innerHTML = emptyStateHTML('kanban-square', 'Kanban ยังว่างอยู่', 'เพิ่มลูกค้าแล้วติดตามสถานะ ตั้งแต่ใหม่ จนถึงปิดการขาย', 'เพิ่มลูกค้า', "openCustSheet('add')", 'w-full'); return; }
   wrap.innerHTML = columns.map(col => {
     const items = list.filter(c => c.status === col);
     const cm = CUST_STATUS_META[col];
@@ -3088,7 +3126,7 @@ async function exportData() {
   const cfg = getPostConfig();
   const heroImg = (() => { try { return localStorage.getItem(HERO_KEY) || ''; } catch (e) { return ''; } })();
   const avatarImg = (() => { try { return localStorage.getItem(AVATAR_KEY) || ''; } catch (e) { return ''; } })();
-  const payload = { app:'staylow', version:31, exportedAt:new Date().toISOString(), units, customers, photos, cfg, heroImg, avatarImg };
+  const payload = { app:'staylow', version:31, exportedAt:new Date().toISOString(), units, customers, photos, cfg, heroImg, avatarImg, monthlyOcc };
   const blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
   const name = 'staylow-backup-' + new Date().toISOString().slice(0,10) + '.json';
   const file = new File([blob], name, { type:'application/json' });
@@ -3107,6 +3145,7 @@ async function importData(file) {
     const inCusts = Array.isArray(data) ? [] : (data.customers || []);
     const inPhotos = Array.isArray(data) ? [] : (data.photos || []);
     if (!inUnits.length && !inCusts.length) throw new Error('ไม่พบข้อมูล');
+    if (data.monthlyOcc && typeof data.monthlyOcc === 'object') { Object.entries(data.monthlyOcc).forEach(([ym, m]) => { monthlyOcc[ym] = { ...(monthlyOcc[ym] || {}), ...m }; }); persistOcc(); }
     let added = 0, updated = 0, cAdd = 0, cUpd = 0;
     inUnits.forEach(u => { const i = units.findIndex(x => x.id === u.id); if (i >= 0) { units[i] = { ...units[i], ...u }; updated++; } else { units.push(u); added++; } });
     inCusts.forEach(c => { const i = customers.findIndex(x => x.id === c.id); if (i >= 0) { customers[i] = { ...customers[i], ...c }; cUpd++; } else { customers.push(c); cAdd++; } });

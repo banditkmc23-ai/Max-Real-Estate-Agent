@@ -1,5 +1,5 @@
 // MAX Agent service worker: network-first for HTML, cache-first for static assets.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
 const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'];
