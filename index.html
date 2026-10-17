@@ -60,6 +60,9 @@
     }
   }
   input, select, textarea { font-family:inherit; }
+  /* Keep bottom nav pinned & out of the way while a sheet/detail is open (iOS fixed-position jump fix) */
+  .bottom-nav-new { transform: translateZ(0); -webkit-transform: translateZ(0); transition: transform .2s ease, visibility 0s; }
+  body.sheet-open .bottom-nav-new, body:has(.sheet.open) .bottom-nav-new { transform: translateY(110%); visibility: hidden; pointer-events: none; transition: transform .2s ease, visibility 0s linear .2s; }
   /* Compact form labels in sheets */
   .sheet label { font-size: 11px; }
   .sheet label .inp { font-size: 13px; }
@@ -2907,10 +2910,12 @@ function openCustDetail(id) {
   void sheetEl.offsetHeight;
   sheetEl.scrollTop = 0;
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('sheet-open');
   lucide.createIcons();
 }
 function closeCustDetail() {
   detailCustId = null;
+  document.body.classList.remove('sheet-open');
   document.getElementById('custDetailOverlay').classList.add('hidden');
   document.getElementById('custDetail').classList.remove('open');
   document.body.style.overflow = '';
