@@ -542,5 +542,110 @@ FX.revExcel = function () {
 FX.addTool({ label: 'รายงานรายได้', icon: 'bar-chart-3', view: 'revenue', action: "FX.show('revenue')" });
 })();
 
+/* ===================== 7) RENT INVOICES + PROMPTPAY ===================== */
+(function () {
+const { $, E, B, T, ls, icons, pad, ymd, ymOf, thDate, thMonth, addMonths, units_, custs_, unitName, cfg } = FX.u;
+const KEY = 'staylow_invoices_v1', CKEY = 'staylow_invoice_cfg_v1';
+let inv = ls.get(KEY, {}); if (!inv || typeof inv !== 'object' || Array.isArray(inv)) inv = {};
+let icfg = { ppId: '', ppName: '', dueDay: 5, ...ls.get(CKEY, {}) };
+const save = () => ls.set(KEY, inv), saveC = () => ls.set(CKEY, icfg);
+FX.addBackup('invoices', () => inv, v => { if (!v || typeof v !== 'object') return; Object.entries(v).forEach(([ym, m]) => { inv[ym] = { ...(inv[ym] || {}), ...m }; }); save(); });
+FX.addBackup('invoiceCfg', () => icfg, v => { if (v && typeof v === 'object') { icfg = { ...icfg, ...v }; saveC(); } });
+let ym = ymOf(new Date());
+/* ---- PromptPay (EMVCo) ---- */
+const tlv = (id, v) => id + pad(v.length) + v;
+function crc16(s) { let c = 0xFFFF; for (let i = 0; i < s.length; i++) { c ^= s.charCodeAt(i) << 8; for (let j = 0; j < 8; j++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, '0'); }
+function ppTarget(id) {
+  const d = String(id || '').replace(/[^0-9]/g, '');
+  if (d.length === 10 && d[0] === '0') return tlv('01', ('0066' + d.slice(1)).padStart(13, '0'));
+  if (d.length === 13) return tlv('02', d);
+  if (d.length === 15) return tlv('03', d);
+  return null;
+}
+FX.promptPayPayload = function (id, amount) {
+  const t = ppTarget(id); if (!t) return null;
+  let s = tlv('00', '01') + tlv('01', amount ? '12' : '11') + tlv('29', tlv('00', 'A000000677010111') + t) + tlv('58', 'TH') + tlv('53', '764');
+  if (amount) s += tlv('54', Number(amount).toFixed(2));
+  s += '6304'; return s + crc16(s);
+};
+let qrLib = null;
+function loadQr() { if (window.qrcode) return Promise.resolve(window.qrcode); if (qrLib) return qrLib; qrLib = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'vendor/qrcode.js?v=1'; sc.onload = () => res(window.qrcode); sc.onerror = rej; document.head.appendChild(sc); }); return qrLib; }
+async function qrSvg(text, cell) { const q = (await loadQr())(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: cell || 4, margin: 2, scalable: true }); }
+/* ---- model ---- */
+const dueDate = m => { const [y, mo] = m.split('-').map(Number); const last = new Date(y, mo, 0).getDate(); return `${m}-${pad(Math.min(Number(icfg.dueDay) || 5, last))}`; };
+const tenantOf = u => custs_().find(c => (c.linkedUnits || []).includes(u.id) && c.status === 'WON') || null;
+const rec = (m, id) => (inv[m] && inv[m][id]) || null;
+const ensure = (m, u) => { inv[m] = inv[m] || {}; if (!inv[m][u.id]) inv[m][u.id] = { status: 'pending', water: 0, elec: 0, other: 0, no: `INV-${Number(m.slice(0, 4)) + 543}-${m.slice(5)}-${String(Object.keys(inv[m]).length + 1).padStart(3, '0')}` }; return inv[m][u.id]; };
+const total = (u, r) => Number(u.rent || 0) + Number(r && r.water || 0) + Number(r && r.elec || 0) + Number(r && r.other || 0);
+function statusOf(m, u) { const r = rec(m, u.id); if (r && r.status === 'paid') return 'paid'; return ymd(new Date()) > dueDate(m) ? 'overdue' : 'pending'; }
+const ST = { paid: ['ชำระแล้ว', 'bg-emerald-500/10 text-emerald-700'], pending: ['รอชำระ', 'bg-amber-500/10 text-amber-700'], overdue: ['เกินกำหนด', 'bg-rose-500/10 text-rose-600'] };
+const billed = m => units_().filter(u => FX.revOcc ? FX.revOcc(u, m) : FX.occIn(u, m));
+FX.invoiceAlerts = () => { const m = ymOf(new Date()); const today = ymd(new Date()); const soon = ymd(new Date(Date.now() + 3 * 864e5)); return billed(m).filter(u => statusOf(m, u) === 'overdue' || (statusOf(m, u) === 'pending' && dueDate(m) <= soon && dueDate(m) >= today)).length; };
+FX.registerView('invoices', { title: 'แจ้งหนี้ค่าเช่า', render() {
+  const list = billed(ym); const sum = { paid: 0, pending: 0, overdue: 0 };
+  list.forEach(u => { sum[statusOf(ym, u)] += total(u, rec(ym, u.id)); });
+  const unpaid = list.filter(u => statusOf(ym, u) !== 'paid');
+  const row = u => { const st = statusOf(ym, u), r = rec(ym, u.id), t = tenantOf(u);
+    return `<button onclick="FX.openInvoice('${u.id}')" class="w-full text-left flex items-center gap-3 py-2.5 border-b border-slate-800 last:border-0"><div class="w-9 h-9 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="receipt" class="w-4 h-4 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-xs font-semibold truncate">${E(unitName(u))}</p><p class="text-[10px] text-slate-400 truncate">${t ? E(t.name) + ' · ' : ''}ครบกำหนด ${thDate(dueDate(ym))}${r && r.paidAt ? ' · จ่าย ' + thDate(r.paidAt) : ''}</p></div><div class="text-right shrink-0"><p class="text-xs font-bold">${B(total(u, r))}</p><span class="text-[10px] px-2 py-0.5 rounded-full ${ST[st][1]}">${ST[st][0]}</span></div></button>`; };
+  return `<div class="flex items-center justify-between mb-4"><p class="text-xs text-slate-400">รอบบิล ${thMonth(ym)} · ครบกำหนดทุกวันที่ ${icfg.dueDay}</p><div class="flex items-center gap-1"><button onclick="FX.invNav(-1)" class="w-8 h-8 rounded-full bg-white border border-slate-700 flex items-center justify-center" aria-label="เดือนก่อน"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button onclick="FX.invNav(1)" class="w-8 h-8 rounded-full bg-white border border-slate-700 flex items-center justify-center" aria-label="เดือนถัดไป"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div></div>
+  <div class="grid grid-cols-3 gap-2 text-center mb-3">${['paid', 'pending', 'overdue'].map(k => `<div class="bg-white border border-slate-700 rounded-2xl p-3 shadow-sm"><p class="text-[10px] text-slate-400">${ST[k][0]}</p><p class="text-sm lg:text-base font-bold ${k === 'paid' ? 'text-emerald-600' : k === 'pending' ? 'text-amber-600' : 'text-rose-600'}">${B(sum[k])}</p></div>`).join('')}</div>
+  <button onclick="FX.invSettings()" class="w-full bg-white border border-slate-700 rounded-2xl p-3 shadow-sm flex items-center gap-3 mb-3 text-left"><div class="w-9 h-9 rounded-xl bg-brick-500 text-white flex items-center justify-center shrink-0"><i data-lucide="qr-code" class="w-4 h-4"></i></div><div class="flex-1 min-w-0"><p class="text-xs font-semibold">PromptPay ${icfg.ppId ? E(icfg.ppId) : '— ยังไม่ได้ตั้งค่า'}</p><p class="text-[10px] text-slate-400">${icfg.ppId ? 'QR ในใบแจ้งหนี้ใส่ยอดเงินให้อัตโนมัติ' : 'ตั้งค่าเบอร์/เลขบัตรประชาชนสำหรับรับเงิน'} · แตะเพื่อแก้ไข</p></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+  ${list.length ? `<div class="bg-white border border-slate-700 rounded-2xl px-4 py-1 shadow-sm">${list.map(row).join('')}</div>${unpaid.length ? `<button onclick="FX.remindAll()" class="w-full mt-3 py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>ส่งเตือนห้องที่ยังไม่ชำระ (${unpaid.length}) ทาง LINE</button>` : ''}` : (typeof emptyStateHTML === 'function' ? emptyStateHTML('receipt', 'ไม่มีห้องที่ต้องออกบิลเดือนนี้', 'ห้องที่มีผู้เช่าในเดือนนี้จะแสดงที่นี่ (ติ๊กมีผู้เช่ารายเดือนบนแดชบอร์ดหรือใส่วันสัญญา)', '', '') : '')}
+  <p class="text-[10px] text-slate-400 mt-3">แอปนี้ไม่มีเซิร์ฟเวอร์ จึงส่งบิลอัตโนมัติไม่ได้ ใช้ปุ่ม LINE เพื่อส่งเอง และดูการเตือนครบกำหนดที่ไอคอนเครื่องมือบนแดชบอร์ด</p>`;
+} });
+FX.invNav = n => { ym = addMonths(ym, n); FX.refresh(); };
+FX.invSettings = function () {
+  FX.open(FX.sheetHead('ตั้งค่ารับชำระ', 'ใช้สร้าง QR PromptPay ในใบแจ้งหนี้') + `<div class="space-y-3 text-[11px] text-slate-500">
+    <label class="block">PromptPay (เบอร์มือถือ / เลขบัตรประชาชน / เลขผู้เสียภาษี)<input id="fxI_pp" class="inp" inputmode="numeric" placeholder="0812345678" value="${E(icfg.ppId)}"></label>
+    <label class="block">ชื่อบัญชี (แสดงในใบแจ้งหนี้)<input id="fxI_nm" class="inp" placeholder="เช่น นาย แม็กซ์ ใจดี" value="${E(icfg.ppName)}"></label>
+    <label class="block">ครบกำหนดชำระทุกวันที่<input id="fxI_due" type="number" min="1" max="31" class="inp" value="${E(icfg.dueDay)}"></label></div>
+    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="FX.close()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-semibold">ยกเลิก</button><button onclick="FX.saveInvSettings()" class="py-2.5 rounded-full bg-brick-500 text-white text-sm font-semibold">บันทึก</button></div>`);
+};
+FX.saveInvSettings = function () {
+  const pp = ($('fxI_pp').value || '').trim();
+  if (pp && !ppTarget(pp)) return T('PromptPay ต้องเป็นเบอร์ 10 หลัก หรือเลข 13 หลัก');
+  icfg.ppId = pp; icfg.ppName = $('fxI_nm').value.trim(); icfg.dueDay = Math.min(31, Math.max(1, Number($('fxI_due').value) || 5));
+  saveC(); FX.close(); FX.refresh(); FX.injectTools(); T('บันทึกแล้ว');
+};
+let curInv = { id: null, tab: 'invoice' };
+function docHTML(u, r, tab, qr) {
+  const t = tenantOf(u), st = statusOf(ym, u), c = cfg(), tot = total(u, r);
+  const line = (l, v) => `<div class="flex justify-between py-2"><span>${l}</span><span>${B(v)}</span></div>`;
+  return `<div class="border border-slate-700 rounded-2xl p-4 bg-white"><div class="flex justify-between items-start gap-2"><div><p class="text-[10px] font-bold tracking-widest text-brick-600">${E((c.agentName || 'MAX') + ' AGENT').toUpperCase()}</p><p class="text-base font-bold">${tab === 'receipt' ? 'ใบเสร็จรับเงิน' : 'ใบแจ้งหนี้ค่าเช่า'}</p><p class="text-[10px] text-slate-400">เลขที่ ${E(tab === 'receipt' ? r.no.replace('INV', 'RC') : r.no)} · ${tab === 'receipt' && r.paidAt ? 'รับเงิน ' + thDate(r.paidAt) : 'ออก ' + thDate(ymd(new Date()))}</p></div><span class="text-[10px] px-2 py-0.5 rounded-full ${ST[st][1]} shrink-0">${ST[st][0]}</span></div>
+  <div class="mt-3 text-[11px] text-slate-400 space-y-0.5"><p>ผู้เช่า: <span class="text-ink font-medium">${E(t ? t.name : '-')}</span></p><p>ห้อง: <span class="text-ink font-medium">${E(unitName(u))}</span></p><p>รอบบิล: <span class="text-ink font-medium">${thMonth(ym)}</span> · ครบกำหนด <span class="text-ink font-medium">${thDate(dueDate(ym))}</span></p></div>
+  <div class="mt-3 text-xs divide-y divide-slate-800 border-y border-slate-800">${line('ค่าเช่า ' + thMonth(ym), u.rent)}${Number(r.water) ? line('ค่าน้ำ', r.water) : ''}${Number(r.elec) ? line('ค่าไฟ', r.elec) : ''}${Number(r.other) ? line('อื่นๆ', r.other) : ''}</div>
+  <div class="flex justify-between py-2 text-sm font-bold"><span>รวมทั้งสิ้น</span><span class="text-brick-600">${B(tot)}</span></div>
+  ${tab === 'receipt' ? `<div class="mt-2 rounded-xl border-2 border-emerald-500 text-emerald-700 text-center py-2 text-sm font-bold">${st === 'paid' ? 'ได้รับชำระเรียบร้อยแล้ว' : 'ยังไม่ได้รับชำระ'}</div>` : (qr ? `<div class="flex items-center gap-3 mt-2 bg-slate-950 rounded-xl p-3"><div class="bg-white p-1 rounded-lg w-28 h-28 shrink-0">${qr}</div><div class="text-[11px]"><p class="font-semibold" style="color:#003d6a">PromptPay</p><p class="text-slate-400">สแกนจ่าย ${B(tot)}</p>${icfg.ppName ? `<p class="text-slate-400">ชื่อบัญชี: ${E(icfg.ppName)}</p>` : ''}<p class="text-slate-400">${E(icfg.ppId)}</p></div></div>` : `<p class="text-[11px] text-slate-400 mt-2">ตั้งค่า PromptPay เพื่อแสดง QR รับเงิน</p>`)}</div>`;
+}
+FX.openInvoice = async function (id, tab) {
+  const u = units_().find(x => x.id === id); if (!u) return;
+  const r = ensure(ym, u); save(); curInv = { id, tab: tab || (r.status === 'paid' ? 'receipt' : 'invoice') };
+  const pl = icfg.ppId ? FX.promptPayPayload(icfg.ppId, total(u, r)) : null;
+  let qr = ''; if (pl && curInv.tab === 'invoice') { try { qr = await qrSvg(pl); } catch (e) { qr = ''; } }
+  const tb = (k, l) => `<button onclick="FX.openInvoice('${id}','${k}')" class="px-3 py-1.5 rounded-full ${curInv.tab === k ? 'bg-brick-500 text-white font-semibold' : 'bg-slate-100 text-slate-500'}">${l}</button>`;
+  const numIn = (k, l) => `<label class="text-[11px] text-slate-500">${l}<input type="number" inputmode="decimal" class="inp" value="${Number(r[k]) || ''}" placeholder="0" onchange="FX.invSet('${id}','${k}',this.value)"></label>`;
+  FX.open(FX.sheetHead(curInv.tab === 'receipt' ? 'ใบเสร็จรับเงิน' : 'ใบแจ้งหนี้', E(unitName(u)) + ' · ' + thMonth(ym)) + `<div class="flex gap-1.5 text-[11px] mb-3">${tb('invoice', 'ใบแจ้งหนี้')}${tb('receipt', 'ใบเสร็จ')}</div>
+    <div id="fxInvDoc">${docHTML(u, r, curInv.tab, qr)}</div>
+    ${r.status !== 'paid' ? `<div class="grid grid-cols-3 gap-2 mt-3">${numIn('water', 'ค่าน้ำ')}${numIn('elec', 'ค่าไฟ')}${numIn('other', 'อื่นๆ')}</div>` : ''}
+    <div class="grid grid-cols-3 gap-2 mt-4"><button onclick="FX.invLine('${id}')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1" style="background:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>LINE</button><button onclick="FX.invPrint()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="printer" class="w-3.5 h-3.5"></i>พิมพ์/PDF</button>${r.status === 'paid' ? `<button onclick="FX.invPaid('${id}',false)" class="py-2.5 rounded-full bg-white border border-slate-700 text-xs font-semibold">ยกเลิกชำระ</button>` : `<button onclick="FX.invPaid('${id}',true)" class="py-2.5 rounded-full bg-brick-500 text-white text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>รับชำระ</button>`}</div>`);
+};
+FX.invSet = (id, k, v) => { const u = units_().find(x => x.id === id); if (!u) return; ensure(ym, u)[k] = Math.max(0, Number(v) || 0); save(); FX.openInvoice(id, curInv.tab); FX.refresh(); };
+FX.invPaid = (id, paid) => { const u = units_().find(x => x.id === id); if (!u) return; const r = ensure(ym, u); r.status = paid ? 'paid' : 'pending'; r.paidAt = paid ? ymd(new Date()) : ''; save(); T(paid ? 'บันทึกรับชำระแล้ว' : 'ยกเลิกการชำระแล้ว'); FX.openInvoice(id, paid ? 'receipt' : 'invoice'); FX.refresh(); FX.injectTools(); };
+function lineText(u) { const r = ensure(ym, u), t = tenantOf(u), c = cfg(), st = statusOf(ym, u);
+  return `${st === 'paid' ? '🧾 ใบเสร็จค่าเช่า' : '📄 แจ้งค่าเช่า'} ${thMonth(ym)}\n${t ? 'คุณ' + t.name.replace(/^คุณ/, '') + '\n' : ''}🏢 ${unitName(u)}\nค่าเช่า ${B(u.rent)}${Number(r.water) ? '\nค่าน้ำ ' + B(r.water) : ''}${Number(r.elec) ? '\nค่าไฟ ' + B(r.elec) : ''}${Number(r.other) ? '\nอื่นๆ ' + B(r.other) : ''}\nรวม ${B(total(u, r))}\n${st === 'paid' ? '✅ ได้รับชำระแล้ว ' + thDate(r.paidAt) + ' ขอบคุณค่ะ' : '📅 ครบกำหนด ' + thDate(dueDate(ym)) + (icfg.ppId ? `\n💳 PromptPay ${icfg.ppId}${icfg.ppName ? ' (' + icfg.ppName + ')' : ''}` : '') + (st === 'overdue' ? '\n⚠️ เลยกำหนดชำระแล้ว รบกวนชำระด้วยค่ะ' : '')}\n— ${c.agentName || ''}${c.phone ? ' ' + c.phone : ''}`; }
+FX.invLine = id => { const u = units_().find(x => x.id === id); if (u) { save(); FX.lineShare(lineText(u)); } };
+FX.remindAll = () => { const list = billed(ym).filter(u => statusOf(ym, u) !== 'paid'); if (!list.length) return; FX.lineShare(list.map(lineText).join('\n\n———\n\n')); };
+FX.invPrint = function () {
+  const doc = $('fxInvDoc'); if (!doc) return;
+  let p = $('fxPrint'); if (!p) { document.body.insertAdjacentHTML('beforeend', '<div id="fxPrint"></div>'); p = $('fxPrint'); }
+  p.innerHTML = doc.innerHTML; document.body.classList.add('fx-printing');
+  const done = () => { document.body.classList.remove('fx-printing'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done); setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50);
+};
+if (!$('fxPrintCss')) document.head.insertAdjacentHTML('beforeend', `<style id="fxPrintCss">#fxPrint{display:none}@media print{body.fx-printing>*:not(#fxPrint){display:none!important}body.fx-printing #fxPrint{display:block!important;max-width:520px;margin:0 auto;padding:16px}body.fx-printing{background:#fff!important}#fxPrint svg{width:112px;height:112px}}</style>`);
+FX.addTool({ label: 'แจ้งหนี้ค่าเช่า', icon: 'receipt', view: 'invoices', action: "FX.show('invoices')", badge: () => FX.invoiceAlerts() });
+setTimeout(() => { try { const n = FX.invoiceAlerts(); if (n) T(`💳 มีค่าเช่า ${n} ห้องที่ใกล้/เลยกำหนดชำระ`); } catch (e) {} }, 4500);
+})();
+
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
