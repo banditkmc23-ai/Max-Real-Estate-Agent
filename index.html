@@ -49,8 +49,9 @@
       top: 0 !important; bottom: 0 !important;
       transform: translateX(-50%) !important;
       margin: 0 !important; opacity: 1 !important; visibility: visible !important;
-      max-height: 100vh !important;
-      border-radius: 0 !important;
+      top: 12px !important; bottom: 12px !important;
+      max-height: calc(100vh - 24px) !important;
+      border-radius: 22px !important;
       border: none !important;
       box-shadow: 0 24px 60px -12px rgba(28,25,23,.25);
     }
@@ -63,6 +64,12 @@
   /* Keep bottom nav pinned & out of the way while a sheet/detail is open (iOS fixed-position jump fix) */
   .bottom-nav-new { transform: translateZ(0); -webkit-transform: translateZ(0); transition: transform .2s ease, visibility 0s; }
   body.sheet-open .bottom-nav-new, body:has(.sheet.open) .bottom-nav-new { transform: translateY(110%); visibility: hidden; pointer-events: none; transition: transform .2s ease, visibility 0s linear .2s; }
+  /* Rounded corners everywhere (no 90° corners) */
+  .bottom-nav-new { border-radius: 22px 22px 0 0; }
+  .offline-banner { border-radius: 0 0 12px 12px; }
+  .h-card-img { border-radius: 16px 16px 0 0; }
+  .inp-check { border-radius: 4px; }
+  #searchSuggest button, #searchSuggestDesktop button, #projectSuggest button { border-radius: 12px; }
   /* Compact form labels in sheets */
   .sheet label { font-size: 11px; }
   .sheet label .inp { font-size: 13px; }
@@ -886,7 +893,7 @@
 </div>
 
 <div id="custDetailOverlay" class="fixed inset-0 bg-black/40 z-[84] hidden" onclick="closeCustDetail()" ontouchstart="event.preventDefault(); closeCustDetail();" style="touch-action: manipulation;"></div>
-<div id="custDetail" class="sheet fixed bottom-0 lg:top-0 lg:bottom-0 left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 max-w-[calc(100vw-24px)] lg:max-w-[900px] w-full mx-auto bg-white lg:rounded-none border-t lg:border-0 rounded-t-3xl z-[85] p-4 lg:p-6 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] lg:max-h-full overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+<div id="custDetail" class="sheet fixed bottom-0 lg:top-0 lg:bottom-0 left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 max-w-[calc(100vw-24px)] lg:max-w-[900px] w-full mx-auto bg-white border-t lg:border-0 rounded-t-3xl z-[85] p-4 lg:p-6 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[88vh] lg:max-h-full overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
   <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
   <div id="custDetailContent"></div>
 </div>
