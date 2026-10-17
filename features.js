@@ -679,7 +679,7 @@ FX.openInvoice = async function (id, tab) {
   FX.open(FX.sheetHead(curInv.tab === 'receipt' ? 'ใบเสร็จรับเงิน' : 'ใบแจ้งหนี้', E(unitName(u)) + ' · ' + thMonth(ym)) + `<div class="flex gap-1.5 text-[11px] mb-3">${tb('invoice', 'ใบแจ้งหนี้')}${tb('receipt', 'ใบเสร็จ')}</div>
     <div id="fxInvDoc">${docHTML(u, r, curInv.tab, qr)}</div>
     ${r.status !== 'paid' ? `<div class="grid grid-cols-3 gap-2 mt-3">${numIn('water', 'ค่าน้ำ')}${numIn('elec', 'ค่าไฟ')}${numIn('other', 'อื่นๆ')}</div>` : ''}
-    <div class="grid grid-cols-3 gap-2 mt-4"><button onclick="FX.invLine('${id}')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1" style="background:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>LINE</button><button onclick="FX.invPrint()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="printer" class="w-3.5 h-3.5"></i>พิมพ์/PDF</button>${r.status === 'paid' ? `<button onclick="FX.invPaid('${id}',false)" class="py-2.5 rounded-full bg-white border border-slate-700 text-xs font-semibold">ยกเลิกชำระ</button>` : `<button onclick="FX.invPaid('${id}',true)" class="py-2.5 rounded-full bg-brick-500 text-white text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>รับชำระ</button>`}</div>`);
+    <div class="grid grid-cols-3 gap-2 mt-4"><button onclick="FX.invLine('${id}')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1" style="background:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>LINE</button><button onclick="FX.invPrint()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="printer" class="w-3.5 h-3.5"></i>PDF/พิมพ์</button>${r.status === 'paid' ? `<button onclick="FX.invPaid('${id}',false)" class="py-2.5 rounded-full bg-white border border-slate-700 text-xs font-semibold">ยกเลิกชำระ</button>` : `<button onclick="FX.invPaid('${id}',true)" class="py-2.5 rounded-full bg-brick-500 text-white text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>รับชำระ</button>`}</div>`);
 };
 FX.invSet = (id, k, v) => { const u = units_().find(x => x.id === id); if (!u) return; ensure(ym, u)[k] = Math.max(0, Number(v) || 0); save(); FX.openInvoice(id, curInv.tab); FX.refresh(); };
 FX.invPaid = (id, paid) => { const u = units_().find(x => x.id === id); if (!u) return; const r = ensure(ym, u); r.status = paid ? 'paid' : 'pending'; r.paidAt = paid ? ymd(new Date()) : ''; save(); T(paid ? 'บันทึกรับชำระแล้ว' : 'ยกเลิกการชำระแล้ว'); FX.openInvoice(id, paid ? 'receipt' : 'invoice'); FX.refresh(); FX.injectTools(); };
@@ -687,12 +687,55 @@ function lineText(u) { const r = ensure(ym, u), t = tenantOf(u), c = cfg(), st =
   return `${st === 'paid' ? '🧾 ใบเสร็จค่าเช่า' : '📄 แจ้งค่าเช่า'} ${thMonth(ym)}\n${t ? 'คุณ' + t.name.replace(/^คุณ/, '') + '\n' : ''}🏢 ${unitName(u)}\nค่าเช่า ${B(u.rent)}${Number(r.water) ? '\nค่าน้ำ ' + B(r.water) : ''}${Number(r.elec) ? '\nค่าไฟ ' + B(r.elec) : ''}${Number(r.other) ? '\nอื่นๆ ' + B(r.other) : ''}\nรวม ${B(total(u, r))}\n${st === 'paid' ? '✅ ได้รับชำระแล้ว ' + thDate(r.paidAt) + ' ขอบคุณค่ะ' : '📅 ครบกำหนด ' + thDate(dueDate(ym)) + (icfg.ppId ? `\n💳 PromptPay ${icfg.ppId}${icfg.ppName ? ' (' + icfg.ppName + ')' : ''}` : '') + (st === 'overdue' ? '\n⚠️ เลยกำหนดชำระแล้ว รบกวนชำระด้วยค่ะ' : '')}\n— ${c.agentName || ''}${c.phone ? ' ' + c.phone : ''}`; }
 FX.invLine = id => { const u = units_().find(x => x.id === id); if (u) { save(); FX.lineShare(lineText(u)); } };
 FX.remindAll = () => { const list = billed(ym).filter(u => statusOf(ym, u) !== 'paid'); if (!list.length) return; FX.lineShare(list.map(lineText).join('\n\n———\n\n')); };
-FX.invPrint = function () {
+const loadJs = src => new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+async function invoicePdf() {
+  const doc = $('fxInvDoc'); if (!doc) throw new Error('no doc');
+  if (!window.html2canvas) await loadJs('vendor/html2canvas.min.js?v=1');
+  if (!window.jspdf) await loadJs('vendor/jspdf.umd.min.js?v=1');
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-10000px;top:0;width:560px;padding:24px;background:#fff;font-family:Poppins,"Noto Sans Thai",sans-serif';
+  box.innerHTML = doc.innerHTML;
+  box.querySelectorAll('svg').forEach(svg => { svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); svg.setAttribute('width', '600'); svg.setAttribute('height', '600'); svg.removeAttribute('style'); const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg)); img.style.cssText = 'width:100%;height:100%'; svg.replaceWith(img); });
+  document.body.appendChild(box);
+  try {
+    await Promise.all([...box.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+    const cv = await window.html2canvas(box, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false });
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' });
+    const W = 148 - 16, H = W * cv.height / cv.width;
+    pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 8, 8, W, Math.min(H, 210 - 16));
+    return pdf.output('blob');
+  } finally { box.remove(); }
+}
+FX.invoicePdf = invoicePdf;
+let readyPdf = null;
+FX.sharePdf = async function () {
+  if (!readyPdf) return;
+  const f = readyPdf;
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: f.name }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); T('ดาวน์โหลด PDF แล้ว');
+};
+const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+FX.invPrint = async function (mode) {
   const doc = $('fxInvDoc'); if (!doc) return;
-  let p = $('fxPrint'); if (!p) { document.body.insertAdjacentHTML('beforeend', '<div id="fxPrint"></div>'); p = $('fxPrint'); }
-  p.innerHTML = doc.innerHTML; document.body.classList.add('fx-printing');
-  const done = () => { document.body.classList.remove('fx-printing'); window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done); setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50);
+  if (mode !== 'pdf' && !isMobile()) {
+    let p = $('fxPrint'); if (!p) { document.body.insertAdjacentHTML('beforeend', '<div id="fxPrint"></div>'); p = $('fxPrint'); }
+    p.innerHTML = doc.innerHTML; document.body.classList.add('fx-printing');
+    const done = () => { document.body.classList.remove('fx-printing'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done); window.print(); setTimeout(done, 1500); return;
+  }
+  T('กำลังสร้าง PDF...');
+  let blob; try { blob = await invoicePdf(); } catch (e) { console.error(e); return T('สร้าง PDF ไม่สำเร็จ'); }
+  const no = (doc.textContent.match(/เลขที่\s*(\S+)/) || [])[1] || 'invoice';
+  readyPdf = new File([blob], no.replace(/[^\w-]/g, '_') + '.pdf', { type: 'application/pdf' });
+  if (navigator.canShare && navigator.canShare({ files: [readyPdf] })) {
+    try { await navigator.share({ files: [readyPdf], title: readyPdf.name }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+    // iOS may block share after async work (no user gesture) — offer a one-tap button
+    const btn = $('fxPdfReady') || (doc.insertAdjacentHTML('afterend', '<button id="fxPdfReady" onclick="FX.sharePdf()" class="w-full mt-3 py-3 rounded-full bg-brick-500 text-white text-xs font-semibold">PDF พร้อมแล้ว · แตะเพื่อบันทึก/แชร์</button>'), $('fxPdfReady'));
+    return;
+  }
+  FX.sharePdf();
 };
 if (!$('fxPrintCss')) document.head.insertAdjacentHTML('beforeend', `<style id="fxPrintCss">#fxPrint{display:none}@media print{body.fx-printing>*:not(#fxPrint){display:none!important}body.fx-printing #fxPrint{display:block!important;max-width:520px;margin:0 auto;padding:16px}body.fx-printing{background:#fff!important}#fxPrint svg{width:112px;height:112px}}</style>`);
 FX.addTool({ label: 'แจ้งหนี้ค่าเช่า', icon: 'receipt', view: 'invoices', action: "FX.show('invoices')", badge: () => FX.invoiceAlerts() });
