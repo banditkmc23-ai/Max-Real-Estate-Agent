@@ -137,7 +137,7 @@ const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
 const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
 const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
 const cloudCache = {};
-const rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(8)); return Array.from(r, x => a[x % a.length]).join(''); };
+const rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(6)); return Array.from(r, x => a[x % a.length]).join(''); };
 async function toJpeg(blob, max) {
   const bmp = await createImageBitmap(blob); const r = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas'); c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
@@ -160,7 +160,7 @@ async function cloudLink(u, o, withPhotos) {
   }
   const r = await fetch(`${SB_URL}/rest/v1/shared_rooms`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, data: { ...o, imgs } }) });
   if (!r.ok) throw new Error('insert ' + r.status);
-  return (cloudCache[key] = BASE() + '?id=' + id);
+  return (cloudCache[key] = BASE().replace(/room\.html$/, 'r/') + id);
 }
 async function buildLink(u, opts) {
   const c = cfg();
@@ -185,7 +185,7 @@ async function renderShare() {
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
   shareState.link = await buildLink(u, shareState);
   el.querySelector('#fxShareLink').textContent = shareState.link;
-  el.querySelector('#fxShareLen').textContent = shareState.link.includes('?id=') ? 'ลิงก์สั้น พร้อมรูปทั้งหมดของห้อง' : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? 'ลิงก์สั้น พร้อมรูปทั้งหมดของห้อง' : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
