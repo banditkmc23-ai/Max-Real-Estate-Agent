@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=7">
+<link rel="stylesheet" href="tailwind.min.css?v=8">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -232,7 +232,7 @@
 
   @media (max-width: 1023px) {
     .mobile-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
-    .main-wrapper { padding-top: calc(env(safe-area-inset-top, 0px) + 175px) !important; padding-bottom: 130px; }
+    .main-wrapper { padding-top: calc(env(safe-area-inset-top, 0px) + 187px) !important; padding-bottom: 130px; }
   }
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
@@ -349,7 +349,7 @@
       </div>
       <input type="file" id="heroFile" accept="image/*" class="hidden" onchange="importHeroImage(this.files[0])">
 
-      <div class="relative z-10 flex items-start justify-between px-5 pt-3 pb-5">
+      <div class="relative z-10 flex items-start justify-between px-5 pt-4 pb-[52px]">
         <div>
           <div class="flex items-center gap-1.5 text-white mb-1" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);">
             <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
@@ -358,19 +358,19 @@
           <h1 class="text-xl font-bold text-white tracking-tight" style="text-shadow: 0 2px 6px rgba(0,0,0,.4);" id="greetingText">สวัสดี MAX 👋</h1>
           <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
           <button onclick="openNotifications()" class="w-10 h-10 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" style="border-radius:9999px !important;" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
           </button>
-          <button onclick="openSettings()" class="w-10 h-10 bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-sm shadow-md active:scale-95 transition-transform overflow-hidden" id="headerAvatar" style="border-radius:9999px !important;">
+          <button onclick="openSettings()" class="w-14 h-14 bg-gradient-to-br from-brick-400 to-brick-600 border-2 border-white flex items-center justify-center text-white font-bold text-lg shadow-md active:scale-95 transition-transform overflow-hidden" id="headerAvatar" style="border-radius:9999px !important;">
             <span id="headerAvatarText">M</span>
             <img id="headerAvatarImg" class="w-full h-full object-cover hidden" alt="">
           </button>
         </div>
       </div>
 
-      <div class="relative z-10 px-5 pb-4">
+      <div class="relative z-10 px-5 pb-3">
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
