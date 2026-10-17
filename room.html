@@ -6,11 +6,16 @@
 <meta name="theme-color" content="#ffffff">
 <title>ห้องให้เช่า — MAX Agent</title>
 <meta name="description" content="รายละเอียดห้องให้เช่า ราคา รูป และช่องทางติดต่อเอเจนต์">
-<meta property="og:title" content="ห้องให้เช่า — MAX Agent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MAX Agent">
+<meta property="og:title" content="ห้องให้เช่า — ดูรูปและรายละเอียด | MAX Agent">
+<meta property="og:description" content="กดเพื่อดูรูปห้อง ราคา ทำเล และทักไลน์เอเจนต์ได้ทันที">
+<meta property="og:url" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/room.html">
+<meta name="twitter:card" content="summary">
 <meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tailwind.min.css?v=16">
+<link rel="stylesheet" href="tailwind.min.css?v=17">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <style>
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -21,6 +26,7 @@
 <div id="app" class="max-w-[560px] mx-auto pb-32"></div>
 <script>
 (function () {
+  const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
   const ST = { AVAILABLE: ['ว่าง พร้อมเข้าอยู่', 'bg-emerald-500/10 text-emerald-700'], RESERVED: ['ติดจอง', 'bg-amber-500/10 text-amber-700'], OCCUPIED: ['มีผู้เช่า (รับจองล่วงหน้า)', 'bg-sky-500/10 text-sky-700'], FOR_SALE: ['ขาย', 'bg-brick-500/10 text-brick-700'] };
@@ -36,9 +42,14 @@
   }
   function fail(msg) { document.getElementById('app').innerHTML = `<div class="p-8 text-center mt-20"><div class="w-14 h-14 rounded-2xl bg-brick-500/10 flex items-center justify-center mx-auto mb-3"><i data-lucide="link-2-off" class="w-7 h-7 text-brick-500"></i></div><p class="text-sm font-semibold">เปิดลิงก์ห้องไม่ได้</p><p class="text-xs text-slate-400 mt-1">${esc(msg)}</p></div>`; lucide.createIcons(); }
   async function main() {
-    const h = location.hash.slice(1);
-    if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
-    let d; try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }
+    const h = location.hash.slice(1), qid = new URLSearchParams(location.search).get('id');
+    let d;
+    if (qid) {
+      document.getElementById('app').innerHTML = '<p class="text-center text-xs text-slate-400 mt-24">กำลังโหลด...</p>';
+      try { const r = await fetch(`${SB_URL}/rest/v1/shared_rooms?id=eq.${encodeURIComponent(qid)}&select=data`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.length) throw 0; d = j[0].data; }
+      catch (e) { return fail('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่'); }
+    } else if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
+    if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }
     const title = [d.p, d.r ? 'ห้อง ' + d.r : ''].filter(Boolean).join(' · ');
     document.title = (d.p || 'ห้องให้เช่า') + ' — ' + baht(d.rent) + '/เดือน';
     const st = ST[d.st] || null;
@@ -47,12 +58,13 @@
     const lineUrl = a.l ? 'https://line.me/R/ti/p/~' + encodeURIComponent(a.l.replace(/^@?/, a.l.startsWith('@') ? '@' : '')) : '';
     const tel = a.ph ? 'tel:' + a.ph.replace(/[^0-9+]/g, '') : '';
     document.getElementById('app').innerHTML = `
-      <div class="relative h-72 ${d.img ? '' : 'hero-ph'} overflow-hidden lg:rounded-b-3xl">
-        ${d.img ? `<img src="data:image/jpeg;base64,${d.img}" class="absolute inset-0 w-full h-full object-cover" alt="">` : `<div class="absolute inset-0 flex items-center justify-center opacity-30"><i data-lucide="building-2" class="w-24 h-24 text-white"></i></div>`}
+      <div class="relative h-72 ${(d.imgs && d.imgs.length) || d.img ? '' : 'hero-ph'} overflow-hidden lg:rounded-b-3xl">
+        ${d.imgs && d.imgs.length ? `<img src="${esc(d.imgs[0])}" class="absolute inset-0 w-full h-full object-cover" alt="">` : d.img ? `<img src="data:image/jpeg;base64,${d.img}" class="absolute inset-0 w-full h-full object-cover" alt="">` : `<div class="absolute inset-0 flex items-center justify-center opacity-30"><i data-lucide="building-2" class="w-24 h-24 text-white"></i></div>`}
         <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(28,25,23,.35),transparent 40%,rgba(28,25,23,.55))"></div>
         <div class="absolute top-[max(16px,env(safe-area-inset-top))] left-4 right-4 flex justify-between"><span class="bg-white/90 text-brick-700 text-xs font-semibold px-3 py-1.5 rounded-full">${d.sale && !d.rent ? 'ขาย' : 'ให้เช่า'}</span></div>
         <div class="absolute bottom-4 left-4 right-4 text-white"><p class="text-xs opacity-90">${esc(d.b || '')}</p><h1 class="text-2xl font-bold leading-tight">${esc(title || 'ห้องให้เช่า')}</h1></div>
       </div>
+      ${d.imgs && d.imgs.length > 1 ? `<div class="flex gap-2 overflow-x-auto px-4 mt-3 snap-x">${d.imgs.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener" class="shrink-0 snap-start"><img src="${esc(u)}" loading="lazy" class="h-24 w-32 object-cover rounded-xl" alt=""></a>`).join('')}</div>` : ''}
       <div class="px-4 space-y-3 mt-3">
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-700">
           <div class="flex items-end justify-between gap-2 flex-wrap"><div><p class="text-xs text-slate-400">ค่าเช่า</p><p class="text-3xl font-bold text-brick-600">${baht(d.rent)}<span class="text-sm text-slate-400 font-medium">/เดือน</span></p>${d.sale ? `<p class="text-xs text-slate-400">ราคาขาย ${baht(d.sale)}</p>` : ''}</div>${st ? `<span class="text-[11px] ${st[1]} px-2.5 py-1 rounded-full font-semibold">${st[0]}</span>` : ''}</div>

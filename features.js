@@ -133,9 +133,39 @@ async function tinyThumb(unitId, w, q) {
 }
 const BASE = () => location.origin + location.pathname.replace(/[^/]*$/, '') + 'room.html';
 let shareState = {};
+const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
+const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
+const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+const cloudCache = {};
+const rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(8)); return Array.from(r, x => a[x % a.length]).join(''); };
+async function toJpeg(blob, max) {
+  const bmp = await createImageBitmap(blob); const r = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+}
+async function cloudLink(u, o, withPhotos) {
+  if (!navigator.onLine) throw new Error('offline');
+  const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
+  const key = JSON.stringify(o) + '|' + ps.map(p => p.id).join(',');
+  if (cloudCache[key]) return cloudCache[key];
+  const id = rid(); const imgs = [];
+  const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
+  for (let i = 0; i < sorted.length; i++) {
+    const jpg = await toJpeg(sorted[i].full || sorted[i].thumb, 1280);
+    const path = `${id}/${i + 1}.jpg`;
+    const r = await fetch(`${SB_URL}/storage/v1/object/room-photos/${path}`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'false' }, body: jpg });
+    if (!r.ok) throw new Error('upload ' + r.status);
+    imgs.push(`${SB_URL}/storage/v1/object/public/room-photos/${path}`);
+  }
+  const r = await fetch(`${SB_URL}/rest/v1/shared_rooms`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, data: { ...o, imgs } }) });
+  if (!r.ok) throw new Error('insert ' + r.status);
+  return (cloudCache[key] = BASE() + '?id=' + id);
+}
 async function buildLink(u, opts) {
   const c = cfg();
   const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (u.notes || '').slice(0, 900), a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  try { return await cloudLink(u, o, !!opts.photo); } catch (e) { console.warn('cloud share failed, using long link', e); }
   let link = BASE() + '#' + await encode(o);
   if (opts.photo) {
     for (const [w, q] of [[360, 0.5], [260, 0.45], [200, 0.4]]) {
@@ -155,7 +185,7 @@ async function renderShare() {
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
   shareState.link = await buildLink(u, shareState);
   el.querySelector('#fxShareLink').textContent = shareState.link;
-  el.querySelector('#fxShareLen').textContent = `ความยาวลิงก์ ${shareState.link.length.toLocaleString()} ตัวอักษร${shareState.link.includes('"img"') ? '' : ''}`;
+  el.querySelector('#fxShareLen').textContent = shareState.link.includes('?id=') ? 'ลิงก์สั้น พร้อมรูปทั้งหมดของห้อง' : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
@@ -168,7 +198,7 @@ FX.openShare = function (id) {
     <p class="text-[11px] text-slate-500 mb-1">ลิงก์สำหรับลูกค้า</p>
     <div class="bg-white border border-slate-700 rounded-2xl p-3"><p id="fxShareLink" class="text-[11px] text-slate-400 break-all max-h-16 overflow-hidden"></p></div>
     <p id="fxShareLen" class="text-[10px] text-slate-400 mt-1"></p>
-    <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปปก (ย่อขนาด)')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ซ่อนเลขห้อง')}</div>
+    <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ซ่อนเลขห้อง')}</div>
     <p class="text-[10px] text-slate-400 mt-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
     <div class="grid grid-cols-3 gap-2 mt-4">
       <button onclick="FX.shareDo('line')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>LINE</button>
