@@ -158,6 +158,7 @@ async function renderShare() {
   el.querySelector('#fxShareLen').textContent = `ความยาวลิงก์ ${shareState.link.length.toLocaleString()} ตัวอักษร${shareState.link.includes('"img"') ? '' : ''}`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
+FX.buildRoomLink = buildLink;
 FX.shareOpt = (k, v) => { shareState[k] = v; renderShare(); };
 FX.openShare = function (id) {
   const u = units_().find(x => x.id === id); if (!u) return;
@@ -321,6 +322,76 @@ function checkReminders() {
   if (changed) save();
 }
 setTimeout(checkReminders, 3000); setInterval(checkReminders, 60000);
+})();
+
+/* ===================== 3) CUSTOMER ↔ ROOM MATCHING ===================== */
+(function () {
+const { $, E, B, T, icons, units_, custs_, unitName } = FX.u;
+const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+const bedOf = t => { t = norm(t); if (!t) return null; if (t.includes('studio')) return 0; const m = t.match(/(\d)/); return m ? Number(m[1]) : (t.includes('duplex') ? 2 : null); };
+function score(c, u) {
+  const reasons = [], misses = [];
+  let s = 0;
+  const rent = Number(u.rent) || 0, mn = Number(c.budgetMin) || 0, mx = Number(c.budgetMax) || 0;
+  if (mn || mx) {
+    if ((!mn || rent >= mn) && (!mx || rent <= mx)) { s += 40; reasons.push('งบตรง'); }
+    else if (mx && rent > mx && rent <= mx * 1.1) { s += 22; misses.push('เกินงบ ' + B(rent - mx)); }
+    else if (mn && rent < mn) { s += 30; reasons.push('ถูกกว่างบ'); }
+    else misses.push('เกินงบ ' + B(rent - mx));
+  } else s += 20;
+  const ip = norm(c.interestProject), ib = norm(c.interestBuilding), hay = norm(u.project + ' ' + u.building + ' ' + u.notes);
+  if (ip) {
+    if (norm(u.project).includes(ip) || ip.includes(norm(u.project))) { s += 25; reasons.push('โครงการตรง'); }
+    else if (ip.split(/[\s,\/]+/).filter(w => w.length > 2).some(w => hay.includes(w))) { s += 15; reasons.push('ทำเลใกล้เคียง'); }
+    else misses.push('คนละโครงการ');
+  } else s += 10;
+  if (ib && norm(u.building).includes(ib)) { s += 5; reasons.push('อาคารตรง'); }
+  if (/bts|mrt|arl|รถไฟฟ้า/i.test(u.notes || '')) reasons.push('ใกล้รถไฟฟ้า');
+  const cb = bedOf(c.interestType), ub = bedOf(u.type);
+  if (cb !== null) { if (cb === ub) { s += 25; reasons.push(u.type); } else if (ub !== null && Math.abs(cb - ub) === 1) { s += 8; misses.push(u.type || 'คนละแบบ'); } else misses.push(u.type || 'คนละแบบ'); }
+  else s += 10;
+  const dl = typeof daysLeft === 'function' ? daysLeft(u.end) : null;
+  if (u.status === 'AVAILABLE') { s += 10; reasons.push('ว่างพร้อมเข้าอยู่'); }
+  else if (u.status === 'OCCUPIED' && dl !== null && dl >= 0 && dl <= 60) { s += 4; reasons.push('ว่างใน ' + dl + ' วัน'); }
+  return { pct: Math.max(0, Math.min(100, s)), reasons, misses };
+}
+FX.matchScore = score;
+FX.matchesFor = function (c) {
+  return units_().filter(u => u.status === 'AVAILABLE' || (u.status === 'OCCUPIED' && (() => { const d = typeof daysLeft === 'function' ? daysLeft(u.end) : null; return d !== null && d >= 0 && d <= 60; })()))
+    .map(u => ({ u, ...score(c, u) })).filter(m => m.pct >= 40).sort((a, b) => b.pct - a.pct || (a.u.rent || 0) - (b.u.rent || 0));
+};
+function section(c) {
+  const list = FX.matchesFor(c), top = list.slice(0, 4);
+  const card = m => { const col = m.pct >= 85 ? 'text-emerald-700 bg-emerald-500/10' : m.pct >= 65 ? 'text-amber-700 bg-amber-500/10' : 'text-slate-500 bg-slate-100';
+    return `<div class="p-3 rounded-2xl border border-slate-700 bg-white"><div class="flex gap-3"><button onclick="openDetailView('${m.u.id}')" class="w-12 h-12 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></button><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><p class="text-xs font-semibold truncate">${E(unitName(m.u))}</p><span class="text-xs font-bold px-2 py-0.5 rounded-full ${col} shrink-0">${m.pct}%</span></div><p class="text-xs text-brick-600 font-bold">${B(m.u.rent)}/เดือน${m.u.size ? ` <span class="text-slate-400 font-normal">· ${m.u.size} ตร.ม.</span>` : ''}</p>
+    <div class="flex flex-wrap gap-1 mt-1.5">${m.reasons.map(r => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-brick-50 text-brick-700 flex items-center gap-0.5"><i data-lucide="check" class="w-3 h-3"></i>${E(r)}</span>`).join('')}${m.misses.map(r => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">${E(r)}</span>`).join('')}</div></div></div>
+    <div class="flex gap-2 mt-2.5"><button onclick="FX.openShare('${m.u.id}')" class="flex-1 py-2 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1" style="background:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>ส่งให้ลูกค้า</button><button onclick="FX.editAppt && FX.editAppt(null,null,{custId:'${c.id}',unitId:'${m.u.id}'})" class="px-4 py-2 rounded-full bg-slate-100 text-xs font-semibold text-slate-600 flex items-center gap-1"><i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>นัดดู</button></div></div>`; };
+  const noCrit = !(c.budgetMin || c.budgetMax || c.interestProject || c.interestType);
+  return `<div id="fxMatch" class="bg-white border border-slate-700 rounded-2xl p-4 mb-3"><div class="flex items-center justify-between mb-3"><h3 class="text-xs font-bold text-ink flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-brick-500"></i>ห้องที่เข้ากับลูกค้า (${list.length})</h3>${list.length > 1 ? `<button onclick="FX.sendMatches('${c.id}')" class="text-[11px] font-semibold flex items-center gap-1" style="color:#06C755"><i data-lucide="send" class="w-3.5 h-3.5"></i>ส่ง ${Math.min(3, list.length)} ห้องทาง LINE</button>` : ''}</div>
+    ${noCrit ? '<p class="text-[11px] text-slate-400 mb-2">ใส่งบประมาณ โครงการ หรือจำนวนห้องนอนที่ลูกค้าสนใจ เพื่อให้จับคู่แม่นขึ้น</p>' : ''}
+    ${top.length ? `<div class="space-y-2">${top.map(card).join('')}</div>` : '<p class="text-xs text-slate-400 text-center py-4">ยังไม่มีห้องว่างที่ตรงกับความต้องการ</p>'}</div>`;
+}
+FX.sendMatches = async function (cid) {
+  const c = custs_().find(x => x.id === cid); if (!c) return;
+  const top = FX.matchesFor(c).slice(0, 3); if (!top.length) return;
+  T('กำลังสร้างลิงก์...');
+  const lines = [];
+  for (const m of top) { const link = FX.buildRoomLink ? await FX.buildRoomLink(m.u, { photo: false, showPhone: true, hideRoom: false }) : ''; lines.push(`🏢 ${unitName(m.u)} · ${m.u.type || ''} ${m.u.size ? m.u.size + ' ตร.ม.' : ''}\n💰 ${B(m.u.rent)}/เดือน\n${link}`); }
+  FX.lineShare(`สวัสดีค่ะ ${c.name || ''} ห้องที่น่าจะตรงกับที่มองหาค่ะ\n\n${lines.join('\n\n')}`);
+};
+const _rcd = window.renderCustDetail;
+if (_rcd) window.renderCustDetail = function () {
+  const r = _rcd.apply(this, arguments);
+  try {
+    const c = custs_().find(x => x.id === detailCustId); const box = $('custDetailContent');
+    if (c && box) {
+      box.insertAdjacentHTML('beforeend', section(c));
+      const m = $('fxMatch'); const target = [...box.children].find(d => d !== m && /ห้องที่สนใจ/.test(d.textContent));
+      if (target) box.insertBefore(m, target);
+      icons(); }
+  } catch (e) { console.warn(e); }
+  return r;
+};
 })();
 
 /* ---------- boot ---------- */
