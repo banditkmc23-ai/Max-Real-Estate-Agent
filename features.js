@@ -442,5 +442,56 @@ FX.availSpan = n => { span = n; FX.refresh(); };
 FX.addTool({ label: 'ปฏิทินห้องว่าง', icon: 'calendar-range', view: 'avail', action: "FX.show('avail')" });
 })();
 
+/* ===================== 5) EXPIRING CONTRACTS 30/60/90 ===================== */
+(function () {
+const { $, E, B, T, icons, ymd, thDate, units_, custs_, unitName, cfg } = FX.u;
+let filt = 'all';
+const dl = u => (typeof daysLeft === 'function' ? daysLeft(u.end) : null);
+const tenantOf = u => custs_().find(c => (c.linkedUnits || []).includes(u.id) && c.status === 'WON') || null;
+const list = () => units_().filter(u => u.end && u.status === 'OCCUPIED').map(u => ({ u, d: dl(u) })).filter(x => x.d !== null && x.d >= -30 && x.d <= 90).sort((a, b) => a.d - b.d);
+const bucket = d => d < 0 ? 'over' : d <= 30 ? '30' : d <= 60 ? '60' : '90';
+const BC = { over: 'bg-rose-600 text-white', '30': 'bg-rose-500/10 text-rose-600', '60': 'bg-amber-500/10 text-amber-700', '90': 'bg-sky-500/10 text-sky-700' };
+FX.expiringCount = () => list().filter(x => x.d >= 0 && x.d <= 30).length;
+function msgTenant(u) { const c = cfg(); const t = tenantOf(u); return `สวัสดีค่ะ${t ? ' ' + t.name : ''}\nสัญญาเช่า ${unitName(u)} จะครบกำหนดวันที่ ${thDate(u.end)}\nสนใจต่อสัญญาไหมคะ? ตอบกลับได้เลยค่ะ 🙏\n— ${c.agentName || ''}${c.phone ? ' ' + c.phone : ''}`; }
+function alertText(u, d) { return `⏰ สัญญาใกล้หมด ${d < 0 ? 'เลยมา ' + (-d) : d} วัน\n${unitName(u)}\nหมด ${thDate(u.end)} · ค่าเช่า ${B(u.rent)}/เดือน`; }
+FX.registerView('expiring', { title: 'สัญญาใกล้หมด', render() {
+  const all = list(); const shown = all.filter(x => filt === 'all' || bucket(x.d) === filt);
+  const risk = all.filter(x => x.d >= 0).reduce((s, x) => s + Number(x.u.rent || 0), 0);
+  const cnt = k => all.filter(x => bucket(x.d) === k).length;
+  const chip = (k, l, cls) => `<button onclick="FX.expFilter('${k}')" class="px-3 py-1.5 rounded-full whitespace-nowrap ${filt === k ? 'bg-brick-500 text-white font-semibold' : cls}">${l}</button>`;
+  const card = ({ u, d }) => { const t = tenantOf(u); const b = bucket(d);
+    return `<div class="bg-white border border-slate-700 rounded-2xl p-3 shadow-sm"><div class="flex items-start gap-3"><span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${BC[b]} shrink-0">${d < 0 ? 'เลย ' + (-d) + ' วัน' : d + ' วัน'}</span><button onclick="openDetailView('${u.id}')" class="flex-1 min-w-0 text-left"><p class="text-xs font-semibold truncate">${E(unitName(u))}</p><p class="text-[11px] text-slate-400 truncate">${t ? 'ผู้เช่า ' + E(t.name) + ' · ' : ''}หมด ${thDate(u.end)} · ${B(u.rent)}</p></button></div>
+    <div class="grid grid-cols-3 gap-1.5 mt-2.5"><button onclick="FX.renew('${u.id}')" class="py-1.5 rounded-full bg-brick-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i>ต่อสัญญา</button><button onclick="FX.expLine('${u.id}')" class="py-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center gap-1" style="background:#06C7551a;color:#06C755"><i data-lucide="message-circle" class="w-3 h-3"></i>ผู้เช่า</button>${u.ownerPhone || u.ownerLine ? `<button onclick="${u.ownerPhone ? `contactOwner('${u.id}')` : `openOwnerLine('${u.id}')`}" class="py-1.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold flex items-center justify-center gap-1"><i data-lucide="${u.ownerPhone ? 'phone' : 'message-circle'}" class="w-3 h-3"></i>เจ้าของ</button>` : `<button onclick="FX.copy(${E(JSON.stringify(alertText(u, d)))})" class="py-1.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold flex items-center justify-center gap-1"><i data-lucide="copy" class="w-3 h-3"></i>คัดลอก</button>`}</div></div>`; };
+  const first = all.find(x => x.d >= 0);
+  return `<p class="text-xs text-slate-400 mb-3">${all.length} สัญญาใน 90 วัน · รายได้เสี่ยง ${B(risk)}/เดือน</p>
+  <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">${chip('all', 'ทั้งหมด ' + all.length, 'bg-white border border-slate-700 text-slate-500')}${cnt('over') ? chip('over', 'เลยกำหนด ' + cnt('over'), 'bg-rose-600/10 text-rose-700') : ''}${chip('30', '≤30 วัน ' + cnt('30'), 'bg-rose-500/10 text-rose-600')}${chip('60', '≤60 วัน ' + cnt('60'), 'bg-amber-500/10 text-amber-700')}${chip('90', '≤90 วัน ' + cnt('90'), 'bg-sky-500/10 text-sky-700')}</div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${shown.length ? shown.map(card).join('') : (typeof emptyStateHTML === 'function' ? emptyStateHTML('calendar-check', 'ไม่มีสัญญาใกล้หมดในช่วงนี้ 🎉', 'ห้องที่มีผู้เช่าและมีวันสิ้นสุดสัญญาภายใน 90 วันจะแสดงที่นี่', '', '') : '')}</div>
+  ${first ? `<div class="mt-4"><p class="text-[11px] text-slate-400 mb-2 flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5"></i>ข้อความตัวอย่างที่ส่งผ่าน LINE (กดปุ่ม "ผู้เช่า" เพื่อส่งเอง)</p>
+  <div class="rounded-2xl p-3 max-w-md" style="background:#8cabd9"><div class="flex gap-2"><div class="w-8 h-8 rounded-full bg-brick-500 text-white text-xs font-bold flex items-center justify-center shrink-0">${E((cfg().agentName || 'M').slice(0, 1))}</div><div class="bg-white rounded-2xl rounded-tl-md p-3 text-xs shadow-sm whitespace-pre-line">${E(msgTenant(first.u))}</div></div></div>
+  <p class="text-[10px] text-slate-400 mt-2">หมายเหตุ: แอปนี้ไม่มีเซิร์ฟเวอร์ จึงส่งแจ้งเตือนอัตโนมัติไม่ได้ จะแจ้งเตือนในแอปเมื่อเปิดใช้งาน และส่ง LINE ผ่านปุ่มแชร์</p></div>` : ''}`;
+} });
+FX.expFilter = k => { filt = k; FX.refresh(); };
+FX.expLine = id => { const u = units_().find(x => x.id === id); if (u) FX.lineShare(msgTenant(u)); };
+FX.renew = function (id) {
+  const u = units_().find(x => x.id === id); if (!u) return;
+  FX.open(FX.sheetHead('ต่อสัญญา', E(unitName(u)) + ' · หมด ' + thDate(u.end)) + `<div class="space-y-3 text-[11px] text-slate-500">
+    <div>ระยะเวลา<div class="flex gap-1.5 mt-1.5">${[6, 12, 24].map(n => `<label class="cursor-pointer"><input type="radio" name="fxR_m" value="${n}" ${n === 12 ? 'checked' : ''} class="peer hidden"><span class="inline-block px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 peer-checked:bg-brick-500 peer-checked:text-white peer-checked:font-semibold">${n} เดือน</span></label>`).join('')}</div></div>
+    <label class="block">ค่าเช่าใหม่ (บาท/เดือน)<input id="fxR_rent" type="number" inputmode="numeric" class="inp" value="${Number(u.rent) || ''}"></label>
+    <p class="text-[10px] text-slate-400">สัญญาใหม่จะเริ่มต่อจากวันสิ้นสุดเดิม และปรับวันสิ้นสุดให้อัตโนมัติ</p></div>
+    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="FX.close()" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-sm font-semibold">ยกเลิก</button><button onclick="FX.doRenew('${id}')" class="py-2.5 rounded-full bg-brick-500 text-white text-sm font-semibold">บันทึกต่อสัญญา</button></div>`);
+};
+FX.doRenew = function (id) {
+  const u = units_().find(x => x.id === id); if (!u || !u.end) return;
+  const n = Number((document.querySelector('input[name="fxR_m"]:checked') || {}).value || 12);
+  const old = new Date(u.end + 'T00:00:00'); const s = new Date(old); s.setDate(s.getDate() + 1);
+  const e = new Date(s); e.setMonth(e.getMonth() + n); e.setDate(e.getDate() - 1);
+  u.start = ymd(s); u.end = ymd(e); const r = Number(($('fxR_rent') || {}).value); if (r > 0) u.rent = r;
+  u.expiredNotified = false; u.status = 'OCCUPIED';
+  try { persist(); } catch (_) {} FX.close(); T('ต่อสัญญาถึง ' + thDate(u.end));
+  try { render(); } catch (_) { FX.refresh(); }
+};
+FX.addTool({ label: 'สัญญาใกล้หมด', icon: 'alarm-clock', view: 'expiring', action: "FX.show('expiring')", badge: () => FX.expiringCount() });
+})();
+
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
