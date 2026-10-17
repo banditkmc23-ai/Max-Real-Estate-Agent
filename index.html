@@ -2,32 +2,29 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f4f2ef">
 <meta name="apple-mobile-web-app-title" content="MAX Agent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
-<title>Staylow — Property Dashboard</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = { theme: { extend: { colors: {
-  brick: {
-    50:'#fdf4ee', 100:'#f8e2d2', 200:'#f0c4a8',
-    300:'#e6a88c', 400:'#cf7a56',
-    500:'#b85c38', 600:'#a04d2c', 700:'#83401f', 800:'#5a2c15'
-  },
-  ink: '#1c1917',
-  slate: {
-    200:'#1c1917', 300:'#3f3733', 400:'#6b625a', 500:'#8a8078',
-    700:'#e4dfd9', 800:'#f1eeea', 900:'#ffffff', 950:'#f4f2ef'
-  }
-} }, borderRadius: { xl: '16px', '2xl': '22px', '3xl': '30px' } } }
-</script>
+<title>MAX Agent — Property Dashboard</title>
+<meta name="description" content="MAX Agent แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
+<link rel="manifest" href="manifest.json">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MAX Agent — Property Dashboard">
+<meta property="og:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
+<meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
+<meta property="og:url" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MAX Agent — Property Dashboard">
+<meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
+<meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
+<link rel="stylesheet" href="tailwind.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -235,6 +232,7 @@ tailwind.config = { theme: { extend: { colors: {
     .room-grid { grid-template-columns: 1fr !important; }
     .cust-grid { grid-template-columns: 1fr !important; }
   }
+  @media (max-width: 1023px) { input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px !important; } }
 </style>
 </head>
 <body>
@@ -3441,6 +3439,9 @@ async function checkUpdate() {
 }
 setTimeout(checkUpdate, 1500);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkUpdate(); checkExpiredContracts(); } });
+</script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }
 </script>
 </body>
 </html>
