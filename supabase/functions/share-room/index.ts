@@ -39,11 +39,13 @@ ${img ? `<meta property="og:image" content="${H(img)}"><meta property="og:image:
 <meta http-equiv="refresh" content="0;url=${to}"><script>location.replace(${JSON.stringify(to)} + location.hash)</script>
 </head><body><a href="${to}">เปิดดูห้อง</a></body></html>`;
 }
+let lastGh = "";
 async function writeOgPage(id: string, d: any, img: string) {
-  if (!GH) return false;
+  if (!GH) { lastGh = "no token"; return false; }
   const content = btoa(String.fromCharCode(...new TextEncoder().encode(ogHtml(id, d, img))));
   for (let t = 0; t < 5; t++) {
     const r = await fetch(`https://api.github.com/repos/banditkmc23-ai/Max-Real-Estate-Agent/contents/r/${id}/index.html`, { method: "PUT", headers: { Authorization: "Bearer " + GH, Accept: "application/vnd.github+json", "User-Agent": "max-agent-share", "X-GitHub-Api-Version": "2022-11-28" }, body: JSON.stringify({ message: `share: room page r/${id}`, content, branch: "main" }) });
+    lastGh = String(r.status);
     if (r.ok) return true;
     if (r.status === 422) return true; // already exists
     if (r.status === 409 || r.status >= 500 || r.status === 403) { await new Promise(res => setTimeout(res, 400 * (t + 1) + Math.random() * 600)); continue; }
@@ -91,7 +93,7 @@ Deno.serve(async req => {
     const { error } = await sb.from("shared_rooms").insert({ id, data: { ...cd, imgs: urls } });
     if (error) return J(req, { error: "insert failed" }, 500);
     const page = await writeOgPage(id, cd, hasOg ? PUB + id + "/og.jpg" : (urls[0] || ""));
-    return J(req, { id, imgs: urls, page });
+    return J(req, { id, imgs: urls, page, ...(page ? {} : { pageErr: lastGh }) });
   }
   const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
   if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);
