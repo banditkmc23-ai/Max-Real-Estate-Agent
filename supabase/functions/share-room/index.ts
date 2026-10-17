@@ -37,6 +37,26 @@ Deno.serve(async req => {
   if (limited(ip)) return J(req, { error: "rate limited" }, 429);
   if (Number(req.headers.get("content-length") || 0) > MAX_BODY) return J(req, { error: "payload too large" }, 413);
   let body: any; try { const t = await req.text(); if (t.length > MAX_BODY) return J(req, { error: "payload too large" }, 413); body = JSON.parse(t); } catch { return J(req, { error: "bad json" }, 400); }
+  if (body && body.action === "init") {
+    const n = Math.max(0, Math.min(MAX_N, Number(body.count) || 0)); const id = rid();
+    const ups = await Promise.all(Array.from({ length: n }, async (_, k) => {
+      const path = `${id}/${k + 1}.jpg`; const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path);
+      if (error || !data) throw error; return { path, token: data.token, url: PUB + path };
+    })).catch(() => null);
+    if (!ups) return J(req, { error: "sign failed" }, 500);
+    return J(req, { id, uploads: ups });
+  }
+  if (body && body.action === "commit") {
+    const id = String(body.id || ""); if (!/^[A-Za-z0-9]{6}$/.test(id)) return J(req, { error: "bad id" }, 400);
+    const list: unknown[] = Array.isArray(body.images) ? body.images.slice(0, MAX_N) : [];
+    const PUBRE2 = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/\\d{1,2}\\.(jpg|png|webp)$");
+    const urls = list.map(x => (x && typeof x === "object" ? String((x as any).url || "") : "")).filter(u => PUBRE2.test(u));
+    const own = urls.filter(u => u.startsWith(PUB + id + "/")).map(u => u.slice(PUB.length + id.length + 1));
+    if (own.length) { const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 20 }); const have = new Set((objs || []).map(o => o.name)); if (own.some(n => !have.has(n))) return J(req, { error: "photo missing" }, 400); }
+    const { error } = await sb.from("shared_rooms").insert({ id, data: { ...clean(body.data), imgs: urls } });
+    if (error) return J(req, { error: "insert failed" }, 500);
+    return J(req, { id, imgs: urls });
+  }
   const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
   if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);
   const files: ([Uint8Array, string, string] | string)[] = [];

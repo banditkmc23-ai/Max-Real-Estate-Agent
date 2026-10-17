@@ -151,7 +151,7 @@ async function offloadUploaded(sorted, sent, urls) {
   if (urls.length !== sorted.length) return;
   for (let i = 0; i < sorted.length; i++) {
     const p = sorted[i], url = urls[i];
-    if (typeof sent[i] !== 'string' || !p.full || !url || !url.startsWith(SB_URL + '/storage/v1/object/public/room-photos/')) continue;
+    if (sent[i] !== 'new' || !p.full || !url || !url.startsWith(SB_URL + '/storage/v1/object/public/room-photos/')) continue;
     try {
       const r = await fetch(url, { cache: 'no-store' });
       if (!r.ok || !(r.headers.get('content-type') || '').startsWith('image/') || (await r.blob()).size < 100) continue;
@@ -168,18 +168,26 @@ async function cloudLink(u, o, withPhotos) {
   const key = JSON.stringify(o) + '|hide:' + !!o.hr + '|' + ps.map(p => p.id).join(',');
   if (cloudCache[key]) return cloudCache[key];
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
-  const images = [];
-  for (const p of sorted) {
-    if (p.url && !p.full) { images.push({ url: p.url }); continue; }
-    let jpg = null;
-    for (const [m, q] of [[1280, 0.8], [1280, 0.6], [1024, 0.6]]) { jpg = await toJpeg(p.full || p.thumb, m, q); if (jpg.size <= 1900000) break; }
-    const buf = new Uint8Array(await jpg.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
-    images.push(btoa(bin));
-  }
-  const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify({ data: o, images }) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || ''));
-  try { await offloadUploaded(sorted, images, j.imgs || []); } catch (e) { console.warn('offload skipped', e); }
+  const prog = (d, n) => { const el = $('fxShareLink'); if (el && n) el.textContent = `กำลังอัปโหลดรูป ${d}/${n}...`; };
+  const fresh = sorted.filter(p => !(p.url && !p.full));
+  const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
+  const init = await call({ action: 'init', count: fresh.length });
+  const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
+  const jobs = sorted.map(p => { if (p.url && !p.full) { images.push({ url: p.url }); sent.push(null); return null; }
+    const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
+    return async () => {
+      let jpg = null;
+      for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(p.full || p.thumb, m, q); if (jpg.size <= 600000) break; }
+      for (let t = 0; t < 3; t++) {
+        const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null);
+        if (r && r.ok) { prog(++done, fresh.length); return; }
+      }
+      throw new Error('upload failed');
+    }; }).filter(Boolean);
+  // 4 parallel uploads; resizing of the next photo overlaps with uploads in flight
+  let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
+  const j = await call({ action: 'commit', id: init.id, data: o, images });
+  setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const id = j.id;
   return (cloudCache[key] = BASE().replace(/room\.html$/, 'r/') + id);
 }
