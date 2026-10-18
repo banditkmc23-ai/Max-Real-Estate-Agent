@@ -201,11 +201,11 @@ async function cloudLink(u, o, withPhotos) {
   const keepIdx = images.map((x, i) => failedUp.has(x.url) ? -1 : i).filter(i => i >= 0);
   const j = await call({ action: 'commit', id: init.id, data: o, images: keepIdx.map(i => images[i]), secret, v: init.v });
   if (failedUp.size) { sorted.splice(0, sorted.length, ...keepIdx.map(i => sorted[i])); const s2 = keepIdx.map(i => sent[i]); sent.splice(0, sent.length, ...s2); shareNote = `อัปโหลดรูปไม่สำเร็จ ${failedUp.size} รูป แชร์ใหม่อีกครั้งเพื่อลองเพิ่ม`; }
-  u.share = { id: j.id, secret, sig: failedUp.size ? '' : sig, at: Date.now() }; try { (window.persist || (() => {}))(); } catch (e) {}
+  u.share = { id: j.id, secret, sig: failedUp.size ? '' : sig, at: Date.now(), cover: (j.imgs || [])[0] || '' }; try { (window.persist || (() => {}))(); } catch (e) {}
   setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const id = j.id;
   const link = linkOf(id);
-  if (j.page && withPhotos) {
+  if (j.page && withPhotos && !FX.noWait) {
     const el = $('fxShareLink'); if (el) el.textContent = 'กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)';
     const t0 = Date.now(); let ok = false;
     while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const t = await r.text(); if (t.includes('og:title') && (!init.v || t.includes('content="' + init.v + '"'))) { ok = true; break; } } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); if (el) el.textContent = `กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`; }
@@ -251,6 +251,7 @@ async function renderShare() {
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
+FX.sb = { url: SB_URL, h: SB_H };
 FX.shareRetry = () => renderShare();
 FX.shareLong = async function () {
   const u = units_().find(x => x.id === shareState.id); if (!u) return; const el = $('fxShareBody');
@@ -798,3 +799,71 @@ setTimeout(() => { try { const n = FX.invoiceAlerts(); if (n) T(`💳 มีค�
 
 /* ---------- boot ---------- */
 try { FX.injectTools(); } catch (e) {}
+
+/* ===================== PUBLIC AVAILABLE-ROOMS CATALOG (/a/<id>/) ===================== */
+(function () {
+const { $, E, T, cfg, units_ } = FX.u;
+const CK = 'max_catalog';
+const getC = () => { try { return JSON.parse(localStorage.getItem(CK) || 'null'); } catch (e) { return null; } };
+const setC = v => { try { localStorage.setItem(CK, JSON.stringify(v)); } catch (e) {} };
+FX.addBackup('catalog', getC, v => { if (v && v.id && v.secret) setC(v); });
+const SITE = () => location.origin + location.pathname.replace(/[^/]*$/, '');
+const avail = () => units_().filter(u => u.status === 'AVAILABLE');
+const linkOf = c => SITE() + 'a/' + c.id + '/';
+const sigOf = () => JSON.stringify(avail().map(u => [u.id, u.share && u.share.id, u.rent, u.salePrice, u.project, u.type, u.size, u.bath, u.floor])) + '|' + JSON.stringify([cfg().agentName, cfg().phone, cfg().lineId]);
+async function avatarThumb() {
+  try { const src = localStorage.getItem(typeof AVATAR_KEY !== 'undefined' ? AVATAR_KEY : 'staylow_avatar'); if (!src) return '';
+    const img = new Image(); img.src = src; await img.decode(); const c = document.createElement('canvas'); c.width = c.height = 160;
+    const s = Math.min(img.width, img.height); c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 160, 160); return c.toDataURL('image/jpeg', 0.8);
+  } catch (e) { return ''; }
+}
+let busy = false;
+async function publish(progress) {
+  if (busy) return null; busy = true;
+  const say = t => { if (progress) progress(t); };
+  try {
+    if (!navigator.onLine) throw new Error('ไม่มีอินเทอร์เน็ต');
+    const list = avail(); const rooms = [];
+    let so = {}; try { so = JSON.parse(localStorage.getItem('max_share_opts') || '{}'); } catch (e) {}
+    FX.noWait = true;
+    for (let i = 0; i < list.length; i++) {
+      const u = list[i]; say(`เตรียมลิงก์ห้อง ${i + 1}/${list.length}...`);
+      if (!(u.share && u.share.id)) { try { await FX.buildRoomLink(u, { photo: true, hideRoom: true, showPhone: so.showPhone !== false }); } catch (e) { console.warn('room link failed', u.id, e); continue; } }
+      if (!(u.share && u.share.id)) continue;
+      if (u.share.cover === undefined) { try { const r = await fetch(`${FX.sb.url}/functions/v1/share-room?id=${u.share.id}`, { headers: FX.sb.h }); const j = await r.json(); u.share.cover = (j.data && j.data.imgs && j.data.imgs[0]) || ''; } catch (e) {} }
+      rooms.push({ id: u.share.id, p: u.project || '', b: u.building || '', t: u.type || '', sz: Number(u.size) || 0, bt: u.bath || '', f: u.floor || '', vw: u.view || '', rent: Number(u.rent) || 0, sale: Number(u.salePrice) || 0, cover: u.share.cover || '' });
+    }
+    try { window.persist(); } catch (e) {}
+    say('กำลังเผยแพร่หน้าห้องว่าง...');
+    const c = getC(); const c2 = cfg();
+    const secret = c && c.secret || Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
+    const body = { action: 'catalog', id: c && c.id || '', secret, agent: { n: c2.agentName || '', l: c2.lineId || '', ph: c2.phone || '', av: await avatarThumb() }, rooms };
+    const r = await fetch(`${FX.sb.url}/functions/v1/share-room`, { method: 'POST', headers: { ...FX.sb.h, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.id) throw new Error(r.status === 429 ? 'อัปเดตถี่เกินไป รอสักครู่' : r.status === 403 ? 'แก้หน้านี้จากเครื่องนี้ไม่ได้' : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ (' + r.status + ')');
+    const nc = { id: j.id, secret, sig: sigOf(), at: Date.now(), count: j.count, first: !(c && c.id) };
+    setC(nc); return nc;
+  } finally { FX.noWait = false; busy = false; }
+}
+FX.publishCatalog = publish;
+function sheet(msg) {
+  const c = getC(); const n = avail().length;
+  FX.open(FX.sheetHead('หน้าห้องว่างของฉัน', 'หน้าเว็บสาธารณะแสดงเฉพาะห้องที่ "ว่าง" · ไม่แสดงเลขห้อง ข้อมูลเจ้าของ และโน้ตภายใน') + `<div id="fxCat">
+    <div class="bg-white border border-slate-700 rounded-2xl p-3 mb-3"><p class="text-[11px] text-slate-500">ลิงก์ถาวร</p><p class="text-xs font-semibold break-all ${c ? 'text-brick-600' : 'text-slate-400'}">${c ? E(linkOf(c)) : 'ยังไม่ได้สร้าง'}</p>
+    <p id="fxCatMsg" class="text-[10px] text-slate-400 mt-1">${E(msg || (c ? `แสดงอยู่ ${c.count ?? '-'} ห้อง · อัปเดตล่าสุด ${new Date(c.at).toLocaleString('th-TH')}` : `ห้องว่างตอนนี้ ${n} ห้อง`))}</p></div>
+    <button onclick="FX.catPublish()" class="w-full py-3 rounded-full bg-brick-500 text-white text-sm font-semibold flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i>อัปเดตหน้าห้องว่าง</button>
+    ${c ? `<div class="grid grid-cols-3 gap-2 mt-2"><button onclick="FX.lineShare('ห้องว่างพร้อมเข้าอยู่ ดูรูปและราคาได้ที่นี่ 👉 ' + '${linkOf(c)}')" class="py-2.5 rounded-full text-white text-xs font-semibold" style="background:#06C755">LINE</button><button onclick="FX.copy('${linkOf(c)}')" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">คัดลอก</button><button onclick="window.open('${linkOf(c)}','_blank')" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">เปิดดู</button></div>` : ''}
+    <p class="text-[10px] text-slate-400 mt-3">อัปเดตอัตโนมัติเมื่อสถานะห้องเปลี่ยน (เมื่อออนไลน์) · ห้องที่ไม่ว่างจะหายจากหน้าเอง</p></div>`);
+}
+FX.openCatalog = () => sheet();
+FX.catPublish = async function () {
+  const m = () => $('fxCatMsg');
+  try { const c = await publish(t => { if (m()) m().textContent = t; }); if (c) { sheet(`อัปเดตแล้ว · แสดง ${c.count} ห้อง${c.first ? ' · พรีวิว LINE พร้อมในประมาณ 1 นาที' : ''}`); T('อัปเดตหน้าห้องว่างแล้ว'); } }
+  catch (e) { if (m()) m().innerHTML = `<span class="text-rose-600 font-semibold">${E(e.message)}</span>`; }
+};
+// auto-update when the set of available rooms changes
+let timer = null;
+const _p = window.persist;
+if (_p) window.persist = function () { const r = _p.apply(this, arguments); const c = getC(); if (c && !busy && c.sig !== sigOf()) { clearTimeout(timer); timer = setTimeout(() => publish().catch(e => console.warn('catalog auto-update failed', e)), 4000); } return r; };
+FX.addTool({ label: 'หน้าห้องว่าง', icon: 'store', action: 'FX.openCatalog()' });
+})();

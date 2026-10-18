@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#ffffff">
+<title>ห้องว่างพร้อมเข้าอยู่ — MAX Agent</title>
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Poppins','Noto Sans Thai',-apple-system,sans-serif;background:#f4f2ef;color:#1c1917;-webkit-font-smoothing:antialiased}
+.w{max-width:560px;margin:0 auto;padding:0 14px 40px}@media(min-width:900px){.w{max-width:1100px}.grid{grid-template-columns:repeat(3,1fr)!important}}
+.hd{background:linear-gradient(135deg,#cf7a56,#83401f);color:#fff;border-radius:0 0 26px 26px;padding:22px 18px 20px;margin:0 -14px 14px}
+.ag{display:flex;align-items:center;gap:12px}.av{width:58px;height:58px;border-radius:50%;background:#fff3;border:2px solid #fff8;object-fit:cover;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px}
+.ag h1{margin:0;font-size:19px}.ag p{margin:2px 0 0;font-size:12px;opacity:.85}
+.bt{display:flex;gap:8px;margin-top:14px}.bt a{flex:1;text-align:center;padding:11px;border-radius:999px;font-weight:600;font-size:14px;text-decoration:none}
+.line{background:#06C755;color:#fff}.call{background:#fff;color:#a4502a}
+.fl{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none}.fl select{flex:0 0 auto;border:1px solid #e3ddd6;background:#fff;border-radius:999px;padding:9px 12px;font:inherit;font-size:13px;color:#1c1917}
+.tg{display:flex;background:#fff;border:1px solid #e3ddd6;border-radius:999px;padding:3px;margin-bottom:10px}.tg button{flex:1;border:0;background:none;padding:8px;border-radius:999px;font:inherit;font-size:13px;font-weight:600;color:#78716c}.tg .on{background:#c2633a;color:#fff}
+.ct{font-size:12px;color:#78716c;margin:4px 2px 10px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+.cd{display:block;background:#fff;border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 3px #0000000f}
+.cv{aspect-ratio:16/10;background:linear-gradient(135deg,#cf7a56,#83401f) center/cover;position:relative}
+.bd{position:absolute;top:10px;left:10px;background:#16a34a;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px}
+.ci{padding:12px 14px 14px}.ci h3{margin:0;font-size:15px}.ci .s{font-size:12px;color:#78716c;margin-top:3px}
+.pr{color:#c2633a;font-weight:700;font-size:18px;margin-top:6px}.pr small{font-size:12px;font-weight:500;color:#78716c}
+.em{text-align:center;color:#78716c;padding:40px 10px;font-size:14px}.ft{text-align:center;font-size:11px;color:#a8a29e;margin-top:24px}
+</style></head><body><div class="w" id="app"><p class="em">กำลังโหลด...</p></div>
+<script>
+(function(){
+    const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=n=>Number(n||0).toLocaleString('th-TH');
+  const id=(new URLSearchParams(location.search).get('id')||'').replace(/[^A-Za-z0-9]/g,'');
+  const app=document.getElementById('app');
+  let D,mode='rent',f={b:'',p:'',t:''};
+  const beds=t=>/studio/i.test(t)?'Studio':(String(t).match(/\d/)||[''])[0]+' ห้องนอน';
+  function render(){
+    const a=D.agent||{},all=D.rooms||[];
+    const hasSale=all.some(r=>r.sale>0);if(!hasSale)mode='rent';
+    const price=r=>mode==='sale'?r.sale:r.rent;
+    const projs=[...new Set(all.map(r=>r.p).filter(Boolean))].sort();
+    const types=[...new Set(all.map(r=>beds(r.t)))].sort();
+    const B=[['','งบทั้งหมด']].concat(mode==='sale'?[['0-3000000','≤ 3 ล้าน'],['3000000-6000000','3–6 ล้าน'],['6000000-1e12','6 ล้าน+']]:[['0-10000','≤ 10,000'],['10000-20000','10,000–20,000'],['20000-40000','20,000–40,000'],['40000-1e12','40,000+']]);
+    const L=all.filter(r=>(mode!=='sale'||r.sale>0)&&(mode!=='rent'||r.rent>0)&&(!f.p||r.p===f.p)&&(!f.t||beds(r.t)===f.t)&&(!f.b||(()=>{const[x,y]=f.b.split('-').map(Number);return price(r)>=x&&price(r)<=y})()));
+    const tel=String(a.ph||'').replace(/[^0-9+]/g,'');
+    const opt=(arr,v)=>arr.map(([k,l])=>'<option value="'+esc(k)+'"'+(k===v?' selected':'')+'>'+esc(l)+'</option>').join('');
+    app.innerHTML='<div class="hd"><div class="ag">'+(a.av?'<img class="av" src="'+esc(a.av)+'" alt="">':'<div class="av">'+esc((a.n||'A').slice(0,1))+'</div>')+'<div><h1>'+esc(a.n||'เอเจนต์')+'</h1><p>ห้องว่างพร้อมเข้าอยู่ '+all.length+' ห้อง</p></div></div>'
+     +'<div class="bt">'+(a.l?'<a class="line" href="https://line.me/R/ti/p/~'+encodeURIComponent(a.l)+'" target="_blank">ทัก LINE</a>':'')+(tel?'<a class="call" href="tel:'+esc(tel)+'">โทร '+esc(a.ph)+'</a>':'')+'</div></div>'
+     +(hasSale?'<div class="tg"><button data-m="rent" class="'+(mode==='rent'?'on':'')+'">เช่า</button><button data-m="sale" class="'+(mode==='sale'?'on':'')+'">ขาย</button></div>':'')
+     +'<div class="fl"><select data-f="b">'+opt(B,f.b)+'</select><select data-f="p">'+opt([['','ทุกโครงการ']].concat(projs.map(p=>[p,p])),f.p)+'</select><select data-f="t">'+opt([['','ทุกขนาดห้อง']].concat(types.map(t=>[t,t])),f.t)+'</select></div>'
+     +'<p class="ct">พบ '+L.length+' ห้อง</p><div class="grid">'+(L.length?L.map(r=>'<a class="cd" href="r/'+esc(r.id)+'/"><div class="cv" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"><span class="bd">ว่าง</span></div><div class="ci"><h3>'+esc(r.p||'ห้องให้เช่า')+'</h3><div class="s">'+[beds(r.t),r.sz?r.sz+' ตร.ม.':'',r.bt?r.bt+' ห้องน้ำ':'',r.f?'ชั้น '+esc(r.f):''].filter(Boolean).join(' · ')+'</div><div class="pr">฿'+fmt(price(r))+(mode==='rent'?' <small>/ เดือน</small>':'')+'</div></div></a>').join(''):'<p class="em">ไม่พบห้องตามตัวกรอง</p>')+'</div>'
+     +'<p class="ft">อัปเดตล่าสุด '+new Date(D._u).toLocaleString('th-TH')+' · MAX Agent</p>';
+    app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;f.b='';render()});
+    app.querySelectorAll('[data-f]').forEach(s=>s.onchange=()=>{f[s.dataset.f]=s.value;render()});
+    document.title='ห้องว่าง '+all.length+' ห้อง · '+(a.n||'MAX Agent');
+  }
+  fetch(SB_URL+'/functions/v1/share-room?cat='+id,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{D=j.data;D._u=j.updated_at;render()}).catch(()=>{app.innerHTML='<p class="em">ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง</p>'});
+})();
+</script></body></html>
