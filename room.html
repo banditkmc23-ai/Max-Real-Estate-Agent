@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tailwind.min.css?v=27">
+<link rel="stylesheet" href="tailwind.min.css?v=28">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <style>
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -70,7 +70,7 @@
     document.getElementById('app').innerHTML = `
       <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-6 lg:p-6 lg:items-start">
         <div>
-          <div class="relative h-72 lg:h-[520px] overflow-hidden lg:rounded-3xl ${imgs.length ? 'cursor-zoom-in' : ''}" ${imgs.length ? 'data-lb="0" id="heroBox"' : ''}>
+          <div style="min-height:18rem" class="relative h-72 lg:h-[520px] overflow-hidden lg:rounded-3xl ${imgs.length ? 'cursor-zoom-in' : ''}" ${imgs.length ? 'data-lb="0" id="heroBox"' : ''}>
             ${imgs.length ? `<img id="heroImg" src="${esc(imgs[0])}" class="absolute inset-0 w-full h-full object-cover" alt="">` : ph}
             <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(28,25,23,.35),transparent 40%,rgba(28,25,23,.55))"></div>
             <div class="absolute top-[max(16px,env(safe-area-inset-top))] left-4 right-4 flex justify-between pointer-events-none"><span class="bg-white/90 text-brick-700 text-xs font-semibold px-3 py-1.5 rounded-full">${d.sale && !d.rent ? 'ขาย' : 'ให้เช่า'}</span>${imgs.length > 1 ? `<span class="bg-black/50 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1"><i data-lucide="images" class="w-3.5 h-3.5"></i>${imgs.length} รูป</span>` : ''}</div>
