@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=29">
+<link rel="stylesheet" href="tailwind.min.css?v=30">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -359,7 +359,7 @@
           <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-2">
-          <button id="syncChip" onclick="SYNC && SYNC.open()" class="h-8 px-2.5 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center gap-1 text-white text-[10px] font-semibold whitespace-nowrap" aria-label="ซิงก์"><i data-lucide="cloud-off" class="w-3.5 h-3.5"></i><span>ยังไม่ซิงก์</span></button>
+          <button id="syncChip" onclick="window.SYNC && SYNC.chip()" class="h-8 px-2.5 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center gap-1 text-white text-[10px] font-semibold whitespace-nowrap" aria-label="ซิงก์"><i data-lucide="cloud-off" class="w-3.5 h-3.5"></i><span>ยังไม่ซิงก์</span></button>
           <button onclick="openNotifications()" class="w-10 h-10 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" style="border-radius:9999px !important;" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
@@ -3579,8 +3579,8 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=29"></script>
+<script src="features.js?v=30"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=29"></script>
+<script src="sync.js?v=30"></script>
 </body>
 </html>

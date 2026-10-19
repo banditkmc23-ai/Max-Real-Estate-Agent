@@ -9,7 +9,10 @@ const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeIt
 const rawGet = k => { try { return LS.getItem(k); } catch (e) { return null; } };
 const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const T = m => { try { FX.u.T(m); } catch (e) {} };
-const sb = supabase.createClient(FX.sb.url, FX.sb.h.apikey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'max_auth' } });
+const tfetch = (url, opt = {}) => { const ac = new AbortController(), ms = /\/storage\/v1\/object\//.test(String(url)) ? 90000 : 30000; const t = setTimeout(() => ac.abort(), ms);
+  if (opt.signal) opt.signal.addEventListener('abort', () => ac.abort());
+  return fetch(url, { ...opt, signal: ac.signal }).finally(() => clearTimeout(t)); };
+const sb = supabase.createClient(FX.sb.url, FX.sb.h.apikey, { global: { fetch: tfetch }, auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'max_auth' } });
 const BUCKET = 'user-photos';
 
 /* ---------- what syncs ---------- */
@@ -154,17 +157,21 @@ async function refetch(keys) {
 }
 
 /* ---------- pull ---------- */
-const uiBusy = () => [...document.querySelectorAll('.sheet.open')].some(s => !s.querySelector('#syncPanel'));
-async function pull() {
-  let since = new Date(new Date(st.cursor).getTime() - 5 * 60000).toISOString(), maxSeen = st.cursor, got = 0;
+const EDIT_SHEETS = ['sheet', 'custSheet', 'cfgSheet', 'custNoteSheet'];
+const uiBusy = () => EDIT_SHEETS.some(id => { const el = document.getElementById(id); return el && el.classList.contains('open'); });
+async function pull(opts = {}) {
+  const full = !!opts.full;
+  const c0 = full ? '1970-01-01T00:00:00Z' : st.cursor;
+  const t0 = Date.parse(String(c0).replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1').replace(/\+00$/, 'Z'));
+  let since = isNaN(t0) ? '1970-01-01T00:00:00Z' : new Date(Math.max(0, t0 - 2 * 60000)).toISOString(), maxSeen = full ? since : st.cursor, got = 0, seen = 0;
   for (;;) {
     const { data, error } = await sb.from('user_docs').select('kind,id,data,rev,deleted,server_at').gt('server_at', since).order('server_at', { ascending: true }).limit(400);
     if (error) throw error; if (!data.length) break;
-    got += await applyRows(data);
+    got += await applyRows(data, !!opts.full); seen += data.length;
     since = data[data.length - 1].server_at; if (since > maxSeen) maxSeen = since;
     if (data.length < 400) break;
   }
-  st.cursor = maxSeen; saveSt();
+  st.cursor = maxSeen; st.pulled = now(); st.seen = seen; saveSt();
   // photos whose files failed to download last time
   const retry = Object.values(st.retry); if (retry.length) got += await applyRows(retry, true);
   return got;
@@ -184,7 +191,7 @@ async function applyRows(rows, force) {
     for (const c of g) { delete st.dirty[c.k]; st.r[c.k] = c.rev; const s = m.get(c.id); if (s == null) delete st.h[c.k]; else st.h[c.k] = hash(s); n++; }
   }
   saveSt();
-  if (n) { try { W.reloadFromStorage(); } catch (e) { console.warn(e); } }   // show rooms/customers right away
+  if (n) { try { W.reloadFromStorage(); FX.refresh && FX.refresh(); FX.injectTools && FX.injectTools(); } catch (e) { console.warn(e); } }   // show rooms/customers right away
   if (photos.length && P()) { const pn = await applyPhotos(photos); saveSt(); if (pn) { try { W.reloadFromStorage(); } catch (e) {} } n += pn; }
   return n;
 }
@@ -232,21 +239,25 @@ async function fillFulls() {
 }
 
 /* ---------- main loop ---------- */
-async function sync() {
+let runStart = 0, gen = 0, wantFull = false;
+async function sync(opts = {}) {
+  if (opts.full) wantFull = true;
   if (!user) return setStatus('off');
   if (!navigator.onLine) return setStatus('offline');
-  if (running) { again = true; return; }
-  running = true; setStatus('busy', 'กำลังซิงก์...');
+  if (running && now() - runStart < 180000) { again = true; return; }
+  const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
+  let held = false;
   try {
     if (!st.init) { await pull(); scanLS(); await scanPhotos(); st.init = true; saveSt(); }
     scanLS(); await scanPhotos(); saveSt();
     await push();
-    if (!uiBusy()) await pull(); else again = true;
+    if (!uiBusy()) { const f = wantFull; wantFull = false; await pull({ full: f }); } else { held = true; again = true; }
+    if (my !== gen) return;
     st.last = now(); saveSt();
-    setStatus(Object.keys(st.dirty).length || Object.keys(st.retry).length ? 'pending' : 'ok');
+    setStatus(held ? 'pending' : (Object.keys(st.dirty).length || Object.keys(st.retry).length ? 'pending' : 'ok'), held ? 'รอปิดหน้าแก้ไขก่อนรับข้อมูลใหม่' : undefined);
     if (!filling) { filling = true; fillFulls().then(() => setStatus(status, '')).catch(() => {}).finally(() => { filling = false; }); }
   } catch (e) { console.warn('sync failed', e); setStatus(navigator.onLine ? 'error' : 'offline', String(e && e.message || e)); }
-  finally { running = false; if (again) { again = false; schedule(3000); } }
+  finally { if (my === gen) { running = false; if (again) { again = false; schedule(3000); } } }
 }
 function schedule(ms) { if (!user) return; clearTimeout(timer); timer = setTimeout(sync, ms); }
 
@@ -256,8 +267,12 @@ Storage.prototype.removeItem = function (k) { const r = rawRemove.call(this, k);
 if (typeof W.tx === 'function') { const _tx = W.tx; W.tx = function (mode) { if (mode === 'readwrite') schedule(2500); return _tx.apply(this, arguments); }; }
 addEventListener('online', () => schedule(500));
 addEventListener('offline', () => setStatus(user ? 'offline' : 'off'));
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') schedule(500); });
-setInterval(() => { if (user && document.visibilityState === 'visible') sync(); }, 45000);
+const wake = () => { if (document.visibilityState !== 'hidden') schedule(400); };
+document.addEventListener('visibilitychange', wake);
+addEventListener('focus', wake); addEventListener('pageshow', wake);
+// iOS Home Screen apps sometimes resume without any event: a touch after >30s idle also triggers a pull
+document.addEventListener('touchstart', () => { if (user && now() - (st.pulled || 0) > 30000) schedule(200); }, { passive: true });
+setInterval(() => { if (user && document.visibilityState !== 'hidden') sync(); }, 30000);
 
 sb.auth.onAuthStateChange((ev, session) => {
   const u = session && session.user;
@@ -285,9 +300,9 @@ function body() {
     if (view === 'setpw') return `<label class="block text-xs text-slate-500">ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)<input id="syPw2" type="password" autocomplete="new-password" class="${inp}"></label><button onclick="SYNC.setPw()" class="${btn}">บันทึกรหัสผ่าน</button><button onclick="SYNC.view('')" class="${btn2}">ยกเลิก</button>`;
     return `<div class="bg-white border border-slate-700 rounded-2xl p-3"><p class="text-[11px] text-slate-500">บัญชี</p><p class="text-sm font-semibold break-all">${E(user.email)}</p>
       <div class="flex items-center gap-2 mt-2 text-xs"><i data-lucide="${ic}" class="w-4 h-4 text-brick-600"></i><b>${tx}</b><span class="text-slate-400">${E(detail)}</span></div>
-      <p class="text-[10px] text-slate-400 mt-1">ซิงก์ล่าสุด ${st.last ? new Date(st.last).toLocaleString('th-TH') : '-'}${pend ? ` · รอส่ง ${pend} รายการ` : ''}</p></div>
+      <p class="text-[10px] text-slate-400 mt-1">ซิงก์ล่าสุด ${st.last ? new Date(st.last).toLocaleString('th-TH') : '-'} · ดึงข้อมูลล่าสุด ${st.pulled ? new Date(st.pulled).toLocaleTimeString('th-TH') : '-'}${pend ? ` · รอส่ง ${pend} รายการ` : ''}</p></div>
       <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">ซิงก์: ห้อง/ประกาศ (รวมสัญญา) · ลูกค้า · นัดหมาย · ใบแจ้งหนี้ · การตั้งค่า · รูปห้อง · รูปโปรไฟล์ — เก็บแบบส่วนตัว เห็นได้เฉพาะบัญชีนี้</p>
-      <button onclick="SYNC.now()" class="${btn}">ซิงก์ตอนนี้</button>
+      <button onclick="SYNC.full()" class="${btn}">ซิงก์ตอนนี้ (ดึงข้อมูลทั้งหมด)</button>
       <button onclick="SYNC.view('setpw')" class="${btn2}">เปลี่ยนรหัสผ่าน</button>
       <button onclick="SYNC.logout()" class="${btn2}">ออกจากระบบ (ข้อมูลในเครื่องยังอยู่)</button>`;
   }
@@ -308,7 +323,7 @@ const thErr = e => { const s = String(e && e.message || e); if (/Invalid login/i
 const creds = () => { const email = ($('syEmail') && $('syEmail').value || '').trim().toLowerCase(), password = $('syPw') ? $('syPw').value : ''; if (email) rawSet.call(LS, 'max_sync_email', email); return { email, password }; };
 function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บัญชี & ซิงก์คลาวด์', 'สำรองอัตโนมัติ · ใช้ได้หลายเครื่อง') + '<div id="syncPanel"></div>'); render(); }
 W.SYNC = {
-  open, view: v => { view = v; render(); }, now: () => sync(), fullBlob, status: () => status, state: () => st, client: sb, user: () => user,
+  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, status: () => status, state: () => st, client: sb, user: () => user,
   async login() { const c = creds(); if (!c.email || !c.password) return msg('กรอกอีเมลและรหัสผ่าน'); msg('กำลังเข้าสู่ระบบ...', true); const { error } = await sb.auth.signInWithPassword(c); if (error) return msg(thErr(error)); T('เข้าสู่ระบบแล้ว · เริ่มซิงก์'); view = ''; render(); },
   async signup() { const c = creds(); if (!c.email || c.password.length < 8) return msg('กรอกอีเมลและรหัสผ่านอย่างน้อย 8 ตัว'); msg('กำลังสมัคร...', true); const { data, error } = await sb.auth.signUp(c); if (error) return msg(thErr(error)); if (!data.session) return msg('สมัครแล้ว · ตรวจอีเมลเพื่อยืนยัน แล้วกลับมาเข้าสู่ระบบ', true); T('สมัครและเข้าสู่ระบบแล้ว'); view = ''; render(); },
   async sendCode() { const c = creds(); if (!c.email) return msg('กรอกอีเมลก่อน'); msg('กำลังส่ง...', true); const { error } = await sb.auth.signInWithOtp({ email: c.email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } }); if (error) return msg(thErr(error)); view = 'code'; render(); },
