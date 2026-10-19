@@ -180,7 +180,7 @@ async function cloudLink(u, o, withPhotos) {
     const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
     return async () => {
       let jpg = null;
-      for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(p.full || p.thumb, m, q); if (jpg.size <= 600000) break; }
+      for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(p.full || (W.fullBlobOf ? await W.fullBlobOf(p) : p.thumb), m, q); if (jpg.size <= 600000) break; }
       for (let t = 0; t < 3; t++) {
         const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null);
         if (r && r.ok) { prog(++done, fresh.length); return; }
@@ -189,7 +189,7 @@ async function cloudLink(u, o, withPhotos) {
     }; }).filter(Boolean);
   // 4 parallel uploads; resizing of the next photo overlaps with uploads in flight
   if (init.og && sorted[0]) jobs.push(async () => {
-    try { const bmp = await createImageBitmap(sorted[0].full || sorted[0].thumb || await (await fetch(sorted[0].url)).blob()); const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
+    try { const bmp = await createImageBitmap(sorted[0].full || (!sorted[0].url && W.fullBlobOf ? await W.fullBlobOf(sorted[0]) : null) || sorted[0].thumb || await (await fetch(sorted[0].url)).blob()); const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
       const sc = Math.max(1200 / bmp.width, 630 / bmp.height), w = bmp.width * sc, h = bmp.height * sc; c.getContext('2d').drawImage(bmp, (1200 - w) / 2, (630 - h) / 2, w, h);
       const jpg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
       await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${init.og.path}?token=${encodeURIComponent(init.og.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg });
@@ -328,6 +328,7 @@ const TYPES = { VIEW: ['นัดดูห้อง', 'bg-brick-500'], SIGN: ['�
 const REM = [[0, 'ไม่เตือน'], [15, '15 นาที'], [60, '1 ชม.'], [1440, '1 วัน']];
 let calMonth = ymOf(new Date()), selDay = ymd(new Date());
 FX.appts = () => appts;
+(FX.reloaders = FX.reloaders || []).push(() => { appts = ls.get(KEY, []); if (!Array.isArray(appts)) appts = []; });
 FX.addBackup('appointments', () => appts, v => { if (!Array.isArray(v)) return; v.forEach(a => { const i = appts.findIndex(x => x.id === a.id); if (i >= 0) appts[i] = { ...appts[i], ...a }; else appts.push(a); }); save(); });
 const cust = id => custs_().find(c => c.id === id);
 const unit = id => units_().find(u => u.id === id);
@@ -658,6 +659,7 @@ let icfg = { ppId: '', ppName: '', dueDay: 5, ...ls.get(CKEY, {}) };
 const save = () => ls.set(KEY, inv), saveC = () => ls.set(CKEY, icfg);
 FX.addBackup('invoices', () => inv, v => { if (!v || typeof v !== 'object') return; Object.entries(v).forEach(([ym, m]) => { inv[ym] = { ...(inv[ym] || {}), ...m }; }); save(); });
 FX.addBackup('invoiceCfg', () => icfg, v => { if (v && typeof v === 'object') { icfg = { ...icfg, ...v }; saveC(); } });
+(FX.reloaders = FX.reloaders || []).push(() => { inv = ls.get(KEY, {}); if (!inv || typeof inv !== 'object' || Array.isArray(inv)) inv = {}; icfg = { ppId: '', ppName: '', dueDay: 5, ...ls.get(CKEY, {}) }; });
 let ym = ymOf(new Date());
 /* ---- PromptPay (EMVCo) ---- */
 const tlv = (id, v) => id + pad(v.length) + v;

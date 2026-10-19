@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=28">
+<link rel="stylesheet" href="tailwind.min.css?v=29">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -359,6 +359,7 @@
           <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-2">
+          <button id="syncChip" onclick="SYNC && SYNC.open()" class="h-8 px-2.5 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center gap-1 text-white text-[10px] font-semibold whitespace-nowrap" aria-label="ซิงก์"><i data-lucide="cloud-off" class="w-3.5 h-3.5"></i><span>ยังไม่ซิงก์</span></button>
           <button onclick="openNotifications()" class="w-10 h-10 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" style="border-radius:9999px !important;" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
@@ -1289,6 +1290,16 @@ function setView(mode) { viewMode = mode; try { localStorage.setItem(VIEW_KEY, m
 function setCustView(mode) { custViewMode = mode; try { localStorage.setItem(CUST_VIEW_KEY, mode); } catch (e) {} renderCustomers(); }
 function load(key, fallback) { try { const s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(fallback)); }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
+// Re-read everything from storage after cloud sync wrote remote changes.
+function reloadFromStorage() {
+  units = load(KEY, []).map((u, i) => ({ bath: '1', building: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false, createdAt: Date.now() - (9999 - i) * 1000, ...u }));
+  customers = load(CUST_KEY, []).map(c => ({ name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'', budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'', linkedUnits:[], timeline:[], createdAt: Date.now(), ...c }));
+  monthlyOcc = load(OCC_KEY, {});
+  try { (window.FX && FX.reloaders || []).forEach(f => f()); } catch (e) {}
+  try { loadAvatar(); loadHeroImage(); } catch (e) {}
+  try { miniPhotoCache.clear(); photoUrlCache.clear(); } catch (e) {}
+  try { refreshCounts().then(() => { render(); renderCustomers(); }); } catch (e) {}
+}
 function persistCust() { try { localStorage.setItem(CUST_KEY, JSON.stringify(customers)); } catch (e) {} }
 
 // ============= HERO COVER IMAGE =============
@@ -3148,7 +3159,7 @@ const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Arr
 async function exportData() {
   const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'กำลังรวบรวม...';
   const photos = [];
-  if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, ...(p.full ? { full:await blobToB64(p.full) } : {}), ...(p.url ? { url:p.url } : {}), thumb:p.thumb ? await blobToB64(p.thumb) : '' }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
+  if (db) { try { const all = await req(tx('readonly').getAll()); for (const p of all) photos.push({ id:p.id, unitId:p.unitId, ts:p.ts, order:p.order, cover:!!p.cover, ...(p.full ? { full:await blobToB64(p.full) } : (p.cloud && !p.url ? await fullBlobOf(p).then(async b => b && b !== p.thumb ? { full:await blobToB64(b) } : {}).catch(() => ({})) : {})), ...(p.url ? { url:p.url } : {}), thumb:p.thumb ? await blobToB64(p.thumb) : '' }); } catch (e) { prog.classList.add('hidden'); return toast('อ่านรูปไม่สำเร็จ'); } }
   const cfg = getPostConfig();
   const heroImg = (() => { try { return localStorage.getItem(HERO_KEY) || ''; } catch (e) { return ''; } })();
   const avatarImg = (() => { try { return localStorage.getItem(AVATAR_KEY) || ''; } catch (e) { return ''; } })();
@@ -3250,6 +3261,7 @@ function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.r
 const remoteBlobCache = new Map();
 async function fullBlobOf(p) {
   if (p.full) return p.full;
+  if (!p.url && p.cloud && window.SYNC && SYNC.fullBlob) { try { const b = await SYNC.fullBlob(p); if (b) return b; } catch (e) {} }
   if (p.url) { if (remoteBlobCache.has(p.url)) return remoteBlobCache.get(p.url); try { const r = await fetch(p.url); if (r.ok) { const b = await r.blob(); remoteBlobCache.set(p.url, b); return b; } } catch (e) {} }
   return p.thumb;
 }
@@ -3567,6 +3579,8 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=28"></script>
+<script src="features.js?v=29"></script>
+<script src="vendor/supabase.js"></script>
+<script src="sync.js?v=29"></script>
 </body>
 </html>
