@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const ORIGINS = ["https://banditkmc23-ai.github.io", "http://localhost:8799"];
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const PUB = Deno.env.get("SUPABASE_URL") + "/storage/v1/object/public/room-photos/";
-const MAX_IMG = 2 * 1024 * 1024, MAX_N = 12, MAX_BODY = 30 * 1024 * 1024;
+const MAX_IMG = 2 * 1024 * 1024, MAX_N = 40, MAX_BODY = 30 * 1024 * 1024;
 const hits = new Map<string, number[]>();
 function limited(ip: string, max = 120) { const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < 3600_000); a.push(now); hits.set(ip, a); return a.length > max; }
 function cors(req: Request) { const o = req.headers.get("origin") || ""; return { "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin" }; }
@@ -126,6 +126,22 @@ Deno.serve(async req => {
     let id = rid();
     if (body.id) { if (!/^[A-Za-z0-9]{6}$/.test(String(body.id)) || !(await canEdit(String(body.id), body.secret))) return J(req, { error: "not allowed" }, 403); id = String(body.id); }
     const v = Date.now().toString(36);
+    // stable per-photo files: <id>/p-<photoKey>.jpg — uploaded once, reused by every later share
+    if (Array.isArray(body.keys)) {
+      const keys = body.keys.slice(0, MAX_N).map((k: unknown) => String(k)).filter((k: string) => /^[A-Za-z0-9_-]{1,60}$/.test(k));
+      const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 1000 });
+      const have = new Set((objs || []).map(o => o.name));
+      const ups2 = await Promise.all(keys.map(async (key: string) => {
+        const path = `${id}/p-${key}.jpg`;
+        if (have.has(`p-${key}.jpg`)) return { key, path, url: PUB + path, exists: true };
+        const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path, { upsert: true });
+        if (error || !data) throw error; return { key, path, token: data.token, url: PUB + path };
+      })).catch(() => null);
+      if (!ups2) return J(req, { error: "sign failed" }, 500);
+      let og2 = null;
+      if (body.og) { const { data } = await sb.storage.from("room-photos").createSignedUploadUrl(`${id}/og-${v}.jpg`); if (data) og2 = { name: `og-${v}.jpg`, path: `${id}/og-${v}.jpg`, token: data.token, url: PUB + `${id}/og-${v}.jpg` }; }
+      return J(req, { id, uploads: ups2, og: og2, v });
+    }
     const ups = await Promise.all(Array.from({ length: n }, async (_, k) => {
       const path = `${id}/${v}-${k + 1}.jpg`; const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path);
       if (error || !data) throw error; return { path, token: data.token, url: PUB + path };
@@ -138,23 +154,25 @@ Deno.serve(async req => {
   if (body && body.action === "commit") {
     const id = String(body.id || ""); if (!/^[A-Za-z0-9]{6}$/.test(id)) return J(req, { error: "bad id" }, 400);
     const list: unknown[] = Array.isArray(body.images) ? body.images.slice(0, MAX_N) : [];
-    const PUBRE2 = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/[A-Za-z0-9-]{1,30}\\.(jpg|png|webp)$");
+    const PUBRE2 = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/[A-Za-z0-9_-]{1,80}\\.(jpg|png|webp)$");
     const { data: existing } = await sb.from("shared_rooms").select("id").eq("id", id).maybeSingle();
     const isUpdate = !!existing;
     if (isUpdate && !(await canEdit(id, body.secret))) return J(req, { error: "not allowed" }, 403);
     if (!isUpdate && (typeof body.secret !== "string" || body.secret.length < 16 || body.secret.length > 128)) return J(req, { error: "secret required" }, 400);
     const urls = list.map(x => (x && typeof x === "object" ? String((x as any).url || "") : "")).filter(u => PUBRE2.test(u));
     const own = urls.filter(u => u.startsWith(PUB + id + "/")).map(u => u.slice(PUB.length + id.length + 1));
-    if (own.length) { const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 20 }); const have = new Set((objs || []).map(o => o.name)); if (own.some(n => !have.has(n))) return J(req, { error: "photo missing" }, 400); }
-    const { data: objs2 } = await sb.storage.from("room-photos").list(id, { limit: 20 });
+    if (own.length) { const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 1000 }); const have = new Set((objs || []).map(o => o.name)); if (own.some(n => !have.has(n))) return J(req, { error: "photo missing" }, 400); }
+    const { data: objs2 } = await sb.storage.from("room-photos").list(id, { limit: 1000 });
     const v = /^[a-z0-9]{4,12}$/.test(String(body.v || "")) ? String(body.v) : "";
-    const ogName = v && (objs2 || []).some(o => o.name === `og-${v}.jpg`) ? `og-${v}.jpg` : ((objs2 || []).some(o => o.name === "og.jpg") ? "og.jpg" : "");
+    const has2 = (n: string) => (objs2 || []).some(o => o.name === n);
+    const ogReq = /^og-[a-z0-9]{4,12}\.jpg$/.test(String(body.og || "")) ? String(body.og) : "";
+    const ogName = ogReq && has2(ogReq) ? ogReq : v && has2(`og-${v}.jpg`) ? `og-${v}.jpg` : (has2("og.jpg") ? "og.jpg" : "");
     const cd = clean(body.data);
     const row = { data: { ...cd, imgs: urls }, updated_at: new Date().toISOString() };
     const { error } = isUpdate ? await sb.from("shared_rooms").update(row).eq("id", id) : await sb.from("shared_rooms").insert({ id, ...row, edit_hash: await sha256(body.secret) });
     if (error) return J(req, { error: "save failed" }, 500);
     const page = await writeOgPage(id, cd, ogName ? PUB + id + "/" + ogName : (urls[0] || ""), v);
-    return J(req, { id, imgs: urls, page, updated: isUpdate, ...(page ? {} : { pageErr: lastGh }) });
+    return J(req, { id, imgs: urls, page, og: ogName, updated: isUpdate, ...(page ? {} : { pageErr: lastGh }) });
   }
   const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
   if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);

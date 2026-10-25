@@ -162,53 +162,73 @@ async function offloadUploaded(sorted, sent, urls) {
     } catch (e) { console.warn('keep local photo', p.id, e); }
   }
 }
+// Photos are stored once per room at a stable path (<roomId>/p-<photoKey>.jpg) and reused by every later share,
+// so re-sharing never re-uploads a photo that is already in the cloud.
+const photoKey = p => String(p.id).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 60);
+const MAX_PHOTOS = 40;
+let shareProg = null;
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
-  const sig = JSON.stringify(o) + '|' + ps.map(p => p.id).join(',');
+  const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, MAX_PHOTOS);
+  const sig = JSON.stringify(o) + '|' + sorted.map(p => p.id).join(',');
   const linkOf = id => BASE().replace(/room\.html$/, 'r/') + id + '/';
   const sh = u.share && u.share.id && u.share.secret ? u.share : null;
-  // one permanent link per room: reuse it as-is when nothing changed (or when only a text link is needed)
-  if (sh && (sh.sig === sig || !withPhotos)) return linkOf(sh.id);
-  const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, 12);
-  const prog = (d, n) => { const el = $('fxShareLink'); if (el && n) el.textContent = `กำลังอัปโหลดรูป ${d}/${n}...`; };
-  const fresh = sorted.filter(p => !(p.url && !p.full));
+  // unchanged room (or a text-only link): the permanent link is returned instantly, nothing is uploaded
+  if (sh && (sh.sig === sig || !withPhotos)) { FX.lastShareStats = { uploaded: 0, reused: sorted.length, instant: true }; return linkOf(sh.id); }
+  const say = t => { const el = $('fxShareLink'); if (el) el.textContent = t; if (shareProg) shareProg(t); };
   const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
-  const init = await call({ action: 'init', count: fresh.length, og: sorted.length > 0, ...(sh ? { id: sh.id, secret: sh.secret } : {}) });
-  const failedUp = new Set(); const images = []; const sent = []; let k = 0, done = 0; prog(0, fresh.length);
-  const jobs = sorted.map(p => { if (p.url && !p.full) { images.push({ url: p.url }); sent.push(null); return null; }
-    const up = init.uploads[k++]; images.push({ url: up.url }); sent.push('new');
-    return async () => {
+  const PUBP = SB_URL + '/storage/v1/object/public/room-photos/';
+  // photos that already have a public cloud URL are reused as-is; the rest get a stable per-room path
+  const needKey = sorted.filter(p => !(p.url && p.url.startsWith(PUBP)));
+  const coverKey = sorted[0] ? sorted[0].id : '';
+  const ogFresh = !!sorted[0] && !(sh && sh.og && sh.ogKey === coverKey);
+  say('กำลังตรวจรูปบนคลาวด์...');
+  const init = await call({ action: 'init', keys: needKey.map(photoKey), og: ogFresh, ...(sh ? { id: sh.id, secret: sh.secret } : {}) });
+  const byKey = new Map((init.uploads || []).map(x => [x.key, x]));
+  const images = [], sent = [], jobs = [], failed = new Set(); let done = 0;
+  const todo = (init.uploads || []).filter(x => !x.exists).length;
+  for (const p of sorted) {
+    if (p.url && p.url.startsWith(PUBP)) { images.push({ url: p.url }); sent.push(null); continue; }
+    const up = byKey.get(photoKey(p)); if (!up) { failed.add(p.id); images.push(null); sent.push(null); continue; }
+    images.push({ url: up.url }); sent.push(p.full ? 'new' : null);
+    if (up.exists) continue;
+    jobs.push(async () => {
       let jpg = null;
-      for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(p.full || (W.fullBlobOf ? await W.fullBlobOf(p) : p.thumb), m, q); if (jpg.size <= 600000) break; }
-      for (let t = 0; t < 3; t++) {
-        const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null);
-        if (r && r.ok) { prog(++done, fresh.length); return; }
-      }
-      failedUp.add(up.url); prog(++done, fresh.length);
-    }; }).filter(Boolean);
-  // 4 parallel uploads; resizing of the next photo overlaps with uploads in flight
+      try { const src = p.full || (W.fullBlobOf ? await W.fullBlobOf(p) : p.thumb); for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(src, m, q); if (jpg.size <= 600000) break; } } catch (e) { jpg = null; }
+      let ok = false;
+      for (let t = 0; jpg && t < 3 && !ok; t++) { const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null); ok = !!(r && r.ok); }
+      if (!ok) failed.add(p.id);
+      say(`กำลังอัปโหลดรูปใหม่ ${++done}/${todo}...`);
+    });
+  }
+  if (todo) say(`กำลังอัปโหลดรูปใหม่ 0/${todo}...`);
   if (init.og && sorted[0]) jobs.push(async () => {
-    try { const bmp = await createImageBitmap(sorted[0].full || (!sorted[0].url && W.fullBlobOf ? await W.fullBlobOf(sorted[0]) : null) || sorted[0].thumb || await (await fetch(sorted[0].url)).blob()); const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
+    try { const s0 = sorted[0]; const bmp = await createImageBitmap(s0.full || (!s0.url && W.fullBlobOf ? await W.fullBlobOf(s0) : null) || (s0.url ? await (await fetch(s0.url)).blob() : s0.thumb)); const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
       const sc = Math.max(1200 / bmp.width, 630 / bmp.height), w = bmp.width * sc, h = bmp.height * sc; c.getContext('2d').drawImage(bmp, (1200 - w) / 2, (630 - h) / 2, w, h);
       const jpg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
-      await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${init.og.path}?token=${encodeURIComponent(init.og.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg });
-    } catch (e) { console.warn('og image skipped', e); }
+      const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${init.og.path}?token=${encodeURIComponent(init.og.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg });
+      if (!r.ok) init.og = null;
+    } catch (e) { init.og = null; console.warn('og image skipped', e); }
   });
   let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
+  const keep = sorted.map((p, i) => images[i] && !failed.has(p.id) ? i : -1).filter(i => i >= 0);
+  if (sorted.length && !keep.length) throw new Error('อัปโหลดรูปไม่สำเร็จ');
   const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
-  if (failedUp.size && failedUp.size === fresh.length && fresh.length) throw new Error('อัปโหลดรูปไม่สำเร็จ');
-  const keepIdx = images.map((x, i) => failedUp.has(x.url) ? -1 : i).filter(i => i >= 0);
-  const j = await call({ action: 'commit', id: init.id, data: o, images: keepIdx.map(i => images[i]), secret, v: init.v });
-  if (failedUp.size) { sorted.splice(0, sorted.length, ...keepIdx.map(i => sorted[i])); const s2 = keepIdx.map(i => sent[i]); sent.splice(0, sent.length, ...s2); shareNote = `อัปโหลดรูปไม่สำเร็จ ${failedUp.size} รูป แชร์ใหม่อีกครั้งเพื่อลองเพิ่ม`; }
-  u.share = { id: j.id, secret, sig: failedUp.size ? '' : sig, at: Date.now(), cover: (j.imgs || [])[0] || '' }; try { (window.persist || (() => {}))(); } catch (e) {}
-  setTimeout(() => offloadUploaded(sorted, sent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
-  const id = j.id;
-  const link = linkOf(id);
+  const ogName = init.og ? init.og.name : (sh && sh.ogKey === coverKey ? sh.og : '');
+  say('กำลังบันทึกลิงก์...');
+  const j = await call({ action: 'commit', id: init.id, data: o, images: keep.map(i => images[i]), secret, v: init.v, og: ogName });
+  if (failed.size) shareNote = `อัปโหลดรูปไม่สำเร็จ ${failed.size} รูป ระบบจะลองใหม่ครั้งถัดไป`;
+  const keptSorted = keep.map(i => sorted[i]), keptSent = keep.map(i => sent[i]);
+  u.share = { id: j.id, secret, sig: failed.size ? '' : sig, at: Date.now(), cover: (j.imgs || [])[0] || '', og: j.og || ogName || '', ogKey: (j.og || ogName) ? coverKey : '', opts: u.share && u.share.opts };
+  try { (window.persist || (() => {}))(); } catch (e) {}
+  FX.lastShareStats = { uploaded: todo - [...failed].length, reused: keep.length - (todo - [...failed].length), failed: failed.size, total: sorted.length };
+  setTimeout(() => offloadUploaded(keptSorted, keptSent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
+  const link = linkOf(j.id);
   if (j.page && withPhotos && !FX.noWait) {
-    const el = $('fxShareLink'); if (el) el.textContent = 'กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)';
+    say('กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)');
     const t0 = Date.now(); let ok = false;
-    while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const t = await r.text(); if (t.includes('og:title') && (!init.v || t.includes('content="' + init.v + '"'))) { ok = true; break; } } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); if (el) el.textContent = `กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`; }
+    while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const t = await r.text(); if (t.includes('og:title') && (!init.v || t.includes('content="' + init.v + '"'))) { ok = true; break; } } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); say(`กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`); }
     if (!ok) shareNote = 'พรีวิว LINE ยังไม่พร้อม ลิงก์ใช้ได้แล้ว แต่ถ้าส่งตอนนี้ LINE อาจไม่แสดงรูป รอสักครู่แล้วค่อยส่ง';
   }
   return link;
@@ -240,17 +260,36 @@ async function renderShare() {
   const el = $('fxShareBody'); if (!el) return;
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
   shareNote = ''; shareState.link = '';
-  try { shareState.link = await buildLink(u, shareState); }
+  try { shareBusy++; shareState.link = await buildLink(u, shareState); if (shareState.photo && u.share && shareState.link.includes('/r/')) { const op = { hideRoom: !!shareState.hideRoom, showPhone: !!shareState.showPhone, photo: true }; if (JSON.stringify(u.share.opts) !== JSON.stringify(op)) { u.share.opts = op; try { window.persist(); } catch (e) {} } } }
   catch (e) {
     el.querySelector('#fxShareLink').innerHTML = `<span class="text-rose-600 font-semibold">สร้างลิงก์สั้นไม่สำเร็จ: ${E(e.message)}</span><br><span class="text-[10px] text-slate-400">${E(e.detail || '')}</span>`;
     el.querySelector('#fxShareLen').innerHTML = `<span class="flex gap-2 mt-1"><button onclick="FX.shareRetry()" class="px-3 py-1.5 rounded-full bg-brick-500 text-white text-[11px] font-semibold">ลองใหม่</button><button onclick="FX.shareLong()" class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">ใช้ลิงก์ยาวแทน</button></span>`;
     return;
   }
+  finally { shareBusy--; }
   el.querySelector('#fxShareLink').textContent = shareState.link;
   el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์ถาวรของห้องนี้ · แก้ข้อมูลแล้วแชร์อีกครั้ง ลิงก์เดิมจะอัปเดตให้') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
+// Background auto-update: rooms that already have a link get it refreshed (new photos only) a few seconds after an edit.
+let shareBusy = 0, bgTimer = null, bgRun = false;
+async function bgShareUpdate() {
+  if (bgRun || shareBusy || !navigator.onLine) return; bgRun = true;
+  try {
+    for (const u of units_().filter(x => x.share && x.share.id && x.share.secret && x.share.opts)) {
+      if (shareBusy || !navigator.onLine) break;
+      const before = u.share.sig; const nw = FX.noWait; FX.noWait = true;
+      try { await buildLink(u, { ...u.share.opts }); } catch (e) { console.warn('bg share update failed', u.id, e); } finally { FX.noWait = nw; }
+      if (u.share && u.share.sig !== before) console.log('link auto-updated', u.share.id, FX.lastShareStats);
+    }
+  } finally { bgRun = false; }
+}
+FX.bgShareUpdate = bgShareUpdate;
+FX.scheduleShareUpdate = (ms) => { clearTimeout(bgTimer); bgTimer = setTimeout(() => bgShareUpdate().catch(() => {}), ms == null ? 6000 : ms); };
+{ const _pp = window.persist; if (_pp) window.persist = function () { const r = _pp.apply(this, arguments); FX.scheduleShareUpdate(); return r; }; }
+addEventListener('online', () => FX.scheduleShareUpdate(3000));
+setInterval(() => FX.scheduleShareUpdate(0), 180000);
 FX.sb = { url: SB_URL, h: SB_H };
 FX.shareRetry = () => renderShare();
 FX.shareLong = async function () {
