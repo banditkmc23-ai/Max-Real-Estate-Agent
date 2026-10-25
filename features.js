@@ -672,7 +672,7 @@ FX.registerView('revenue', { title: 'รายงานรายได้', rend
   <div class="space-y-3"><div class="bg-gradient-to-br from-brick-500 to-brick-700 rounded-2xl p-4 text-white shadow-lg shadow-brick-500/25"><p class="text-[11px] text-white/80">รายได้ ${thMonth(sel)}</p><p class="text-3xl font-bold">${B(cur.rev)}</p><p class="text-xs text-white/80 mt-1">${diff === null ? '' : (diff >= 0 ? '▲ ' : '▼ ') + Math.abs(diff) + '% จากเดือนก่อน · '}เข้าพัก ${cur.occ}/${cur.total} ห้อง (${cur.pct}%) · 12 เดือน ${B(year)}</p></div>
   <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm"><h3 class="text-sm font-semibold mb-2">รายได้และอัตราเข้าพัก</h3>${chart(data, sel)}<div class="flex gap-3 mt-2 text-[10px] text-slate-400"><span class="flex items-center gap-1"><span class="w-3 h-2 rounded bg-brick-200"></span>รายได้ (แตะแท่งเพื่อเลือกเดือน)</span><span class="flex items-center gap-1"><span class="w-3 border-t border-dashed border-ink"></span>อัตราเข้าพัก</span></div></div></div>
   <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm space-y-3"><h3 class="text-sm font-semibold">แยกตามโครงการ (${thMonth(sel)})</h3>${projs.map(([n, d]) => `<button onclick="gotoProject(${E(JSON.stringify(n))})" class="w-full text-left"><div class="flex justify-between text-xs mb-1 gap-2"><span class="font-medium truncate">${E(n)}</span><span class="font-bold text-brick-600 shrink-0">${B(d.rev)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.rev / pmax * 100)}%"></div></div><p class="text-[10px] text-slate-400 mt-1">${d.occ}/${d.n} ห้องมีผู้เช่า</p></button>`).join('')}
-  <p class="text-[10px] text-slate-400 pt-1">คำนวณจากการติ๊ก "มีผู้เช่า" รายเดือนบนแดชบอร์ด ถ้าเดือนไหนไม่ได้ติ๊ก จะใช้วันเริ่ม/สิ้นสุดสัญญา</p></div></div>`;
+  <p class="text-[10px] text-slate-400 pt-1">คำนวณจากการติ๊ก "มีผู้เช่า" รายเดือนบนแดชบอร์ด ถ้าเดือนไหนไม่ได้ติ๊ก จะใช้วันเริ่ม/สิ้นสุดสัญญา</p></div></div>${FX.commHTML ? FX.commHTML(sel) : ''}`;
 } });
 FX.revSel = ym => { selYm = ym; FX.refresh(); };
 FX.revNav = n => { endYm = addMonths(endYm, n); if (endYm > addMonths(ymOf(new Date()), 12)) endYm = addMonths(ymOf(new Date()), 12); selYm = null; FX.refresh(); };
@@ -684,6 +684,7 @@ FX.revExcel = function () {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['โครงการ', 'ห้อง', 'ค่าเช่า', ...data.map(d => thMonth(d.ym))], ...us.map(u => [u.project || '', u.room || '', Number(u.rent) || 0, ...data.map(d => occ(u, d.ym) ? Number(u.rent) || 0 : 0)])]), 'รายห้อง');
   const by = {}; us.forEach(u => { const p = u.project || '(ไม่ระบุ)'; by[p] = by[p] || data.map(() => 0); data.forEach((d, i) => { if (occ(u, d.ym)) by[p][i] += Number(u.rent) || 0; }); });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['โครงการ', ...data.map(d => thMonth(d.ym)), 'รวม'], ...Object.entries(by).map(([p, a]) => [p, ...a, a.reduce((s, x) => s + x, 0)])]), 'รายโครงการ');
+  if (FX.commRows) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['เดือน', 'ห้อง', 'ผู้ปิด', 'สถานะ', 'ค่าคอม (บาท)', 'หมายเหตุ'], ...FX.commRows()]), 'ค่าคอม');
   XLSX.writeFile(wb, `max-agent-revenue-${endYm}.xlsx`); T('ส่งออก Excel แล้ว');
 };
 FX.addTool({ label: 'รายงานรายได้', icon: 'bar-chart-3', view: 'revenue', action: "FX.show('revenue')" });
@@ -834,8 +835,7 @@ FX.invPrint = async function (mode) {
   FX.sharePdf();
 };
 if (!$('fxPrintCss')) document.head.insertAdjacentHTML('beforeend', `<style id="fxPrintCss">#fxPrint{display:none}@media print{body.fx-printing>*:not(#fxPrint){display:none!important}body.fx-printing #fxPrint{display:block!important;max-width:520px;margin:0 auto;padding:16px}body.fx-printing{background:#fff!important}#fxPrint svg{width:112px;height:112px}}</style>`);
-FX.addTool({ label: 'แจ้งหนี้ค่าเช่า', icon: 'receipt', view: 'invoices', action: "FX.show('invoices')", badge: () => FX.invoiceAlerts() });
-setTimeout(() => { try { const n = FX.invoiceAlerts(); if (n) T(`💳 มีค่าเช่า ${n} ห้องที่ใกล้/เลยกำหนดชำระ`); } catch (e) {} }, 4500);
+/* rent-invoice tile + reminder toast removed (v32); data kept & still synced */
 })();
 
 /* ---------- boot ---------- */
@@ -908,3 +908,99 @@ const _p = window.persist;
 if (_p) window.persist = function () { const r = _p.apply(this, arguments); const c = getC(); if (c && !busy && c.sig !== sigOf()) { clearTimeout(timer); timer = setTimeout(() => publish().catch(e => console.warn('catalog auto-update failed', e)), 4000); } return r; };
 FX.addTool({ label: 'หน้าห้องว่าง', icon: 'store', action: 'FX.openCatalog()' });
 })();
+
+/* ===================== 8) COMMISSIONS (v32) ===================== */
+(function () {
+const { $, E, B, T, ls, ymOf, thMonth, units_, unitName } = FX.u;
+const KEY = 'max_commissions_v1';
+let comms = ls.get(KEY, []); if (!Array.isArray(comms)) comms = [];
+const save = () => ls.set(KEY, comms);
+const DEAL = ['RESERVED', 'OCCUPIED'];
+const SL = { RESERVED: 'จอง', OCCUPIED: 'มีผู้เช่า' };
+let snap = {};
+const takeSnap = () => { snap = {}; units_().forEach(u => { snap[u.id] = u.status; }); };
+(FX.reloaders = FX.reloaders || []).push(() => { comms = ls.get(KEY, []); if (!Array.isArray(comms)) comms = []; takeSnap(); });
+FX.addBackup && FX.addBackup('commissions', () => comms, v => { if (!Array.isArray(v)) return; const ids = new Set(comms.map(c => c.id)); v.forEach(c => { if (c && c.id && !ids.has(c.id)) comms.push(c); }); save(); });
+takeSnap();
+const queue = [];
+const _persist = window.persist;
+if (typeof _persist === 'function') window.persist = function () {
+  try {
+    units_().forEach(u => {
+      const prev = snap[u.id];
+      if (DEAL.includes(u.status) && prev !== u.status && !(prev === 'RESERVED' && u.status === 'OCCUPIED' && comms.some(c => c.unitId === u.id && c.ym >= ymOf(new Date(Date.now() - 62 * 864e5))))) {
+        if (!queue.some(q => q.id === u.id)) queue.push({ id: u.id, status: u.status });
+      }
+      snap[u.id] = u.status;
+    });
+    Object.keys(snap).forEach(id => { if (!units_().some(u => u.id === id)) delete snap[id]; });
+  } catch (e) {}
+  const r = _persist.apply(this, arguments);
+  if (queue.length) setTimeout(next, 350);
+  return r;
+};
+let cur = null;
+function next() {
+  if (cur || !queue.length) return;
+  if ($('fxSheet') && $('fxSheet').classList.contains('open')) { setTimeout(next, 800); return; }
+  cur = queue.shift(); askWho(cur.id, cur.status);
+}
+const rentOf = u => Number(u && u.rent) || 0;
+const amt = (u, closer) => closer === 'self' ? rentOf(u) : Math.round(rentOf(u) * 0.5);
+const btn = (on, l, sub) => `<button ${on} class="w-full text-left bg-white border border-slate-700 rounded-2xl p-3 flex items-center gap-3 active:scale-[.98]"><div class="flex-1"><p class="text-sm font-semibold">${l}</p>${sub ? `<p class="text-[11px] text-slate-400">${sub}</p>` : ''}</div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`;
+function askWho(id, status) {
+  const u = units_().find(x => x.id === id); if (!u) { cur = null; return next(); }
+  FX.open(FX.sheetHead('🎉 ปิดดีลได้แล้ว?', E(unitName(u)) + ' · เปลี่ยนเป็น "' + SL[status] + '"') + `<p class="text-xs text-slate-500 mb-3">ใครเป็นคนปิดดีลห้องนี้? จะบันทึกค่าคอมเข้ารายงานรายได้</p><div class="space-y-2">
+    ${btn(`onclick="FX.commForm('${id}','self','${status}')"`, 'ฉันปิดเอง', 'ค่าคอม 1 เดือน = ' + B(amt(u, 'self')))}
+    ${btn(`onclick="FX.commForm('${id}','co','${status}')"`, 'คนอื่นปิด (co-agent)', 'แบ่ง 50% = ' + B(amt(u, 'co')))}
+    <button onclick="FX.commSkip()" class="w-full py-3 rounded-full bg-slate-100 text-slate-500 text-sm font-semibold">ไม่มีค่าคอม / ข้าม</button></div>`);
+}
+FX.commSkip = () => { FX.close(); cur = null; setTimeout(next, 300); };
+FX.commForm = function (unitId, closer, status, editId) {
+  const ex = editId ? comms.find(c => c.id === editId) : null;
+  const u = units_().find(x => x.id === (ex ? ex.unitId : unitId));
+  if (ex) { closer = ex.closer; status = ex.status; }
+  const rent = ex ? Number(ex.rent) || rentOf(u) : rentOf(u);
+  const mode = ex ? (ex.mode || 'custom') : (closer === 'self' ? 'full' : 'half');
+  const val = ex ? ex.amount : (mode === 'full' ? rent : Math.round(rent / 2));
+  const rb = (m, l) => `<label class="flex items-center gap-2 text-sm py-1"><input type="radio" name="fxCm_mode" value="${m}" ${mode === m ? 'checked' : ''} onchange="FX.commMode(${rent})" class="accent-[#b85c38]"> ${l}</label>`;
+  FX.open(FX.sheetHead(ex ? 'แก้ไขค่าคอม' : 'บันทึกค่าคอม', E(ex ? (ex.unitName || unitName(u)) : unitName(u)) + ' · ค่าเช่า ' + B(rent)) + `<div class="space-y-3">
+    <div class="flex gap-1.5 text-xs"><button id="fxCm_self" onclick="FX.commCloser('self',${rent})" class="px-3 py-1.5 rounded-full ${closer === 'self' ? 'bg-brick-500 text-white font-semibold' : 'bg-slate-100 text-slate-500'}">ฉันปิดเอง</button><button id="fxCm_co" onclick="FX.commCloser('co',${rent})" class="px-3 py-1.5 rounded-full ${closer === 'co' ? 'bg-brick-500 text-white font-semibold' : 'bg-slate-100 text-slate-500'}">คนอื่นปิด (co-agent)</button></div>
+    <input type="hidden" id="fxCm_closer" value="${closer}">
+    <div class="bg-white border border-slate-700 rounded-2xl px-3 py-2">${rb('full', '1 เดือนของค่าเช่า (' + B(rent) + ')')}${rb('half', '50% ของค่าเช่า 1 เดือน (' + B(Math.round(rent / 2)) + ')')}${rb('custom', 'กำหนดเอง')}</div>
+    <label class="block text-[11px] text-slate-500">จำนวนเงิน (บาท)<input id="fxCm_amt" type="number" inputmode="numeric" class="inp" value="${Number(val) || 0}" oninput="document.querySelector('input[name=fxCm_mode][value=custom]').checked=true"></label>
+    <label class="block text-[11px] text-slate-500">นับเป็นรายได้เดือน<input id="fxCm_ym" type="month" class="inp" value="${ex ? ex.ym : ymOf(new Date())}"></label>
+    <label class="block text-[11px] text-slate-500">หมายเหตุ (ไม่บังคับ)<input id="fxCm_note" class="inp" value="${E(ex ? ex.note || '' : '')}" placeholder="เช่น ชื่อ co-agent"></label>
+    <button onclick="FX.commSave('${ex ? '' : unitId}','${status}','${editId || ''}')" class="w-full py-3 rounded-full bg-brick-500 text-white text-sm font-semibold">บันทึก</button>
+    ${ex ? `<button onclick="FX.commDel('${editId}')" class="w-full py-3 rounded-full bg-slate-100 text-red-600 text-sm font-semibold">ลบรายการนี้</button>` : `<button onclick="FX.commSkip()" class="w-full py-2 text-slate-400 text-xs">ข้าม</button>`}</div>`);
+};
+FX.commMode = rent => { const m = (document.querySelector('input[name=fxCm_mode]:checked') || {}).value; if (m === 'full') $('fxCm_amt').value = rent; else if (m === 'half') $('fxCm_amt').value = Math.round(rent / 2); };
+FX.commCloser = (c, rent) => { $('fxCm_closer').value = c; ['self', 'co'].forEach(k => { $('fxCm_' + k).className = 'px-3 py-1.5 rounded-full ' + (k === c ? 'bg-brick-500 text-white font-semibold' : 'bg-slate-100 text-slate-500'); }); const r = document.querySelector(`input[name=fxCm_mode][value=${c === 'self' ? 'full' : 'half'}]`); if (r) { r.checked = true; FX.commMode(rent); } };
+FX.commSave = function (unitId, status, editId) {
+  const amount = Math.max(0, Number($('fxCm_amt').value) || 0), ym = $('fxCm_ym').value || ymOf(new Date());
+  const closer = $('fxCm_closer').value, mode = (document.querySelector('input[name=fxCm_mode]:checked') || {}).value || 'custom', note = $('fxCm_note').value.trim();
+  if (editId) { const c = comms.find(x => x.id === editId); if (c) Object.assign(c, { amount, ym, closer, mode, note, updatedAt: Date.now() }); }
+  else { const u = units_().find(x => x.id === unitId); comms.push({ id: 'c' + Date.now() + Math.random().toString(36).slice(2, 5), unitId, unitName: unitName(u), rent: rentOf(u), status, closer, mode, amount, ym, note, createdAt: Date.now() }); }
+  save(); FX.close(); T('✓ บันทึกค่าคอมแล้ว'); cur = null; FX.refresh(); setTimeout(next, 300);
+};
+FX.commDel = id => { if (!confirm('ลบรายการค่าคอมนี้?')) return; comms = comms.filter(c => c.id !== id); save(); FX.close(); T('ลบแล้ว'); FX.refresh(); };
+FX.commEdit = id => FX.commForm(null, null, null, id);
+FX.commAdd = function () {
+  const us = units_().slice().sort((a, b) => (a.project || '').localeCompare(b.project || ''));
+  FX.open(FX.sheetHead('เพิ่มค่าคอม', 'เลือกห้อง') + `<div class="space-y-1 max-h-[60vh] overflow-y-auto">${us.map(u => `<button onclick="FX.commAskAdd('${u.id}')" class="w-full text-left text-sm py-2 border-b border-slate-800">${E(unitName(u))} <span class="text-[11px] text-slate-400">${B(u.rent)}</span></button>`).join('') || '<p class="text-xs text-slate-400">ยังไม่มีห้อง</p>'}</div>`);
+};
+FX.commAskAdd = id => { const u = units_().find(x => x.id === id); askWho(id, u && DEAL.includes(u.status) ? u.status : 'OCCUPIED'); };
+const CL = { self: 'ปิดเอง', co: 'co-agent' };
+FX.commRows = () => comms.slice().sort((a, b) => a.ym.localeCompare(b.ym)).map(c => [thMonth(c.ym), c.unitName || '', CL[c.closer] || '', SL[c.status] || '', Number(c.amount) || 0, c.note || '']);
+FX.commHTML = function (ym) {
+  const list = comms.filter(c => c.ym === ym).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const sum = k => list.filter(c => !k || c.closer === k).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  const yr = ym.slice(0, 4), ytd = comms.filter(c => c.ym.slice(0, 4) === yr && c.ym <= ym).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  return `<div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm mt-3"><div class="flex items-center justify-between mb-2"><h3 class="text-sm font-semibold">ค่าคอมมิชชั่น ${thMonth(ym)}</h3><button onclick="FX.commAdd()" class="text-xs bg-brick-500 text-white px-3 py-1.5 rounded-full font-semibold flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i>เพิ่ม</button></div>
+  <p class="text-2xl font-bold text-brick-600">${B(sum())}</p>
+  <div class="grid grid-cols-2 gap-2 mt-2 text-xs"><div class="bg-slate-100 rounded-xl p-2"><p class="text-slate-500">ปิดเอง</p><p class="font-bold">${B(sum('self'))} · ${list.filter(c => c.closer === 'self').length} ดีล</p></div><div class="bg-slate-100 rounded-xl p-2"><p class="text-slate-500">co-agent</p><p class="font-bold">${B(sum('co'))} · ${list.filter(c => c.closer === 'co').length} ดีล</p></div></div>
+  <div class="mt-3">${list.map(c => `<button onclick="FX.commEdit('${c.id}')" class="w-full text-left flex items-center gap-2 py-2 border-b border-slate-800 last:border-0"><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${E(c.unitName || '')}</p><p class="text-[11px] text-slate-400">${CL[c.closer] || ''} · ${SL[c.status] || ''}${c.note ? ' · ' + E(c.note) : ''}</p></div><span class="text-sm font-bold text-brick-600">${B(c.amount)}</span><i data-lucide="pencil" class="w-3.5 h-3.5 text-slate-400"></i></button>`).join('') || '<p class="text-xs text-slate-400">ยังไม่มีค่าคอมเดือนนี้ — จะถามอัตโนมัติเมื่อเปลี่ยนห้องเป็น "จอง" หรือ "มีผู้เช่า"</p>'}</div>
+  <p class="text-[10px] text-slate-400 mt-2">ค่าคอมสะสมปี ${Number(yr) + 543} ถึงเดือนนี้: ${B(ytd)} · แตะรายการเพื่อแก้ไข/ลบ</p></div>`;
+};
+})();
+

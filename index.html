@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=31">
+<link rel="stylesheet" href="tailwind.min.css?v=32">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2551,7 +2551,7 @@ function renderAvailableScroll() {
     const pic = photoCount[u.id] || 0;
     return `<div class="h-card" onclick="openDetailView('${u.id}')">
       <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full">${pic} รูป</span>` : ''}</div>
-      <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">${u.building ? esc(u.building) + ' · ' : ''}ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span></p></div>
+      <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">${u.building ? esc(u.building) + ' · ' : ''}ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${Number(u.rent) > 0 || !Number(u.salePrice) ? `${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span>` : `ขาย ${baht(u.salePrice)}`}</p>${Number(u.rent) > 0 && Number(u.salePrice) > 0 ? `<p class="text-[10px] font-semibold text-brick-700">ขาย ${baht(u.salePrice)}</p>` : ''}</div>
     </div>`;
   }).join('');
   lucide.createIcons();
@@ -2681,7 +2681,7 @@ function cardRowHTML(x) {
           <div class="flex items-center gap-1.5 flex-wrap"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
           ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}
           <h3 class="text-base font-bold text-ink truncate tracking-tight">ห้อง ${esc(x.room)}</h3>
-          <div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>
+          ${Number(x.rent) > 0 || !Number(x.salePrice) ? `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>` : ''}${Number(x.salePrice) > 0 ? (Number(x.rent) > 0 ? `<p class="text-[11px] font-semibold text-brick-700 mt-0.5">ขาย ${baht(x.salePrice)}</p>` : `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-[10px] font-semibold text-slate-400">ขาย</span><span class="text-base font-bold text-brick-600">${baht(x.salePrice)}</span></div>`) : ''}
         </div>
         <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
@@ -2723,7 +2723,7 @@ function listRowHTML(x) {
         <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p>
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0">
-        <span class="text-sm font-bold text-brick-600">${baht(x.rent)}</span>
+        ${Number(x.rent) > 0 || !Number(x.salePrice) ? `<span class="text-sm font-bold text-brick-600">${baht(x.rent)}</span>` : ''}${Number(x.salePrice) > 0 ? `<span class="${Number(x.rent) > 0 ? 'text-[10px] font-semibold text-brick-700' : 'text-sm font-bold text-brick-600'} whitespace-nowrap">ขาย ${baht(x.salePrice)}</span>` : ''}
         <button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">${m.short ? m.short : m.label}</button>
       </div>
       <div class="flex flex-col gap-1 shrink-0" onclick="event.stopPropagation()">
@@ -3579,8 +3579,8 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=31"></script>
+<script src="features.js?v=32"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=31"></script>
+<script src="sync.js?v=32"></script>
 </body>
 </html>

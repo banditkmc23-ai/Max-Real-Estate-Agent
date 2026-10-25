@@ -21,6 +21,7 @@ const ADP = [
   { kind: 'cust', key: 'staylow_customers_v1', type: 'list' },
   { kind: 'appt', key: 'staylow_appointments_v1', type: 'list' },
   { kind: 'inv', key: 'staylow_invoices_v1', type: 'map2' },
+  { kind: 'comm', key: 'max_commissions_v1', type: 'list' },
   { kind: 'occ', key: 'staylow_monthly_occupancy_v1', type: 'map1' },
   ...['staylow_post_cfg_v1', 'staylow_invoice_cfg_v1', 'staylow_avatar', 'staylow_hero_img', 'staylow_wm', 'max_share_opts', 'max_catalog'].map(key => ({ kind: 'kv', key, type: 'kv' }))
 ];
@@ -301,7 +302,7 @@ function body() {
     return `<div class="bg-white border border-slate-700 rounded-2xl p-3"><p class="text-[11px] text-slate-500">บัญชี</p><p class="text-sm font-semibold break-all">${E(user.email)}</p>
       <div class="flex items-center gap-2 mt-2 text-xs"><i data-lucide="${ic}" class="w-4 h-4 text-brick-600"></i><b>${tx}</b><span class="text-slate-400">${E(detail)}</span></div>
       <p class="text-[10px] text-slate-400 mt-1">ซิงก์ล่าสุด ${st.last ? new Date(st.last).toLocaleString('th-TH') : '-'} · ดึงข้อมูลล่าสุด ${st.pulled ? new Date(st.pulled).toLocaleTimeString('th-TH') : '-'}${pend ? ` · รอส่ง ${pend} รายการ` : ''}</p></div>
-      <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">ซิงก์: ห้อง/ประกาศ (รวมสัญญา) · ลูกค้า · นัดหมาย · ใบแจ้งหนี้ · การตั้งค่า · รูปห้อง · รูปโปรไฟล์ — เก็บแบบส่วนตัว เห็นได้เฉพาะบัญชีนี้</p>
+      <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">ซิงก์: ห้อง/ประกาศ (รวมสัญญา) · ลูกค้า · นัดหมาย · ค่าคอม · การตั้งค่า · รูปห้อง · รูปโปรไฟล์ — เก็บแบบส่วนตัว เห็นได้เฉพาะบัญชีนี้</p>
       <button onclick="SYNC.full()" class="${btn}">ซิงก์ตอนนี้ (ดึงข้อมูลทั้งหมด)</button>
       <button onclick="SYNC.view('setpw')" class="${btn2}">เปลี่ยนรหัสผ่าน</button>
       <button onclick="SYNC.logout()" class="${btn2}">ออกจากระบบ (ข้อมูลในเครื่องยังอยู่)</button>`;
