@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=41">
+<link rel="stylesheet" href="tailwind.min.css?v=42">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -238,7 +238,7 @@
 
   @media (max-width: 1023px) {
     .mobile-header { position: fixed !important; top: 0; left: 0; right: 0; z-index: 40; }
-    .main-wrapper { padding-top: calc(env(safe-area-inset-top, 0px) + 150px) !important; padding-bottom: 130px; }
+    .main-wrapper { padding-top: calc(env(safe-area-inset-top, 0px) + 164px) !important; padding-bottom: 130px; }
   }
   @media (min-width: 1024px) {
     html, body { height: 100%; overflow: hidden; }
@@ -452,7 +452,7 @@
         </div>
       </div>
 
-      <div class="relative z-10 px-5 pb-3">
+      <div class="relative z-10 px-5" style="padding-top:14px;padding-bottom:14px">
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <i data-lucide="search" class="w-4 h-4 absolute left-4 z-10 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
@@ -3673,7 +3673,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.8';
+const APP_VERSION = '9.9';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3770,8 +3770,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=41"></script>
+<script src="features.js?v=42"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=41"></script>
+<script src="sync.js?v=42"></script>
 </body>
 </html>
