@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=34">
+<link rel="stylesheet" href="tailwind.min.css?v=35">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -269,6 +269,38 @@
   select.inp { padding-top:8px; padding-bottom:8px; height:42px; }
   .sheet label { font-size:13px !important; color:#6b625a; }
   .inp::placeholder { color:#b5aca4; }
+  /* v35: form F */
+  #sheet.sf{background:#f4f1ee;padding:0}
+  .sf-hero{background:linear-gradient(160deg,#c2552d,#8f3a1b);color:#fff;padding:14px 16px 44px}
+  .sf-x{width:30px;height:30px;border-radius:50%;background:#ffffff26;display:flex;align-items:center;justify-content:center}
+  .sf-search{margin:-32px 12px 0;background:#fff;border-radius:12px;box-shadow:0 6px 18px #0000001f;padding:10px 14px}
+  .sf-search small,.sf-kv small{display:block;font-size:11.5px;color:#9a918a;line-height:1.3}
+  .sf-req{color:#c2552d}
+  #sheet .sf-in{font-size:15px !important;border:0;outline:0;background:transparent;width:100%;padding:2px 0;color:#2b2420;-webkit-appearance:none;appearance:none;min-width:0;border-radius:0}
+  #sheet .sf-in::placeholder{color:#b5aca4}
+  #sheet select.sf-in{padding-right:4px}
+  #sheet input[type=date].sf-in{min-height:22px}
+  #sheet .sf-ta{font-size:14.5px !important;line-height:1.55;resize:vertical;min-height:60px}
+  .sf-recent{display:flex;gap:6px;padding:10px 12px 4px;overflow-x:auto}
+  .sf-recent button{background:#fff;border:1px solid #e7e0da;border-radius:999px;font-size:12.5px;padding:5px 10px;white-space:nowrap;color:#5c534c}
+  .sf-sum{background:#fff;margin:6px 12px 8px;border-radius:12px;padding:10px 12px;display:flex;gap:12px;align-items:center}
+  .sf-sum b{font-size:14.5px}.sf-sum p{font-size:12.5px;color:#6b625a}.sf-price{color:#c2552d !important;font-weight:600}
+  .sf-pic{width:56px;height:56px;border-radius:9px;background:#f1e7e0;color:#c9a38c;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background-size:cover;background-position:center}
+  .sf-c{background:#fff;border-radius:12px;margin:8px 12px;overflow:visible}
+  .sf-ch{display:flex;gap:6px;align-items:center;padding:10px 14px;font-size:14px;font-weight:700;background:#fcf8f5;border-bottom:1px solid #f1ece8;border-radius:12px 12px 0 0;color:#2b2420}
+  .sf-ch a{font-size:12.5px;color:#c2552d;font-weight:500;cursor:pointer}
+  .sf-kv{display:grid;grid-template-columns:repeat(6,1fr)}
+  #sheet .sf-kv>*{grid-column:span 2;padding:8px 12px;border-right:1px solid #f1ece8;border-bottom:1px solid #f1ece8;display:block;font-size:14px !important;color:inherit !important;min-width:0}
+  .sf-kv>.w2{grid-column:span 4}.sf-kv>.w3{grid-column:span 6;border-right:0}.sf-kv>.w15{grid-column:span 3}
+  .sf-kv>*:last-child{border-bottom:0}
+  .sf-sw{position:relative;display:inline-block;width:38px;height:22px;margin-top:3px}.sf-sw input{opacity:0;position:absolute;inset:0;z-index:1;margin:0}
+  .sf-sw i{position:absolute;inset:0;border-radius:11px;background:#ddd;transition:.2s}.sf-sw i:after{content:"";position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .sf-sw input:checked+i{background:#c2552d}.sf-sw input:checked+i:after{left:18px}
+  .sf-tile{width:100%;border:1.5px dashed #c2552d;border-radius:9px;color:#c2552d;font-size:13px;background:#fbeee7;padding:8px;display:flex;align-items:center;justify-content:center;gap:4px}
+  .sf-open{font-size:12px;color:#c2552d;border:1px solid #f0d5c8;border-radius:8px;padding:3px 8px;display:flex;align-items:center;gap:3px}.sf-open:disabled{opacity:.4}
+  .sf-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;padding:10px 12px max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:20}
+  .sf-btn{flex:1;border-radius:10px;padding:11px;font-size:14.5px;font-weight:600;border:1px solid #e4ddd7;background:#fff;color:#5c534c}
+  .sf-pri{background:#c2552d;color:#fff;border-color:#c2552d;box-shadow:0 4px 12px #c2552d40}
 </style>
 </head>
 <body>
@@ -996,75 +1028,73 @@
 </div>
 
 <div id="overlay" class="fixed inset-0 bg-black/30 z-50 hidden" onclick="closeSheet()" ontouchstart="event.preventDefault(); closeSheet();" style="touch-action: manipulation;"></div>
-<div id="sheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-16px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <h2 id="sheetTitle" class="text-base font-bold text-ink mb-4">เพิ่มห้อง</h2>
+<div id="sheet" class="sheet sf fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-16px)] lg:max-w-[500px] mx-auto lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[51] max-h-[90vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" oninput="sfPreview()" onchange="sfPreview()">
   <input type="hidden" id="f_id">
   <input type="hidden" id="f_isTemp" value="">
+  <div class="sf-hero">
+    <div class="flex items-center justify-between"><button type="button" onclick="closeSheet()" class="sf-x" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button><span class="text-[12px] opacity-80">ข้อมูลจะซิงก์อัตโนมัติ</span></div>
+    <h2 id="sheetTitle" class="text-[17px] font-bold mt-2">เพิ่มห้อง</h2>
+    <p class="text-[12.5px] opacity-85 mt-0.5">เริ่มจากชื่อโครงการ ระบบจะเติมข้อมูลเดิมให้</p>
+  </div>
+  <div class="sf-search relative">
+    <small>โครงการ <span class="sf-req">*</span></small>
+    <div class="flex items-center gap-2"><i data-lucide="search" class="w-4 h-4 text-slate-400 shrink-0"></i><input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" onchange="sfAutofill(this.value)" class="sf-in font-semibold" placeholder="พิมพ์ชื่อโครงการ เช่น The Excel"></div>
+    <p id="sfAutoMsg" class="text-[11.5px] text-emerald-600 mt-1 hidden"></p>
+    <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-56 overflow-y-auto hide-scrollbar" style="border-radius:12px;"></div>
+  </div>
+  <div id="sfRecent" class="sf-recent hide-scrollbar"></div>
+  <div class="sf-sum"><div id="sfPrevPic" class="sf-pic"><i data-lucide="image" class="w-5 h-5"></i></div><div class="min-w-0 flex-1"><b id="sfPrevT" class="block truncate">โครงการ · #ห้อง</b><p id="sfPrevS" class="truncate"></p><p id="sfPrevP" class="sf-price"></p></div></div>
 
-
-  <div class="space-y-3 text-sm">
-    <div class="grid grid-cols-2 gap-3">
-      <label class="col-span-2 relative">โครงการ *<input id="f_project" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showProjectSuggest()" onfocus="showProjectSuggest()" class="inp" placeholder="เช่น The Excel Sukhumvit 50">
-        <div id="projectSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-48 overflow-y-auto hide-scrollbar" style="border-radius:16px;"></div>
-      </label>
-      <label>เลขห้อง *<input id="f_room" class="inp" placeholder="1203"></label>
-      <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
-      <label class="col-span-2">อาคาร<input id="f_building" class="inp" placeholder="เช่น Tower A / อาคาร 1 / Building B"></label>
-      <label class="relative">สถานี BTS/MRT<input id="f_station" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showStationSuggest()" onfocus="showStationSuggest()" class="inp" placeholder="เช่น BTS ทองหล่อ">
-        <div id="stationSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-48 overflow-y-auto hide-scrollbar" style="border-radius:14px;"></div>
-      </label>
-      <label>ระยะห่างจากสถานี (เมตร)<input id="f_stationDist" type="number" inputmode="numeric" class="inp" placeholder="เช่น 350"></label>
-      <label>ราคา/ค่าเช่า (บาท/เดือน) *<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
-      <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
-      <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
-      <label>ห้องน้ำ<select id="f_bath" class="inp"><option value="1" selected>1 Bath</option><option value="2">2 Bath</option><option value="3">3 Bath</option><option value="4">4 Bath</option></select></label>
-      <label>วิว<input id="f_view" class="inp" placeholder="Pool / City / Garden"></label>
-      <label>สถานะ<select id="f_status" class="inp"><option value="AVAILABLE">ว่าง (AVAILABLE)</option><option value="OCCUPIED">มีผู้เช่า (OCCUPIED)</option><option value="RESERVED">จอง (RESERVED)</option><option value="PENDING">รอตรวจสอบ (PENDING)</option></select></label>
-    </div>
-    <div class="border-t border-slate-200 pt-3 space-y-2">
-      <label class="col-span-2 flex items-center gap-2 text-slate-600"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)" class="inp-check"><span>ห้องนี้ปล่อยขายด้วย</span></label>
-      <label id="salePriceWrap" class="hidden">ราคาขาย (บาท)<input id="f_salePrice" type="number" inputmode="numeric" class="inp" placeholder="เช่น 3500000"></label>
-    </div>
-    <div class="border-t border-slate-200 pt-3">
-      <div class="flex items-center justify-between mb-2"><label class="!text-slate-600 font-semibold text-xs">📷 รูปห้อง</label><span id="fPhotoCount" class="text-[10px] text-slate-500">0 รูป</span></div>
-      <div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5 mb-2"></div>
-      <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="pickFormPhotos('album')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="images" class="w-3.5 h-3.5"></i>เลือกรูป</button>
-        <button type="button" onclick="pickFormPhotos('camera')" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200 font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1.5 transition-all"><i data-lucide="camera" class="w-3.5 h-3.5"></i>ถ่ายรูป</button>
-      </div>
+  <div class="sf-c"><div class="sf-ch">📷 รูป <span id="fPhotoCount" class="font-normal text-slate-400 text-[12px]">0 รูป</span><span class="ml-auto flex gap-3"><a onclick="pickFormPhotos('album')">เลือกรูป</a><a onclick="pickFormPhotos('camera')">ถ่ายรูป</a></span></div>
+    <div class="p-3"><div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5"></div>
+      <button type="button" onclick="pickFormPhotos('album')" class="sf-tile mt-1.5"><b>+</b>เพิ่มรูป</button>
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
       <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
-      <p id="formPhotoProgress" class="text-[10px] text-brick-600 mt-2 hidden"></p>
-      <p class="text-[10px] text-slate-500 mt-2">💡 เพิ่มรูปได้เลยทันที ไม่ต้องกด "บันทึก" ก่อน</p>
-    </div>
-    <div class="border-t border-slate-200 pt-3">
-      <label>🔗 ลิงก์ต้นทางโพสต์</label>
-      <div class="url-row">
-        <input id="f_sourceUrl" type="url" class="inp" placeholder="https://..." oninput="updateUrlBtn()">
-        <button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="url-open-btn" disabled><i data-lucide="external-link" class="w-4 h-4"></i><span>เปิด</span></button>
-      </div>
-    </div>
-    <div class="border-t border-slate-200 pt-3 grid grid-cols-2 gap-3">
-      <label>ชื่อเจ้าของ<input id="f_owner" class="inp" placeholder="คุณสมชาย"></label>
-      <label>เบอร์โทรเจ้าของ<input id="f_ownerPhone" type="tel" class="inp" placeholder="081-xxx-xxxx"></label>
-      <label class="col-span-2">LINE ID เจ้าของ<input id="f_ownerLine" class="inp" placeholder="เช่น somchai88"></label>
-    </div>
-    <div class="border-t border-slate-200 pt-3 grid grid-cols-2 gap-3">
-      <label>เริ่มสัญญา<input id="f_start" type="date" class="inp"></label>
-      <label>สิ้นสุดสัญญา<input id="f_end" type="date" class="inp" onchange="onEndDateChange()"></label>
-    </div>
-    <label>รายละเอียดห้อง<textarea id="f_notes" rows="12" class="inp form-notes" placeholder="รายละเอียดนี้จะถูกส่งให้ลูกค้าเวลากดแชร์ — ใส่จุดเด่นของห้อง ทำเล ใกล้ BTS/MRT ฯลฯ"></textarea></label>
-    <div class="border-t border-slate-200 pt-3">
-      <div class="flex items-center gap-2 mb-1"><i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-600"></i><label class="!text-amber-700 font-semibold text-xs">📝 โน้ต (ภายใน)</label></div>
-      <p class="text-[10px] text-slate-500 mb-2">💡 โน้ตนี้เห็นเฉพาะในหน้ารายละเอียด ไม่แสดงในการ์ดหรือในข้อความที่แชร์</p>
-      <textarea id="f_internalNote" rows="6" class="inp form-internal-note" placeholder="เช่น ลูกค้าถามแล้วรอตอบ, ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea>
-    </div>
-  </div>
-  <div class="flex gap-2 mt-5">
-    <button id="deleteBtn" onclick="deleteUnit()" class="hidden bg-rose-500/10 text-rose-600 border border-rose-500/20 px-4 py-2.5 rounded-full text-sm font-semibold">ลบ</button>
-    <button onclick="closeSheet()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ยกเลิก</button>
-    <button onclick="saveUnit()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
+      <p id="formPhotoProgress" class="text-[11px] text-brick-600 mt-2 hidden"></p>
+      <p class="text-[11px] text-slate-400 mt-1.5">💡 รูปอัปโหลดทันที ไม่ต้องกดบันทึกก่อน</p></div></div>
+
+  <div class="sf-c"><div class="sf-ch">🏢 ทำเล</div><div class="sf-kv">
+    <label class="w2"><small>อาคาร</small><input id="f_building" class="sf-in" placeholder="Tower A"></label>
+    <label><small>ชั้น</small><input id="f_floor" class="sf-in" placeholder="12"></label>
+    <label class="w2 relative"><small>สถานี BTS/MRT ▾</small><input id="f_station" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showStationSuggest()" onfocus="showStationSuggest()" class="sf-in" placeholder="BTS ทองหล่อ">
+      <div id="stationSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-48 overflow-y-auto hide-scrollbar" style="border-radius:12px;"></div></label>
+    <label><small>ระยะ (ม.)</small><input id="f_stationDist" type="number" inputmode="numeric" class="sf-in" placeholder="350"></label>
+  </div></div>
+
+  <div class="sf-c"><div class="sf-ch">🛏 ห้อง</div><div class="sf-kv">
+    <label><small>เลขห้อง <span class="sf-req">*</span></small><input id="f_room" class="sf-in" placeholder="1203"></label>
+    <label><small>ห้องนอน ▾</small><select id="f_type" class="sf-in"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
+    <label><small>ห้องน้ำ ▾</small><select id="f_bath" class="sf-in"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+    <label><small>ขนาด ตร.ม.</small><input id="f_size" type="number" inputmode="decimal" class="sf-in" placeholder="30"></label>
+    <label><small>วิว</small><input id="f_view" class="sf-in" placeholder="City"></label>
+    <label><small>สถานะ ▾</small><select id="f_status" class="sf-in"><option value="AVAILABLE">ว่าง</option><option value="OCCUPIED">มีผู้เช่า</option><option value="RESERVED">จอง</option><option value="PENDING">รอตรวจสอบ</option></select></label>
+  </div></div>
+
+  <div class="sf-c"><div class="sf-ch">💰 ราคา</div><div class="sf-kv">
+    <label class="w2"><small>ค่าเช่า/เดือน (บาท) <span class="sf-req">*</span></small><input id="f_rent" type="number" inputmode="numeric" class="sf-in" placeholder="13000"></label>
+    <label><small>ปล่อยขาย</small><span class="sf-sw"><input type="checkbox" id="f_forSale" onchange="toggleSalePrice(this.checked)"><i></i></span></label>
+    <label id="salePriceWrap" class="w3 hidden"><small>ราคาขาย (บาท)</small><input id="f_salePrice" type="number" inputmode="numeric" class="sf-in" placeholder="เช่น 3500000"></label>
+  </div></div>
+
+  <div class="sf-c"><div class="sf-ch">📝 รายละเอียด (ส่งให้ลูกค้า)<span id="sfNoteCnt" class="ml-auto font-normal text-slate-400 text-[12px]">0</span></div>
+    <div class="px-3.5 py-2.5"><textarea id="f_notes" rows="6" class="sf-in sf-ta" placeholder="จุดเด่นของห้อง ทำเล เฟอร์นิเจอร์ ใกล้ BTS/MRT ฯลฯ"></textarea></div></div>
+
+  <div class="sf-c"><div class="sf-ch">👤 เจ้าของ · สัญญา · ลิงก์</div><div class="sf-kv">
+    <label class="w2"><small>ชื่อเจ้าของ</small><input id="f_owner" class="sf-in" placeholder="คุณสมชาย"></label>
+    <label><small>LINE</small><input id="f_ownerLine" class="sf-in" placeholder="id"></label>
+    <label class="w3"><small>เบอร์โทร</small><input id="f_ownerPhone" type="tel" class="sf-in" placeholder="081-xxx-xxxx"></label>
+    <label class="w15"><small>เริ่มสัญญา</small><input id="f_start" type="date" class="sf-in"></label>
+    <label class="w15"><small>สิ้นสุด</small><input id="f_end" type="date" class="sf-in" onchange="onEndDateChange()"></label>
+    <div class="w3"><small>🔗 ลิงก์ต้นทางโพสต์</small><div class="flex items-center gap-2"><input id="f_sourceUrl" type="url" class="sf-in flex-1" placeholder="https://..." oninput="updateUrlBtn()"><button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="sf-open" disabled><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิด</button></div></div>
+  </div></div>
+
+  <div class="sf-c" style="background:#fffaf0"><div class="sf-ch" style="background:#fdf3dc">📝 โน้ตภายใน <span class="font-normal text-[11.5px] text-amber-700">ไม่แชร์ให้ลูกค้า</span></div>
+    <div class="px-3.5 py-2.5"><textarea id="f_internalNote" rows="3" class="sf-in sf-ta" placeholder="เช่น ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea></div></div>
+  <div class="h-3"></div>
+  <div class="sf-bar">
+    <button id="deleteBtn" onclick="deleteUnit()" class="hidden sf-btn !text-rose-600 !border-rose-200" style="flex:.45">ลบ</button>
+    <button onclick="closeSheet()" class="sf-btn" style="flex:.6">ยกเลิก</button>
+    <button onclick="saveUnit()" class="sf-btn sf-pri">บันทึก</button>
   </div>
 </div>
 
@@ -3610,8 +3640,44 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=34"></script>
+<script>
+/* v35 form F helpers */
+function sfLatestOf(name, exceptId) { const n = (name || '').trim().toLowerCase(); if (!n) return null; return units.filter(u => (u.project || '').trim().toLowerCase() === n && u.id !== exceptId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null; }
+function sfAutofill(name) {
+  const src = sfLatestOf(name, document.getElementById('f_id').value); const msg = document.getElementById('sfAutoMsg'); if (!msg) return;
+  if (!src) { msg.classList.add('hidden'); return; }
+  const done = [];
+  [['building', 'อาคาร'], ['station', 'สถานี'], ['stationDist', 'ระยะ']].forEach(([k, l]) => { const el = document.getElementById('f_' + k); const v = src[k]; if (el && !el.value && v !== '' && v != null) { el.value = v; done.push(l); } });
+  if (done.length) { msg.textContent = '✓ เติม ' + done.join(' · ') + ' จากห้องเดิมในโครงการนี้แล้ว'; msg.classList.remove('hidden'); } else msg.classList.add('hidden');
+  sfPreview();
+}
+function sfRecentChips() {
+  const box = document.getElementById('sfRecent'); if (!box) return; const seen = new Set(), out = [];
+  [...units].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(u => { const p = (u.project || '').trim(); if (p && !seen.has(p.toLowerCase())) { seen.add(p.toLowerCase()); out.push(p); } });
+  box.innerHTML = out.slice(0, 8).map((p, i) => `<button type="button" data-p="${esc(p)}" onclick="sfPick(this.dataset.p)">${i === 0 ? '⏱ ' : ''}${esc(p)}</button>`).join('');
+  box.style.display = out.length ? '' : 'none';
+}
+function sfPick(p) { pickProject(p); }
+function sfPreview() {
+  const v = k => { const el = document.getElementById('f_' + k); return el ? el.value.trim() : ''; };
+  const t = document.getElementById('sfPrevT'); if (!t) return;
+  t.textContent = (v('project') || 'โครงการ') + ' · #' + (v('room') || 'ห้อง');
+  const bits = [v('type'), v('size') ? v('size') + ' ตร.ม.' : '', v('station') ? stationLabel({ station: v('station'), stationDist: v('stationDist') }) : ''].filter(Boolean);
+  document.getElementById('sfPrevS').textContent = bits.join(' · ');
+  const r = Number(v('rent')), sp = Number(v('salePrice'));
+  document.getElementById('sfPrevP').textContent = (r ? '฿' + r.toLocaleString('th-TH') + '/เดือน' : 'ใส่ค่าเช่า') + (sp ? ' · ขาย ฿' + sp.toLocaleString('th-TH') : '');
+  const pic = document.getElementById('sfPrevPic'), img = document.querySelector('#fPhotoGrid img');
+  if (img && img.src) { pic.style.backgroundImage = `url("${img.src}")`; pic.innerHTML = ''; } else if (pic.style.backgroundImage) { pic.style.backgroundImage = ''; pic.innerHTML = '<i data-lucide="image" class="w-5 h-5"></i>'; try { lucide.createIcons(); } catch (e) {} }
+  const c = document.getElementById('sfNoteCnt'); if (c) c.textContent = v('notes').length + ' ตัวอักษร';
+}
+(function () {
+  const _pick = window.pickProject; window.pickProject = function (name) { _pick(name); sfAutofill(name); };
+  const _open = window.openSheet; window.openSheet = function (mode, id) { _open(mode, id); const m = document.getElementById('sfAutoMsg'); if (m) m.classList.add('hidden'); sfRecentChips(); document.getElementById('sfRecent').style.display = mode === 'edit' ? 'none' : document.getElementById('sfRecent').style.display; sfPreview(); setTimeout(sfPreview, 400); };
+  const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
+})();
+</script>
+<script src="features.js?v=35"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=34"></script>
+<script src="sync.js?v=35"></script>
 </body>
 </html>
