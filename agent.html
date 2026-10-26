@@ -1,56 +1,101 @@
 <!DOCTYPE html>
-<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#ffffff">
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#c2552d">
 <title>ห้องว่างพร้อมเข้าอยู่ — MAX Agent</title>
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:'Poppins','Noto Sans Thai',-apple-system,sans-serif;background:#f4f2ef;color:#1c1917;-webkit-font-smoothing:antialiased}
-.w{max-width:560px;margin:0 auto;padding:0 14px 40px}@media(min-width:900px){.w{max-width:1100px}.grid{grid-template-columns:repeat(3,1fr)!important}}
-.hd{background:linear-gradient(135deg,#cf7a56,#83401f);color:#fff;border-radius:0 0 26px 26px;padding:22px 18px 20px;margin:0 -14px 14px}
-.ag{display:flex;align-items:center;gap:12px}.av{width:58px;height:58px;border-radius:50%;background:#fff3;border:2px solid #fff8;object-fit:cover;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px}
-.ag h1{margin:0;font-size:19px}.ag p{margin:2px 0 0;font-size:12px;opacity:.85}
-.bt{display:flex;gap:8px;margin-top:14px}.bt a{flex:1;text-align:center;padding:11px;border-radius:999px;font-weight:600;font-size:14px;text-decoration:none}
-.line{background:#06C755;color:#fff}.call{background:#fff;color:#a4502a}
-.fl{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none}.fl select{flex:0 0 auto;border:1px solid #e3ddd6;background:#fff;border-radius:999px;padding:9px 12px;font:inherit;font-size:13px;color:#1c1917}
-.tg{display:flex;background:#fff;border:1px solid #e3ddd6;border-radius:999px;padding:3px;margin-bottom:10px}.tg button{flex:1;border:0;background:none;padding:8px;border-radius:999px;font:inherit;font-size:13px;font-weight:600;color:#78716c}.tg .on{background:#c2633a;color:#fff}
-.ct{font-size:12px;color:#78716c;margin:4px 2px 10px}
-.grid{display:grid;grid-template-columns:1fr;gap:12px}
-.cd{display:block;background:#fff;border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 3px #0000000f}
-.cv{aspect-ratio:16/10;background:linear-gradient(135deg,#cf7a56,#83401f) center/cover;position:relative}
-.bd{position:absolute;top:10px;left:10px;background:#16a34a;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px}
-.ci{padding:12px 14px 14px}.ci h3{margin:0;font-size:15px}.ci .s{font-size:12px;color:#78716c;margin-top:3px}
-.pr{color:#c2633a;font-weight:700;font-size:18px;margin-top:6px}.pr small{font-size:12px;font-weight:500;color:#78716c}
+*{box-sizing:border-box}body{margin:0;font-family:'Poppins','Noto Sans Thai',-apple-system,sans-serif;background:#f6f2ee;color:#1c1917;-webkit-font-smoothing:antialiased}
+.w{max-width:1100px;margin:0 auto;padding-bottom:90px}
+.hd{background:linear-gradient(135deg,#cf6a40,#8f3a1c);color:#fff;border-radius:0 0 22px 22px;padding:14px 16px 12px;padding-top:max(14px,env(safe-area-inset-top))}
+.ag{display:flex;align-items:center;gap:10px}.av{width:44px;height:44px;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#fff3;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.ag h1{margin:0;font-size:17px;line-height:1.15}.ag p{margin:1px 0 0;font-size:12px;opacity:.88}
+.ib{margin-left:auto;display:flex;gap:8px}.ib a{height:38px;min-width:38px;padding:0 12px;border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;text-decoration:none}
+.line{background:#06C755;color:#fff}.call{background:#fff;color:#c2552d}
+.sr{display:flex;gap:8px;margin-top:12px}.sr input{flex:1;min-width:0;height:42px;border:0;border-radius:21px;padding:0 16px;font:inherit;font-size:16px;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.tg{display:flex;background:#fff;border-radius:21px;padding:3px;flex:none}.tg button{border:0;background:none;padding:0 12px;border-radius:18px;font:inherit;font-size:13px;font-weight:600;color:#78716c}.tg .on{background:#c2552d;color:#fff}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:10px}.chips::-webkit-scrollbar{display:none}.chip{flex:none;border:0;background:#fff;color:#1c1917;padding:6px 12px;border-radius:16px;font:inherit;font-size:13px}.chip.on{background:#fbe9e1;color:#c2552d;font-weight:600;box-shadow:inset 0 0 0 1.5px #c2552d}
+.zh{display:flex;align-items:baseline;gap:6px;padding:16px 16px 8px}.zh b{font-size:15px}.zh span{font-size:12px;color:#78716c}.zh a{margin-left:auto;color:#c2552d;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:4px 16px}@media(min-width:700px){.grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}}
+.bk{display:flex;align-items:center;gap:8px;padding:14px 16px 6px}.bk button{border:0;background:#fff;border-radius:16px;padding:6px 12px;font:inherit;font-size:13px;color:#c2552d;font-weight:600}.bk span{font-size:13px;color:#78716c}
+.fab{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1200;border:0;background:#1c1917;color:#fff;padding:12px 22px;border-radius:24px;font:inherit;font-size:14px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+#map{position:fixed;inset:0;z-index:1000;display:none;background:#e8e4df}
+.pin{background:#c2552d;color:#fff;font:600 12px Poppins,'Noto Sans Thai',sans-serif;padding:4px 9px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;display:inline-block;transform:translate(-50%,-100%)}
+.pin.sel{background:#1c1917}.lf{background:none!important;border:0!important}
+.cl{width:40px;height:40px;border-radius:50%;background:#c2552d;color:#fff;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font:700 13px Poppins,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.mtop{position:fixed;top:0;left:0;right:0;z-index:1100;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:none;pointer-events:none}.mtop>div{pointer-events:auto;background:#fff;border-radius:21px;padding:10px 16px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.15);display:inline-block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:1150;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18);padding:8px 0 calc(78px + env(safe-area-inset-bottom));max-height:62vh;overflow:auto;display:none;max-width:640px;margin:0 auto}
+.sheet .gr0{width:38px;height:5px;border-radius:3px;background:#ddd;margin:0 auto 8px}.sh{position:relative;padding:0 56px 6px 16px}.sh b{display:block;font-size:16px;line-height:1.3}.sh span{display:block;font-size:12px;color:#78716c}.sh button{position:absolute;right:16px;top:0;border:0;background:#f1ece7;border-radius:50%;width:30px;height:30px;font-size:16px}
+.rw{display:flex;gap:10px;padding:8px 16px;align-items:center;text-decoration:none;color:inherit}.rw .ph{width:72px;height:58px;border-radius:10px;background:#ddd center/cover;flex:none}.rw .m{flex:1;min-width:0;font-size:13px;color:#57534e}.rw .p{color:#c2552d;font-weight:700;font-size:15px}.rw .p small{font-size:11px;color:#78716c;font-weight:400}.rw em{font-style:normal;color:#c2552d;font-size:13px;font-weight:600}
 .em{text-align:center;color:#78716c;padding:40px 10px;font-size:14px}.ft{text-align:center;font-size:11px;color:#a8a29e;margin-top:24px}
 </style></head><body><div class="w" id="app"><p class="em">กำลังโหลด...</p></div>
+<div id="map"></div><div class="mtop" id="mtop"><div id="mtx"></div></div><div class="sheet" id="sheet"></div><button class="fab" id="fab" style="display:none"></button>
+<script>window.MAXGEO_KEY='sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';</script><script src="geo.js"></script>
 <script>
 (function(){
-    const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fmt=n=>Number(n||0).toLocaleString('th-TH');
+  const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = window.MAXGEO_KEY, G=window.MAXGEO;
+  const {esc,fmt,card}=G;
   const id=(new URLSearchParams(location.search).get('id')||'').replace(/[^A-Za-z0-9]/g,'');
-  const app=document.getElementById('app');
-  let D,mode='rent',f={b:'',p:'',t:''};
-  const beds=t=>/studio/i.test(t)?'Studio':(String(t).match(/\d/)||[''])[0]+' ห้องนอน';
+  const app=document.getElementById('app'),fab=document.getElementById('fab'),mapEl=document.getElementById('map'),sheet=document.getElementById('sheet'),mtop=document.getElementById('mtop');
+  let D,mode='rent',zone='',q='',view='list',M=null,cl=null;
+  const OTHER='อื่นๆ';
+  const zkey=r=>r.sl?r.sl+' '+r.sn:OTHER;
+  const price=r=>mode==='sale'?r.sale:r.rent;
+  const list=()=>(D.rooms||[]).filter(r=>(mode==='sale'?r.sale>0:r.rent>0)&&(!q||(r.p+' '+(r.cn||'')+' '+(r.sn||'')).toLowerCase().includes(q.toLowerCase())));
+  const href=r=>'r/'+r.id+'/';
+  function zones(L){const z={};L.forEach(r=>(z[zkey(r)]=z[zkey(r)]||[]).push(r));return Object.entries(z).sort((a,b)=>(a[0]===OTHER)-(b[0]===OTHER)||b[1].length-a[1].length)}
+  function head(){const a=D.agent||{},all=D.rooms||[],tel=String(a.ph||'').replace(/[^0-9+]/g,''),hasSale=all.some(r=>r.sale>0),np=new Set(all.map(r=>r.cn||r.p)).size;
+    return '<div class="hd"><div class="ag">'+(a.av?'<img class="av" src="'+esc(a.av)+'" alt="">':'<div class="av">'+esc((a.n||'A').slice(0,1))+'</div>')+'<div><h1>'+esc(a.n||'เอเจนต์')+'</h1><p>ห้องว่าง '+all.length+' ห้อง · '+np+' โครงการ</p></div><div class="ib">'+(a.l?'<a class="line" href="https://line.me/R/ti/p/~'+encodeURIComponent(a.l)+'" target="_blank">LINE</a>':'')+(tel?'<a class="call" href="tel:'+esc(tel)+'" aria-label="โทร">📞</a>':'')+'</div></div>'
+    +'<div class="sr"><input id="q" type="search" placeholder="🔍 ค้นหาโครงการ, BTS…" value="'+esc(q)+'">'+(hasSale?'<div class="tg"><button data-m="rent" class="'+(mode==='rent'?'on':'')+'">เช่า</button><button data-m="sale" class="'+(mode==='sale'?'on':'')+'">ขาย</button></div>':'')+'</div>'
+    +'<div class="chips" id="chips"></div></div>'}
   function render(){
-    const a=D.agent||{},all=D.rooms||[];
-    const hasSale=all.some(r=>r.sale>0);if(!hasSale)mode='rent';
-    const price=r=>mode==='sale'?r.sale:r.rent;
-    const projs=[...new Set(all.map(r=>r.p).filter(Boolean))].sort();
-    const types=[...new Set(all.map(r=>beds(r.t)))].sort();
-    const B=[['','งบทั้งหมด']].concat(mode==='sale'?[['0-3000000','≤ 3 ล้าน'],['3000000-6000000','3–6 ล้าน'],['6000000-1e12','6 ล้าน+']]:[['0-10000','≤ 10,000'],['10000-20000','10,000–20,000'],['20000-40000','20,000–40,000'],['40000-1e12','40,000+']]);
-    const L=all.filter(r=>(mode!=='sale'||r.sale>0)&&(mode!=='rent'||r.rent>0)&&(!f.p||r.p===f.p)&&(!f.t||beds(r.t)===f.t)&&(!f.b||(()=>{const[x,y]=f.b.split('-').map(Number);return price(r)>=x&&price(r)<=y})()));
-    const tel=String(a.ph||'').replace(/[^0-9+]/g,'');
-    const opt=(arr,v)=>arr.map(([k,l])=>'<option value="'+esc(k)+'"'+(k===v?' selected':'')+'>'+esc(l)+'</option>').join('');
-    app.innerHTML='<div class="hd"><div class="ag">'+(a.av?'<img class="av" src="'+esc(a.av)+'" alt="">':'<div class="av">'+esc((a.n||'A').slice(0,1))+'</div>')+'<div><h1>'+esc(a.n||'เอเจนต์')+'</h1><p>ห้องว่างพร้อมเข้าอยู่ '+all.length+' ห้อง</p></div></div>'
-     +'<div class="bt">'+(a.l?'<a class="line" href="https://line.me/R/ti/p/~'+encodeURIComponent(a.l)+'" target="_blank">ทัก LINE</a>':'')+(tel?'<a class="call" href="tel:'+esc(tel)+'">โทร '+esc(a.ph)+'</a>':'')+'</div></div>'
-     +(hasSale?'<div class="tg"><button data-m="rent" class="'+(mode==='rent'?'on':'')+'">เช่า</button><button data-m="sale" class="'+(mode==='sale'?'on':'')+'">ขาย</button></div>':'')
-     +'<div class="fl"><select data-f="b">'+opt(B,f.b)+'</select><select data-f="p">'+opt([['','ทุกโครงการ']].concat(projs.map(p=>[p,p])),f.p)+'</select><select data-f="t">'+opt([['','ทุกขนาดห้อง']].concat(types.map(t=>[t,t])),f.t)+'</select></div>'
-     +'<p class="ct">พบ '+L.length+' ห้อง</p><div class="grid">'+(L.length?L.map(r=>'<a class="cd" href="r/'+esc(r.id)+'/"><div class="cv" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"><span class="bd">ว่าง</span></div><div class="ci"><h3>'+esc(r.p||'ห้องให้เช่า')+'</h3><div class="s">'+[beds(r.t),r.sz?r.sz+' ตร.ม.':'',r.bt?r.bt+' ห้องน้ำ':'',r.f?'ชั้น '+esc(r.f):''].filter(Boolean).join(' · ')+'</div><div class="pr">฿'+fmt(price(r))+(mode==='rent'?' <small>/ เดือน</small>':'')+'</div></div></a>').join(''):'<p class="em">ไม่พบห้องตามตัวกรอง</p>')+'</div>'
-     +'<p class="ft">อัปเดตล่าสุด '+new Date(D._u).toLocaleString('th-TH')+' · MAX Agent</p>';
-    app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;f.b='';render()});
-    app.querySelectorAll('[data-f]').forEach(s=>s.onchange=()=>{f[s.dataset.f]=s.value;render()});
-    document.title='ห้องว่าง '+all.length+' ห้อง · '+(a.n||'MAX Agent');
+    const L=list(),Z=zones(L);
+    if(!app.querySelector('.hd')){app.innerHTML=head()+'<div id="body"></div>';bindHead()}
+    document.getElementById('chips').innerHTML='<button class="chip'+(zone?'':' on')+'" data-z="">ทุกโซน</button>'+Z.map(([k])=>'<button class="chip'+(zone===k?' on':'')+'" data-z="'+esc(k)+'">'+esc(k.replace(/^(BTS|MRT|ARL) /,''))+'</button>').join('');
+    document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{zone=b.dataset.z;render();if(view==='map')showMap();else scrollTo(0,0)});
+    const body=document.getElementById('body');let h='';
+    if(!L.length)h='<p class="em">ไม่พบห้องที่ค้นหา</p>';
+    else if(zone){const rs=(Z.find(z=>z[0]===zone)||[0,[]])[1];h='<div class="bk"><button data-z2="">‹ ทุกโซน</button><span>'+(zone===OTHER?OTHER:'ใกล้ '+esc(zone))+' · '+rs.length+' ห้อง</span></div><div class="grid">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>'}
+    else h=Z.map(([k,rs])=>'<div class="zh"><b>'+(k===OTHER?'🏙️ '+OTHER:'🚆 ใกล้ '+esc(k))+'</b><span>'+rs.length+' ห้อง</span><a data-z2="'+esc(k)+'">ดูทั้งหมด ›</a></div><div class="mq">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>').join('');
+    body.innerHTML=h+'<p class="ft">อัปเดตล่าสุด '+new Date(D._u).toLocaleString('th-TH')+' · MAX Agent</p>';
+    body.querySelectorAll('[data-z2]').forEach(b=>b.onclick=()=>{zone=b.dataset.z2;render();scrollTo(0,0)});
+    body.querySelectorAll('.mq').forEach(el=>G.loop(el));
+    paintCounts();
+    fab.style.display='';fab.textContent=view==='map'?'☰ รายการ':'📍 แผนที่';
   }
-  fetch(SB_URL+'/functions/v1/share-room?cat='+id,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{D=j.data;D._u=j.updated_at;render()}).catch(()=>{app.innerHTML='<p class="em">ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง</p>'});
+  function bindHead(){
+    const qi=document.getElementById('q');qi.oninput=()=>{q=qi.value.trim();render();if(view==='map')showMap()};
+    app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;app.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));zone='';render();if(view==='map')showMap()});
+  }
+  /* photo counts: lazily read each room's share data once (cached per session) */
+  let CNT={};try{CNT=JSON.parse(sessionStorage.getItem('max_cnt_'+id)||'{}')}catch(e){}
+  function paintCounts(){document.querySelectorAll('a.xc').forEach(a=>{const rid=(a.getAttribute('href').match(/([A-Za-z0-9]{6})\/?$/)||[])[1];const n=CNT[rid];if(n&&!a.querySelector('.xn'))a.querySelector('.xp').insertAdjacentHTML('beforeend','<span class="xn">'+n+' รูป</span>')})}
+  async function loadCounts(){const ids=(D.rooms||[]).map(r=>r.id).filter(x=>CNT[x]===undefined);let i=0;
+    const worker=async()=>{while(i<ids.length){const x=ids[i++];try{const r=await fetch(SB_URL+'/functions/v1/share-room?id='+x,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});const j=await r.json();CNT[x]=(j.data&&j.data.imgs||[]).length}catch(e){CNT[x]=0}}};
+    await Promise.all([1,2,3,4,5,6].map(worker));try{sessionStorage.setItem('max_cnt_'+id,JSON.stringify(CNT))}catch(e){}paintCounts()}
+  /* map */
+  function lib(){return window.L&&L.markerClusterGroup?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=()=>{const t=document.createElement('script');t.src='https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';t.onload=ok;t.onerror=no;document.head.appendChild(t)};s.onerror=no;document.head.appendChild(s)})}
+  const kk=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':Math.round(n/1000)+'k';
+  async function showMap(){view='map';mapEl.style.display='block';mtop.style.display='block';document.body.style.overflow='hidden';fab.textContent='☰ รายการ';sheet.style.display='none';
+    try{await lib()}catch(e){document.getElementById('mtx').textContent='โหลดแผนที่ไม่สำเร็จ';return}
+    if(!M){M=L.map(mapEl,{zoomControl:false}).setView([13.725,100.585],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(M);M.on('click',()=>{sheet.style.display='none'})}
+    if(cl)M.removeLayer(cl);
+    cl=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:45,iconCreateFunction:c=>{const n=c.getAllChildMarkers().reduce((s,m)=>s+m.options.rc,0);return L.divIcon({className:'lf',html:'<div class="cl">'+n+'</div>',iconSize:[40,40]})}});
+    const g={};list().filter(r=>r.lat&&(!zone||zkey(r)===zone)).forEach(r=>{const k=r.cn;(g[k]=g[k]||{n:k,lat:r.lat,lng:r.lng,rooms:[]}).rooms.push(r)});
+    const gs=Object.values(g);
+    gs.forEach(x=>{const min=Math.min(...x.rooms.map(price));const m=L.marker([x.lat,x.lng],{rc:x.rooms.length,icon:L.divIcon({className:'lf',html:'<div class="pin">฿'+kk(min)+(x.rooms.length>1?' · '+x.rooms.length:'')+'</div>',iconSize:[0,0]})});m.on('click',e=>{L.DomEvent.stopPropagation(e);document.querySelectorAll('.pin.sel').forEach(p=>p.classList.remove('sel'));const el=m.getElement();el&&el.firstChild.classList.add('sel');openSheet(x)});cl.addLayer(m)});
+    M.addLayer(cl);const n=gs.reduce((s,x)=>s+x.rooms.length,0);
+    document.getElementById('mtx').innerHTML='📍 <b>'+n+'</b> ห้อง · '+gs.length+' โครงการ'+(zone?' · '+esc(zone):'')+' — แตะหมุดเพื่อดูห้อง';
+    setTimeout(()=>{M.invalidateSize();if(gs.length)M.fitBounds(L.latLngBounds(gs.map(x=>[x.lat,x.lng])),{padding:[40,40],maxZoom:16})},30)}
+  function openSheet(x){const rs=x.rooms.slice().sort((a,b)=>price(a)-price(b));
+    sheet.innerHTML='<div class="gr0"></div><div class="sh"><b>'+esc(x.n)+'</b><span>ว่าง '+rs.length+' ห้อง'+(rs[0].sl?' · '+rs[0].sl+' '+esc(rs[0].sn)+' '+G.dtxt(rs[0].sm):'')+'</span><button aria-label="ปิด" id="shx">×</button></div>'
+     +rs.map(r=>'<a class="rw" href="'+href(r)+'"><div class="ph" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"></div><div class="m">'+esc([r.t,r.sz?r.sz+' ตร.ม.':'',r.f?'ชั้น '+r.f:''].filter(Boolean).join(' · '))+'<div class="p">฿'+fmt(price(r))+(mode==='sale'?'':' <small>/เดือน</small>')+'</div></div><em>ดูห้อง ›</em></a>').join('');
+    sheet.style.display='block';document.getElementById('shx').onclick=()=>{sheet.style.display='none'}}
+  function hideMap(){view='list';mapEl.style.display='none';mtop.style.display='none';sheet.style.display='none';document.body.style.overflow='';fab.textContent='📍 แผนที่'}
+  fab.onclick=()=>view==='map'?hideMap():showMap();
+  Promise.all([fetch(SB_URL+'/functions/v1/share-room?cat='+id,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.ok?r.json():Promise.reject(r.status)),G.coords()])
+   .then(([j])=>{D=j.data;D._u=j.updated_at;G.attach(D.rooms||[]);if(!(D.rooms||[]).some(r=>r.rent>0))mode='sale';document.title='ห้องว่าง '+(D.rooms||[]).length+' ห้อง · '+((D.agent||{}).n||'MAX Agent');render();if(location.hash==='#map')showMap();loadCounts()})
+   .catch(()=>{app.innerHTML='<p class="em">ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง</p>'});
 })();
 </script></body></html>
