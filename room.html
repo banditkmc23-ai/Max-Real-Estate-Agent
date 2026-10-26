@@ -14,22 +14,42 @@
 <meta name="twitter:card" content="summary">
 <meta property="og:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tailwind.min.css?v=31">
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
-  .hero-ph { background: linear-gradient(135deg, #cf7a56 0%, #83401f 100%); }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Thai',-apple-system,sans-serif;background:#f7f4f1;color:#2b2420;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+#app{max-width:560px;margin:0 auto;padding-bottom:110px}
+.mut{color:#8e8680;font-size:13px}.sec{padding:0 16px}.h2{font-size:17px;font-weight:600;margin-bottom:10px}
+.car{position:relative;height:520px;max-height:68vh;min-height:360px;overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#cf7a56,#83401f)}
+.trk{display:flex;height:100%}.trk img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block}
+.fade{position:absolute;left:0;right:0;bottom:0;height:18%;background:linear-gradient(rgba(247,244,241,0),#f7f4f1);pointer-events:none}
+.dots{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.dot{width:6px;height:6px;border-radius:3px;background:#fff;opacity:.6;transition:.3s;box-shadow:0 0 3px #0003}.dot.on{width:18px;opacity:1}
+.pill{position:absolute;top:max(16px,env(safe-area-inset-top));font-size:13px;font-weight:600;padding:4px 10px;border-radius:20px}
+.card{background:#fff;border-radius:14px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0}.row+.row{border-top:1px solid #f0ebe7}.row b{font-weight:600;text-align:right}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid #eee;z-index:10}
+.bar>div{max-width:560px;margin:0 auto;display:flex;gap:10px;padding:12px 16px max(14px,env(safe-area-inset-bottom))}
+.btn{flex:1;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff}
+#gal{position:fixed;inset:0;background:#000;z-index:50;display:none}
+#gal.on{display:block}
+#gtrk{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}#gtrk::-webkit-scrollbar{display:none}
+#gtrk div{flex:0 0 100%;height:100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center}
+#gtrk img{max-width:100%;max-height:100%;object-fit:contain}
+.gx{position:absolute;top:max(12px,env(safe-area-inset-top));width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);border:0;font-size:22px;right:12px}
+.gc{position:absolute;top:max(18px,env(safe-area-inset-top));left:16px;color:#fff;background:rgba(0,0,0,.5);font-size:13px;padding:4px 10px;border-radius:20px}
 </style>
 </head>
 <body>
-<div id="app" class="max-w-[560px] lg:max-w-[1200px] mx-auto pb-32 lg:pb-10"></div>
+<div id="app"></div>
 <script>
 (function () {
   const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
+  const B = '#c2552d';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
-  const ST = { AVAILABLE: ['ว่าง พร้อมเข้าอยู่', 'bg-emerald-500/10 text-emerald-700'], RESERVED: ['ติดจอง', 'bg-amber-500/10 text-amber-700'], OCCUPIED: ['มีผู้เช่า (รับจองล่วงหน้า)', 'bg-sky-500/10 text-sky-700'], FOR_SALE: ['ขาย', 'bg-brick-500/10 text-brick-700'] };
+  const ST = { AVAILABLE: ['● ว่าง พร้อมเข้าอยู่', '#1a8a4a'], RESERVED: ['● ติดจอง', '#b7791f'], OCCUPIED: ['● มีผู้เช่า (รับจองล่วงหน้า)', '#2b6cb0'], FOR_SALE: ['● ขาย', B] };
   const fromB64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const bin = atob(s); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; };
   async function decode(h) {
     const [ver, data] = [h.slice(0, 1), h.slice(2)];
@@ -40,98 +60,90 @@
     }
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function fail(msg) { document.getElementById('app').innerHTML = `<div class="p-8 text-center mt-20"><div class="w-14 h-14 rounded-2xl bg-brick-500/10 flex items-center justify-center mx-auto mb-3"><i data-lucide="link-2-off" class="w-7 h-7 text-brick-500"></i></div><p class="text-sm font-semibold">เปิดลิงก์ห้องไม่ได้</p><p class="text-xs text-slate-400 mt-1">${esc(msg)}</p></div>`; lucide.createIcons(); }
+  function fail(msg) { document.getElementById('app').innerHTML = `<div style="padding:80px 32px;text-align:center"><p style="font-weight:600">เปิดลิงก์ห้องไม่ได้</p><p class="mut" style="margin-top:4px">${esc(msg)}</p></div>`; }
+  let timer;
   async function main() {
+    clearInterval(timer);
     const h = location.hash.slice(1), qid = new URLSearchParams(location.search).get('id');
     let d;
     if (qid) {
-      document.getElementById('app').innerHTML = '<p class="text-center text-xs text-slate-400 mt-24">กำลังโหลด...</p>';
+      document.getElementById('app').innerHTML = '<p class="mut" style="text-align:center;margin-top:96px">กำลังโหลด...</p>';
       try { const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(qid)}`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.data) throw 0; d = j.data; }
       catch (e) { return fail('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่'); }
     } else if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
     if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }
-    const title = [d.p, d.r ? 'ห้อง ' + d.r : ''].filter(Boolean).join(' · ');
-    document.title = (d.p || 'ห้องให้เช่า') + ' — ' + baht(d.rent) + '/เดือน';
-    const st = ST[d.st] || null;
-    const spec = (icon, label) => label ? `<div class="bg-slate-950 rounded-xl py-2.5 px-1 text-center"><i data-lucide="${icon}" class="w-4 h-4 mx-auto text-brick-500"></i><p class="text-xs font-semibold mt-1">${esc(label)}</p></div>` : '';
+    const desc = String(d.d || '');
+    document.title = (d.p || 'ห้องให้เช่า') + (d.rent ? ' — ' + baht(d.rent) + '/เดือน' : '');
     const a = d.a || {};
     const lineUrl = a.l ? 'https://line.me/R/ti/p/~' + encodeURIComponent(a.l.replace(/^@?/, a.l.startsWith('@') ? '@' : '')) : '';
     const tel = a.ph ? 'tel:' + a.ph.replace(/[^0-9+]/g, '') : '';
     const imgs = d.imgs && d.imgs.length ? d.imgs : (d.img ? ['data:image/jpeg;base64,' + d.img] : []);
-    const ctaBtns = (big) => `${lineUrl ? `<a href="${lineUrl}" class="${big ? 'py-3 text-sm' : 'py-2.5 text-xs'} rounded-full font-semibold text-white flex items-center justify-center gap-2" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>ทัก LINE</a>` : ''}${tel ? `<a href="${tel}" class="${big ? 'py-3 text-sm' : 'py-2.5 text-xs'} rounded-full font-semibold text-white bg-brick-500 flex items-center justify-center gap-2"><i data-lucide="phone" class="w-4 h-4"></i>โทรหาเอเจนต์</a>` : ''}`;
-    const cta = big => (lineUrl || tel) ? `<div class="grid ${lineUrl && tel ? 'grid-cols-2' : 'grid-cols-1'} gap-2">${ctaBtns(big)}</div>` : '';
-    const priceBlock = `<div class="flex items-end justify-between gap-2 flex-wrap"><div><p class="text-xs text-slate-400">ค่าเช่า</p><p class="text-3xl font-bold text-brick-600">${baht(d.rent)}<span class="text-sm text-slate-400 font-medium">/เดือน</span></p>${d.sale ? `<p class="text-xs text-slate-400">ราคาขาย ${baht(d.sale)}</p>` : ''}</div>${st ? `<span class="text-[11px] ${st[1]} px-2.5 py-1 rounded-full font-semibold">${st[0]}</span>` : ''}</div>`;
-    const specs = `<div class="grid grid-cols-4 gap-2">${spec('maximize', d.sz ? d.sz + ' ตร.ม.' : '')}${spec('layers', d.f ? 'ชั้น ' + d.f : '')}${spec('bed-double', d.t)}${spec('bath', d.bt ? d.bt + ' ห้องน้ำ' : '')}${spec('mountain', d.vw ? 'วิว ' + d.vw : '')}</div>${d.sn ? `<div class="mt-2 flex items-center gap-2 text-sm text-slate-600 bg-brick-500/10 rounded-xl px-3 py-2"><i data-lucide="train-front" class="w-4 h-4 text-brick-600"></i><span>${esc(d.sn)}${Number(d.sd) ? ' · ' + Number(d.sd).toLocaleString('th-TH') + ' ม.' : ''}</span></div>` : ''}`;
-    const card = 'bg-white rounded-2xl p-4 shadow-sm border border-slate-700';
-    const mapA = d.p ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.p)}" target="_blank" rel="noopener" class="${card} flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center"><i data-lucide="map-pin" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-semibold">ดูทำเลบนแผนที่</p><p class="text-[11px] text-slate-400 truncate">${esc(d.p)}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i></a>` : '';
-    const agent = `<div class="${card} flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-gradient-to-br from-brick-400 to-brick-600 text-white font-bold flex items-center justify-center">${esc((a.n || 'M').slice(0, 1))}</div><div class="flex-1"><p class="text-sm font-semibold">${esc(a.n || 'เอเจนต์')}</p><p class="text-[11px] text-slate-400">เอเจนต์อสังหาฯ${a.l ? ' · LINE ' + esc(a.l) : ''}</p></div><i data-lucide="badge-check" class="w-5 h-5 text-brick-500"></i></div>`;
-    const descCard = d.d ? `<div class="${card}"><h2 class="text-sm font-semibold mb-2">รายละเอียด</h2><p class="text-xs text-slate-300 leading-relaxed whitespace-pre-line">${esc(d.d)}</p></div>` : '';
-    const ph = `<div class="absolute inset-0 hero-ph flex items-center justify-center"><i data-lucide="building-2" class="w-24 h-24 text-white opacity-30"></i></div>`;
+    const isSale = d.sale && !d.rent;
+    // station: stored field, else from description (e.g. "BTS พระโขนง 300 ม.")
+    let sn = d.sn || '', sd = Number(d.sd) || 0;
+    if (!sn) { const m = desc.match(/(BTS|MRT|ARL|Airport Link)\s*([ก-๙A-Za-z0-9 ]+?)(?:\s*(?:เพียง|ประมาณ)?\s*([\d,.]+)\s*(ม\.|เมตร|m|km|กม\.))?(?=[\s|,·\n]|$)/); if (m) { sn = (m[1] + ' ' + m[2].replace(/\s*(ฟรี|free)$/i, '')).trim(); if (m[3]) sd = parseFloat(m[3].replace(/,/g, '')) * (/k|กม/.test(m[4]) ? 1000 : 1); } }
+    const area = sn ? sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '').trim() : (d.b && d.b.length > 2 ? d.b : '');
+    const corner = /ห้องมุม|corner/i.test(desc);
+    const dist = sd ? (sd >= 1000 ? (sd / 1000).toLocaleString('th-TH') + ' กม.' : sd.toLocaleString('th-TH') + ' ม.') : '';
+    const typ = [d.t ? String(d.t).replace(/(\d+)\s*Bed(room)?s?/i, '$1 ห้องนอน').replace(/Studio/i, 'สตูดิโอ') : '', d.bt ? d.bt + ' ห้องน้ำ' : ''].filter(Boolean).join(' · ');
+    const flo = [d.f ? 'ชั้น ' + d.f : '', corner ? 'ห้องมุม' : '', d.r && d.r !== '-' ? 'ห้อง ' + d.r : ''].filter(Boolean).join(' · ');
+    const rows = [['ประเภทห้อง', typ], ['ขนาด', d.sz ? d.sz + ' ตร.ม.' : ''], ['ชั้น / ตำแหน่ง', flo], ['วิว', d.vw || ''], ['การเดินทาง', sn ? sn + (dist ? ' ' + dist : '') : '']].filter(r => r[1]);
+    // rental terms parsed from description
+    const tm = [];
+    let m;
+    if ((m = desc.match(/สัญญา[^\n\d]*?(\d+)\s*(ปี|เดือน)/))) tm.push(['สัญญาขั้นต่ำ', m[1] + ' ' + m[2]]);
+    else if ((m = desc.match(/minimum[^\n\d]*?(\d+)[\s-]*(year|month)/i))) tm.push(['สัญญาขั้นต่ำ', m[1] + ' ' + (/y/i.test(m[2]) ? 'ปี' : 'เดือน')]);
+    if ((m = desc.match(/ล่วงหน้า\s*(\d+)\s*เดือน/))) tm.push(['ล่วงหน้า', m[1] + ' เดือน']);
+    if ((m = desc.match(/(?:ประกัน|มัดจำ)\s*(\d+)\s*เดือน/))) tm.push(['เงินประกัน', m[1] + ' เดือน']);
+    const st = ST[d.st];
+    const q = encodeURIComponent(d.p || '');
+    const tbl = list => `<div class="card" style="padding:4px 14px">${list.map(([k, v]) => `<div class="row"><span style="color:#8e8680">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
+    const btns = `${lineUrl ? `<a class="btn" style="background:#06c755" href="${lineUrl}">ทัก LINE</a>` : ''}${tel ? `<a class="btn" style="background:${B}" href="${tel}">โทรหาเอเจนต์</a>` : ''}`;
     document.getElementById('app').innerHTML = `
-      <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-6 lg:p-6 lg:items-start">
-        <div>
-          <div style="min-height:18rem" class="relative h-72 lg:h-[520px] overflow-hidden lg:rounded-3xl ${imgs.length ? 'cursor-zoom-in' : ''}" ${imgs.length ? 'data-lb="0" id="heroBox"' : ''}>
-            ${imgs.length ? `<img id="heroImg" src="${esc(imgs[0])}" class="absolute inset-0 w-full h-full object-cover" alt="">` : ph}
-            <div class="absolute inset-0 pointer-events-none" style="background:linear-gradient(180deg,rgba(28,25,23,.35),transparent 40%,rgba(28,25,23,.55))"></div>
-            <div class="absolute top-[max(16px,env(safe-area-inset-top))] left-4 right-4 flex justify-between pointer-events-none"><span class="bg-white/90 text-brick-700 text-xs font-semibold px-3 py-1.5 rounded-full">${d.sale && !d.rent ? 'ขาย' : 'ให้เช่า'}</span>${imgs.length > 1 ? `<span class="bg-black/50 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1"><i data-lucide="images" class="w-3.5 h-3.5"></i>${imgs.length} รูป</span>` : ''}</div>
-            <div class="absolute bottom-4 left-4 right-4 text-white pointer-events-none lg:hidden"><p class="text-xs opacity-90">${esc(d.b || '')}</p><h1 class="text-2xl font-bold leading-tight">${esc(title || 'ห้องให้เช่า')}</h1></div>
-          </div>
-          ${imgs.length > 1 ? `<div id="thumbRow" class="flex gap-2 overflow-x-auto px-4 lg:px-0 mt-3 pb-1 snap-x snap-mandatory" style="-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x">${imgs.map((u, i) => `<button data-th="${i}" class="shrink-0 snap-start rounded-xl ring-2 ring-offset-2 ${i === 0 ? 'ring-brick-500' : 'ring-transparent opacity-80'} transition" aria-label="ดูรูป ${i + 1}"><img src="${esc(u)}" loading="lazy" class="h-24 w-32 lg:h-28 lg:w-40 object-cover rounded-xl" alt=""></button>`).join('')}</div>` : ''}
-          <div class="hidden lg:block mt-4 space-y-3">${descCard}${mapA}</div>
-        </div>
-        <aside class="px-4 lg:px-0 space-y-3 mt-3 lg:mt-0 lg:sticky lg:top-6">
-          <div class="${card}">
-            <div class="hidden lg:block mb-3"><p class="text-xs text-slate-400">${esc(d.b || '')}</p><h1 class="text-xl font-bold leading-tight">${esc(title || 'ห้องให้เช่า')}</h1></div>
-            ${priceBlock}<div class="mt-4">${specs}</div>
-            <div class="hidden lg:block mt-4">${cta(true)}</div>
-          </div>
-          <div class="lg:hidden space-y-3">${descCard}${mapA}</div>
-          ${agent}
-          <p class="text-[10px] text-slate-400 text-center pt-2">ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง</p>
-        </aside>
+    <div class="car" id="car">
+      ${imgs.length ? `<div class="trk" id="trk">${imgs.concat(imgs.length > 1 ? [imgs[0]] : []).map((u, i) => `<img src="${esc(u)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div>` : ''}
+      <div class="fade"></div>
+      <span class="pill" style="left:16px;background:${B};color:#fff">${isSale ? 'ขาย' : 'ให้เช่า'}${st && d.st === 'AVAILABLE' ? ' · ว่าง' : ''}</span>
+      ${imgs.length ? `<span class="pill" style="right:16px;background:rgba(0,0,0,.55);color:#fff;font-weight:500">📷 ${imgs.length} · แตะดูรูป</span>` : ''}
+      ${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<span class="dot${i ? '' : ' on'}"></span>`).join('')}</div>` : ''}
+    </div>
+    <div class="sec" style="margin-top:8px">
+      <div style="font-size:12px;letter-spacing:2px;color:${B};font-weight:600">${isSale ? 'ขาย' : 'ให้เช่า'}${area ? ' · ' + esc(area) : ''}</div>
+      <h1 style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.1;margin-top:2px">${esc(d.p || 'ห้องให้เช่า')}</h1>
+      <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-top:8px">
+        ${d.rent ? `<span><span style="font-size:26px;font-weight:600;color:${B}">${baht(d.rent)}</span><span style="font-size:15px;color:#7a716b;margin-left:4px">/ เดือน</span></span>` : ''}
+        ${d.sale ? `<span style="font-size:${d.rent ? 13 : 26}px;font-weight:600;color:${d.rent ? '#7a716b' : B}">${d.rent ? 'ราคาขาย ' : ''}${baht(d.sale)}</span>` : ''}
+        ${st ? `<span style="margin-left:auto;font-size:13px;color:${st[1]};font-weight:600">${st[0]}</span>` : ''}
       </div>
-      ${(lineUrl || tel) ? `<div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-800 p-3 pb-[max(14px,env(safe-area-inset-bottom))] rounded-t-2xl shadow-lg z-10"><div class="max-w-[560px] mx-auto">${cta(true)}</div></div>` : ''}
-      <div id="lb" class="hidden fixed inset-0 z-50 bg-black/85" role="dialog" aria-modal="true" aria-label="ดูรูปขนาดใหญ่">
-        <div class="h-full flex flex-col lg:flex-row lg:p-6 lg:gap-6" id="lbBackdrop">
-          <div class="relative flex-1 min-h-0 flex items-center justify-center select-none" id="lbStage">
-            <img id="lbImg" class="max-w-full max-h-full object-contain lg:rounded-2xl" alt="">
-            <button id="lbPrev" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-ink flex items-center justify-center shadow" aria-label="รูปก่อนหน้า"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-            <button id="lbNext" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-ink flex items-center justify-center shadow" aria-label="รูปถัดไป"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-            <span id="lbCount" class="absolute top-[max(14px,env(safe-area-inset-top))] left-4 bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full"></span>
-            <button id="lbClose" class="absolute top-[max(10px,env(safe-area-inset-top))] right-3 w-10 h-10 rounded-full bg-white/90 text-ink flex items-center justify-center shadow" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-          <div class="bg-white rounded-t-3xl lg:rounded-3xl p-4 pb-[max(16px,env(safe-area-inset-bottom))] max-h-[42vh] lg:max-h-none lg:w-[380px] overflow-y-auto shrink-0 space-y-3" id="lbInfo">
-            <div><p class="text-[11px] text-slate-400">${esc(d.b || '')}</p><h2 class="text-base font-bold leading-tight">${esc(title || 'ห้องให้เช่า')}</h2></div>
-            ${priceBlock}${specs}
-            ${d.d ? `<p class="text-xs text-slate-300 leading-relaxed whitespace-pre-line">${esc(d.d)}</p>` : ''}
-            ${cta(false)}
-          </div>
-        </div>
-      </div>`;
-    lucide.createIcons();
-    if (imgs.length) {
-      let cur = 0, sx = 0, sy = 0;
-      const lb = document.getElementById('lb'), im = document.getElementById('lbImg'), cnt = document.getElementById('lbCount');
-      const show = i => { cur = (i + imgs.length) % imgs.length; im.src = imgs[cur]; cnt.textContent = `${cur + 1} / ${imgs.length}`; ['lbPrev', 'lbNext'].forEach(id => document.getElementById(id).classList.toggle('hidden', imgs.length < 2)); };
-      const open = i => { show(i); lb.classList.remove('hidden'); document.documentElement.style.overflow = document.body.style.overflow = 'hidden'; };
-      const close = () => { lb.classList.add('hidden'); document.documentElement.style.overflow = document.body.style.overflow = ''; };
-      const hero = document.getElementById('heroBox'), heroImg = document.getElementById('heroImg');
-      hero.addEventListener('click', () => open(+hero.dataset.lb));
-      document.querySelectorAll('[data-th]').forEach(el => el.addEventListener('click', () => {
-        const i = +el.dataset.th; heroImg.src = imgs[i]; hero.dataset.lb = i;
-        document.querySelectorAll('[data-th]').forEach(b => { const on = +b.dataset.th === i; b.classList.toggle('ring-brick-500', on); b.classList.toggle('ring-transparent', !on); b.classList.toggle('opacity-80', !on); });
-        el.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
-      }));
-      document.getElementById('lbPrev').onclick = e => { e.stopPropagation(); show(cur - 1); };
-      document.getElementById('lbNext').onclick = e => { e.stopPropagation(); show(cur + 1); };
-      document.getElementById('lbClose').onclick = close;
-      const stage = document.getElementById('lbStage');
-      stage.addEventListener('click', e => { if (e.target === stage || e.target.id === 'lbBackdrop') close(); });
-      document.getElementById('lbBackdrop').addEventListener('click', e => { if (e.target.id === 'lbBackdrop') close(); });
-      stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-      stage.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) show(cur + (dx < 0 ? 1 : -1)); else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close(); }, { passive: true });
-      document.onkeydown = e => { if (lb.classList.contains('hidden')) return; if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(cur - 1); else if (e.key === 'ArrowRight') show(cur + 1); };
-    }
+    </div>
+    ${rows.length ? `<div class="sec" style="margin-top:16px">${tbl(rows)}</div>` : ''}
+    ${desc ? `<div class="sec" style="margin-top:16px"><p style="line-height:1.65;white-space:pre-line">${esc(desc)}</p></div>` : ''}
+    ${d.p ? `<div class="sec" style="margin-top:20px"><div class="h2">ทำเลที่ตั้ง</div>
+      <iframe src="https://maps.google.com/maps?q=${q}&z=16&hl=th&output=embed" style="width:100%;height:240px;border:0;border-radius:14px;display:block;background:#eee" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่"></iframe>
+      <a class="card" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener" style="margin-top:12px;padding:12px;display:flex;align-items:center;gap:10px">
+        ${sn ? `<span style="width:36px;height:36px;border-radius:10px;background:#62b04a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${esc(sn.split(' ')[0])}</span>` : `<span style="width:36px;height:36px;border-radius:10px;background:#fdf3ee;color:${B};font-size:18px;display:flex;align-items:center;justify-content:center">📍</span>`}
+        <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(sn ? 'สถานี' + sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '') : d.p)}</div>${sn && dist ? `<div class="mut">ห่างประมาณ ${dist}</div>` : ''}</div>
+        <span style="font-size:13px;color:${B};font-weight:600;white-space:nowrap">เปิด Google Maps ›</span></a></div>` : ''}
+    ${tm.length ? `<div class="sec" style="margin-top:20px"><div class="h2">เงื่อนไขการเช่า</div>${tbl(tm)}</div>` : ''}
+    <div class="sec" style="margin-top:16px"><div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:44px;height:44px;border-radius:50%;background:${B};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${esc((a.n || 'M').slice(0, 1))}</div><div><div style="font-weight:600">${esc(a.n || 'เอเจนต์')}</div><div class="mut">${esc([a.ph, a.l ? 'LINE ' + a.l : ''].filter(Boolean).join(' · ') || 'เอเจนต์อสังหาฯ')}</div></div></div></div>
+    <p class="mut" style="font-size:11px;text-align:center;padding:16px 16px 0">ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง</p>
+    ${btns ? `<div class="bar"><div>${btns}</div></div>` : ''}
+    <div id="gal" role="dialog" aria-modal="true"><div id="gtrk">${imgs.map(u => `<div><img src="${esc(u)}" alt="" loading="lazy"></div>`).join('')}</div><span class="gc" id="gc"></span><button class="gx" id="gx" aria-label="ปิด">✕</button></div>`;
+    if (!imgs.length) return;
+    const car = document.getElementById('car'), trk = document.getElementById('trk'), dots = car.querySelectorAll('.dot'), n = imgs.length;
+    let i = 0;
+    const go = () => { i++; trk.style.transition = 'transform .6s ease'; trk.style.transform = `translateX(${-i * 100}%)`; dots.forEach((e, k) => e.classList.toggle('on', k === i % n)); if (i === n) setTimeout(() => { trk.style.transition = 'none'; trk.style.transform = 'translateX(0)'; i = 0; }, 650); };
+    const start = () => { clearInterval(timer); if (n > 1) timer = setInterval(go, 2500); };
+    start();
+    const gal = document.getElementById('gal'), gt = document.getElementById('gtrk'), gc = document.getElementById('gc');
+    const upd = () => { gc.textContent = `${Math.round(gt.scrollLeft / gt.clientWidth) + 1} / ${n}`; };
+    gt.addEventListener('scroll', upd, { passive: true });
+    const close = () => { gal.classList.remove('on'); document.documentElement.style.overflow = ''; start(); };
+    car.addEventListener('click', () => { clearInterval(timer); gal.classList.add('on'); document.documentElement.style.overflow = 'hidden'; gt.scrollLeft = (i % n) * gt.clientWidth; upd(); });
+    document.getElementById('gx').onclick = close;
+    let sy = 0; gt.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
+    gt.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - sy > 100) close(); }, { passive: true });
+    document.onkeydown = e => { if (!gal.classList.contains('on')) return; if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') gt.scrollBy({ left: gt.clientWidth, behavior: 'smooth' }); else if (e.key === 'ArrowLeft') gt.scrollBy({ left: -gt.clientWidth, behavior: 'smooth' }); };
   }
   main();
   window.addEventListener('hashchange', main);
