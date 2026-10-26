@@ -39,6 +39,34 @@ a{color:inherit;text-decoration:none}
 #gtrk img{max-width:100%;max-height:100%;object-fit:contain}
 .gx{position:absolute;top:max(12px,env(safe-area-inset-top));width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);border:0;font-size:22px;right:12px}
 .gc{position:absolute;top:max(18px,env(safe-area-inset-top));left:16px;color:#fff;background:rgba(0,0,0,.5);font-size:13px;padding:4px 10px;border-radius:20px}
+.lay{display:flex;flex-direction:column}.colL,.colR{display:contents}
+.o1{order:1}.o2{order:2}.o3{order:3}.o4{order:4}.o5{order:5}.o6{order:6}.o7{order:7}
+.thumbs,.ibtns{display:none}
+.gnav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.85);border:0;font-size:26px;cursor:pointer;display:none}
+@media (hover:hover){.gnav{display:block}}
+#gal{cursor:default}#gtrk img{cursor:zoom-out}
+@media (min-width:601px){
+ #app{max-width:760px}
+ .car{height:600px;max-height:72vh;border-radius:0 0 22px 22px}
+ .sec{padding:0 24px}
+}
+@media (min-width:1024px){
+ body{background:#f2eeea}
+ #app{max-width:1200px;padding:28px 28px 40px}
+ .lay{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
+ .colL,.colR{display:block}
+ .colR{position:sticky;top:24px;background:#fff;border-radius:20px;padding:22px 4px 18px;box-shadow:0 6px 28px rgba(60,30,10,.08)}
+ .colR .sec{padding:0 18px}.colR .card{background:#faf7f5}
+ .car{height:560px;max-height:none;border-radius:20px}
+ .fade{display:none}
+ .colL .sec{padding:0}
+ .thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}
+ .thumbs img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;cursor:pointer;display:block;transition:.2s}.thumbs img:hover{opacity:.8}
+ .ibtns{display:flex;gap:10px;padding:16px 18px 0}
+ .bar{display:none}
+ #app{padding-bottom:40px}
+ .pill{top:16px}
+}
 </style>
 </head>
 <body>
@@ -100,14 +128,22 @@ a{color:inherit;text-decoration:none}
     const tbl = list => `<div class="card" style="padding:4px 14px">${list.map(([k, v]) => `<div class="row"><span style="color:#8e8680">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
     const btns = `${lineUrl ? `<a class="btn" style="background:#06c755" href="${lineUrl}">ทัก LINE</a>` : ''}${tel ? `<a class="btn" style="background:${B}" href="${tel}">โทรหาเอเจนต์</a>` : ''}`;
     document.getElementById('app').innerHTML = `
-    <div class="car" id="car">
+    <div class="lay"><div class="colL"><div class="car o1" id="car">
       ${imgs.length ? `<div class="trk" id="trk">${imgs.concat(imgs.length > 1 ? [imgs[0]] : []).map((u, i) => `<img src="${esc(u)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div>` : ''}
       <div class="fade"></div>
       <span class="pill" style="left:16px;background:${B};color:#fff">${isSale ? 'ขาย' : 'ให้เช่า'}${st && d.st === 'AVAILABLE' ? ' · ว่าง' : ''}</span>
       ${imgs.length ? `<span class="pill" style="right:16px;background:rgba(0,0,0,.55);color:#fff;font-weight:500">📷 ${imgs.length} · แตะดูรูป</span>` : ''}
       ${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<span class="dot${i ? '' : ' on'}"></span>`).join('')}</div>` : ''}
     </div>
-    <div class="sec" style="margin-top:8px">
+    ${imgs.length > 1 ? `<div class="thumbs">${imgs.slice(0, 12).map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-k="${k}">`).join('')}</div>` : ''}
+    ${d.p ? `<div class="sec o4" style="margin-top:20px"><div class="h2">ทำเลที่ตั้ง</div>
+      <iframe src="https://maps.google.com/maps?q=${q}&z=16&hl=th&output=embed" style="width:100%;height:240px;border:0;border-radius:14px;display:block;background:#eee" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่"></iframe>
+      <a class="card" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener" style="margin-top:12px;padding:12px;display:flex;align-items:center;gap:10px">
+        ${sn ? `<span style="width:36px;height:36px;border-radius:10px;background:#62b04a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${esc(sn.split(' ')[0])}</span>` : `<span style="width:36px;height:36px;border-radius:10px;background:#fdf3ee;color:${B};font-size:18px;display:flex;align-items:center;justify-content:center">📍</span>`}
+        <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(sn ? 'สถานี' + sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '') : d.p)}</div>${sn && dist ? `<div class="mut">ห่างประมาณ ${dist}</div>` : ''}</div>
+        <span style="font-size:13px;color:${B};font-weight:600;white-space:nowrap">เปิด Google Maps ›</span></a></div>` : ''}
+    </div><div class="colR">
+    <div class="sec o2" style="margin-top:8px">
       <div style="font-size:12px;letter-spacing:2px;color:${B};font-weight:600">${isSale ? 'ขาย' : 'ให้เช่า'}${area ? ' · ' + esc(area) : ''}</div>
       <h1 style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.1;margin-top:2px">${esc(d.p || 'ห้องให้เช่า')}</h1>
       <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-top:8px">
@@ -116,18 +152,13 @@ a{color:inherit;text-decoration:none}
         ${st ? `<span style="margin-left:auto;font-size:13px;color:${st[1]};font-weight:600">${st[0]}</span>` : ''}
       </div>
     </div>
-    ${rows.length ? `<div class="sec" style="margin-top:16px">${tbl(rows)}</div>` : ''}
-    ${d.p ? `<div class="sec" style="margin-top:20px"><div class="h2">ทำเลที่ตั้ง</div>
-      <iframe src="https://maps.google.com/maps?q=${q}&z=16&hl=th&output=embed" style="width:100%;height:240px;border:0;border-radius:14px;display:block;background:#eee" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่"></iframe>
-      <a class="card" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener" style="margin-top:12px;padding:12px;display:flex;align-items:center;gap:10px">
-        ${sn ? `<span style="width:36px;height:36px;border-radius:10px;background:#62b04a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${esc(sn.split(' ')[0])}</span>` : `<span style="width:36px;height:36px;border-radius:10px;background:#fdf3ee;color:${B};font-size:18px;display:flex;align-items:center;justify-content:center">📍</span>`}
-        <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(sn ? 'สถานี' + sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '') : d.p)}</div>${sn && dist ? `<div class="mut">ห่างประมาณ ${dist}</div>` : ''}</div>
-        <span style="font-size:13px;color:${B};font-weight:600;white-space:nowrap">เปิด Google Maps ›</span></a></div>` : ''}
-    ${tm.length ? `<div class="sec" style="margin-top:20px"><div class="h2">เงื่อนไขการเช่า</div>${tbl(tm)}</div>` : ''}
-    <div class="sec" style="margin-top:16px"><div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:44px;height:44px;border-radius:50%;background:${B};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${esc((a.n || 'M').slice(0, 1))}</div><div><div style="font-weight:600">${esc(a.n || 'เอเจนต์')}</div><div class="mut">${esc([a.ph, a.l ? 'LINE ' + a.l : ''].filter(Boolean).join(' · ') || 'เอเจนต์อสังหาฯ')}</div></div></div></div>
-    <p class="mut" style="font-size:11px;text-align:center;padding:16px 16px 0">ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง</p>
+    ${rows.length ? `<div class="sec o3" style="margin-top:16px">${tbl(rows)}</div>` : ''}
+    ${tm.length ? `<div class="sec o5" style="margin-top:20px"><div class="h2">เงื่อนไขการเช่า</div>${tbl(tm)}</div>` : ''}
+    <div class="sec o6" style="margin-top:16px"><div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:44px;height:44px;border-radius:50%;background:${B};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${esc((a.n || 'M').slice(0, 1))}</div><div><div style="font-weight:600">${esc(a.n || 'เอเจนต์')}</div><div class="mut">${esc([a.ph, a.l ? 'LINE ' + a.l : ''].filter(Boolean).join(' · ') || 'เอเจนต์อสังหาฯ')}</div></div></div></div>
+    ${btns ? `<div class="ibtns">${btns}</div>` : ''}
+    <p class="mut o7" style="font-size:11px;text-align:center;padding:16px 16px 0">ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง</p></div></div>
     ${btns ? `<div class="bar"><div>${btns}</div></div>` : ''}
-    <div id="gal" role="dialog" aria-modal="true"><div id="gtrk">${imgs.map(u => `<div><img src="${esc(u)}" alt="" loading="lazy"></div>`).join('')}</div><span class="gc" id="gc"></span><button class="gx" id="gx" aria-label="ปิด">✕</button></div>`;
+    <div id="gal" role="dialog" aria-modal="true"><div id="gtrk">${imgs.map(u => `<div><img src="${esc(u)}" alt="" loading="lazy"></div>`).join('')}</div><span class="gc" id="gc"></span><button class="gx" id="gx" aria-label="ปิด">✕</button>${imgs.length > 1 ? '<button class="gnav" id="gp" style="left:16px" aria-label="ก่อนหน้า">‹</button><button class="gnav" id="gn" style="right:16px" aria-label="ถัดไป">›</button>' : ''}</div>`;
     if (!imgs.length) return;
     const car = document.getElementById('car'), trk = document.getElementById('trk'), dots = car.querySelectorAll('.dot'), n = imgs.length;
     let i = 0;
@@ -138,7 +169,12 @@ a{color:inherit;text-decoration:none}
     const upd = () => { gc.textContent = `${Math.round(gt.scrollLeft / gt.clientWidth) + 1} / ${n}`; };
     gt.addEventListener('scroll', upd, { passive: true });
     const close = () => { gal.classList.remove('on'); document.documentElement.style.overflow = ''; start(); };
-    car.addEventListener('click', () => { clearInterval(timer); gal.classList.add('on'); document.documentElement.style.overflow = 'hidden'; gt.scrollLeft = (i % n) * gt.clientWidth; upd(); });
+    const openG = k => { clearInterval(timer); gal.classList.add('on'); document.documentElement.style.overflow = 'hidden'; gt.scrollLeft = k * gt.clientWidth; upd(); };
+    car.addEventListener('click', () => openG(i % n));
+    document.querySelectorAll('.thumbs img').forEach(t => t.onclick = () => openG(+t.dataset.k));
+    const step = dx => gt.scrollBy({ left: dx * gt.clientWidth, behavior: 'smooth' });
+    if (n > 1) { document.getElementById('gp').onclick = () => step(-1); document.getElementById('gn').onclick = () => step(1); }
+    gal.addEventListener('click', e => { if (e.target === gal || e.target.tagName === 'DIV' && e.target.parentNode === gt) close(); });
     document.getElementById('gx').onclick = close;
     let sy = 0; gt.addEventListener('touchstart', e => { sy = e.touches[0].clientY; }, { passive: true });
     gt.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - sy > 100) close(); }, { passive: true });
