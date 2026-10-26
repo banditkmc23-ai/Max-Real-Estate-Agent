@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=35">
+<link rel="stylesheet" href="tailwind.min.css?v=36">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -291,14 +291,17 @@
   .sf-ch a{font-size:12.5px;color:#c2552d;font-weight:500;cursor:pointer}
   .sf-kv{display:grid;grid-template-columns:repeat(6,1fr)}
   #sheet .sf-kv>*{grid-column:span 2;padding:8px 12px;border-right:1px solid #f1ece8;border-bottom:1px solid #f1ece8;display:block;font-size:14px !important;color:inherit !important;min-width:0}
-  .sf-kv>.w2{grid-column:span 4}.sf-kv>.w3{grid-column:span 6;border-right:0}.sf-kv>.w15{grid-column:span 3}
+  #sheet .sf-kv>.w2{grid-column:span 4}#sheet .sf-kv>.w3{grid-column:span 6;border-right:0}#sheet .sf-kv>.w15{grid-column:span 3}
+  #sheet .sf-ta{padding:4px 4px !important;display:block;resize:vertical}
+  #sheet .sf-tawrap{padding:10px 16px}
+  #sheet .sf-lnk{color:#c2552d;font-size:13px;font-weight:600;padding:2px 0;background:none;border:0}
   .sf-kv>*:last-child{border-bottom:0}
   .sf-sw{position:relative;display:inline-block;width:38px;height:22px;margin-top:3px}.sf-sw input{opacity:0;position:absolute;inset:0;z-index:1;margin:0}
   .sf-sw i{position:absolute;inset:0;border-radius:11px;background:#ddd;transition:.2s}.sf-sw i:after{content:"";position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
   .sf-sw input:checked+i{background:#c2552d}.sf-sw input:checked+i:after{left:18px}
   .sf-tile{width:100%;border:1.5px dashed #c2552d;border-radius:9px;color:#c2552d;font-size:13px;background:#fbeee7;padding:8px;display:flex;align-items:center;justify-content:center;gap:4px}
   .sf-open{font-size:12px;color:#c2552d;border:1px solid #f0d5c8;border-radius:8px;padding:3px 8px;display:flex;align-items:center;gap:3px}.sf-open:disabled{opacity:.4}
-  .sf-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;padding:10px 12px max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:20}
+  .sf-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:20}
   .sf-btn{flex:1;border-radius:10px;padding:11px;font-size:14.5px;font-weight:600;border:1px solid #e4ddd7;background:#fff;color:#5c534c}
   .sf-pri{background:#c2552d;color:#fff;border-color:#c2552d;box-shadow:0 4px 12px #c2552d40}
 </style>
@@ -1045,7 +1048,7 @@
   <div id="sfRecent" class="sf-recent hide-scrollbar"></div>
   <div class="sf-sum"><div id="sfPrevPic" class="sf-pic"><i data-lucide="image" class="w-5 h-5"></i></div><div class="min-w-0 flex-1"><b id="sfPrevT" class="block truncate">โครงการ · #ห้อง</b><p id="sfPrevS" class="truncate"></p><p id="sfPrevP" class="sf-price"></p></div></div>
 
-  <div class="sf-c"><div class="sf-ch">📷 รูป <span id="fPhotoCount" class="font-normal text-slate-400 text-[12px]">0 รูป</span><span class="ml-auto flex gap-3"><a onclick="pickFormPhotos('album')">เลือกรูป</a><a onclick="pickFormPhotos('camera')">ถ่ายรูป</a></span></div>
+  <div class="sf-c"><div class="sf-ch">📷 รูป <span id="fPhotoCount" class="font-normal text-slate-400 text-[12px]">0 รูป</span><span class="ml-auto flex gap-3"><button type="button" class="sf-lnk" onclick="pickFormPhotos('album')">เลือกรูป</button><button type="button" class="sf-lnk" onclick="pickFormPhotos('camera')">ถ่ายรูป</button></span></div>
     <div class="p-3"><div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5"></div>
       <button type="button" onclick="pickFormPhotos('album')" class="sf-tile mt-1.5"><b>+</b>เพิ่มรูป</button>
       <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
@@ -1077,7 +1080,7 @@
   </div></div>
 
   <div class="sf-c"><div class="sf-ch">📝 รายละเอียด (ส่งให้ลูกค้า)<span id="sfNoteCnt" class="ml-auto font-normal text-slate-400 text-[12px]">0</span></div>
-    <div class="px-3.5 py-2.5"><textarea id="f_notes" rows="6" class="sf-in sf-ta" placeholder="จุดเด่นของห้อง ทำเล เฟอร์นิเจอร์ ใกล้ BTS/MRT ฯลฯ"></textarea></div></div>
+    <div class="sf-tawrap"><textarea id="f_notes" rows="6" class="sf-in sf-ta" placeholder="จุดเด่นของห้อง ทำเล เฟอร์นิเจอร์ ใกล้ BTS/MRT ฯลฯ"></textarea></div></div>
 
   <div class="sf-c"><div class="sf-ch">👤 เจ้าของ · สัญญา · ลิงก์</div><div class="sf-kv">
     <label class="w2"><small>ชื่อเจ้าของ</small><input id="f_owner" class="sf-in" placeholder="คุณสมชาย"></label>
@@ -1089,7 +1092,7 @@
   </div></div>
 
   <div class="sf-c" style="background:#fffaf0"><div class="sf-ch" style="background:#fdf3dc">📝 โน้ตภายใน <span class="font-normal text-[11.5px] text-amber-700">ไม่แชร์ให้ลูกค้า</span></div>
-    <div class="px-3.5 py-2.5"><textarea id="f_internalNote" rows="3" class="sf-in sf-ta" placeholder="เช่น ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea></div></div>
+    <div class="sf-tawrap"><textarea id="f_internalNote" rows="3" class="sf-in sf-ta" placeholder="เช่น ต้องเปลี่ยนแอร์, นัดช่างวันที่..."></textarea></div></div>
   <div class="h-3"></div>
   <div class="sf-bar">
     <button id="deleteBtn" onclick="deleteUnit()" class="hidden sf-btn !text-rose-600 !border-rose-200" style="flex:.45">ลบ</button>
@@ -3676,8 +3679,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=35"></script>
+<script src="features.js?v=36"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=35"></script>
+<script src="sync.js?v=36"></script>
 </body>
 </html>
