@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=33">
+<link rel="stylesheet" href="tailwind.min.css?v=34">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -264,6 +264,11 @@
   #lbImg { touch-action:none; transform-origin:center center; will-change:transform; }
   .fav-btn { width:28px; height:28px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#c9bfb6; }
   .fav-btn.on { color:#e0892f; } .fav-btn.on svg { fill:#f2a33a; }
+  /* v34: compact iOS-style form fields (font stays 16px = no focus zoom) */
+  .inp { margin-top:4px; padding:9px 12px; min-height:42px; border-radius:11px; border-width:1px; line-height:1.3; }
+  select.inp { padding-top:8px; padding-bottom:8px; height:42px; }
+  .sheet label { font-size:13px !important; color:#6b625a; }
+  .inp::placeholder { color:#b5aca4; }
 </style>
 </head>
 <body>
@@ -997,28 +1002,6 @@
   <input type="hidden" id="f_id">
   <input type="hidden" id="f_isTemp" value="">
 
-  <div class="bg-gradient-to-br from-brick-50 to-brick-100 border border-brick-200 rounded-2xl p-4 mb-4">
-    <div class="flex items-center gap-2 mb-1.5">
-      <div class="w-7 h-7 rounded-lg bg-brick-500 flex items-center justify-center"><i data-lucide="wand-2" class="w-3.5 h-3.5 text-white"></i></div>
-      <div>
-        <p class="text-xs font-bold text-brick-800">แยกรายละเอียดอัตโนมัติ</p>
-        <p class="text-[10px] text-brick-600 leading-tight">วางข้อความ แล้วระบบจะกรอกช่องให้</p>
-      </div>
-    </div>
-    <textarea id="parseInput" rows="5" class="inp !mt-2 !text-xs !bg-white/95 !border-brick-200 focus:!border-brick-500" placeholder="ตัวอย่าง:
-ให้เช่า 13,000/เดือน The Base Sukhumvit 77
-ใกล้ BTS อ่อนนุช, Big C, Lotus, ทางด่วน
-ขนาด : 30 ตร.ม.
-ตึก : A
-ชั้น : 22"></textarea>
-    <div class="flex gap-2 mt-2">
-      <button type="button" onclick="clearParseInput()" class="bg-white text-brick-700 border border-brick-200 text-xs py-2 px-4 rounded-full font-semibold active:scale-95">ล้าง</button>
-      <button type="button" onclick="parseAndFill()" class="flex-1 bg-brick-500 hover:bg-brick-600 text-white text-xs py-2 rounded-full font-semibold shadow-md shadow-brick-500/25 flex items-center justify-center gap-1.5 active:scale-95">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>แยกและเติมข้อมูล
-      </button>
-    </div>
-    <p class="text-[10px] text-brick-600 mt-2" id="parseStatus"></p>
-  </div>
 
   <div class="space-y-3 text-sm">
     <div class="grid grid-cols-2 gap-3">
@@ -1028,6 +1011,10 @@
       <label>เลขห้อง *<input id="f_room" class="inp" placeholder="1203"></label>
       <label>ชั้น<input id="f_floor" class="inp" placeholder="3"></label>
       <label class="col-span-2">อาคาร<input id="f_building" class="inp" placeholder="เช่น Tower A / อาคาร 1 / Building B"></label>
+      <label class="relative">สถานี BTS/MRT<input id="f_station" autocomplete="off" autocorrect="off" spellcheck="false" oninput="showStationSuggest()" onfocus="showStationSuggest()" class="inp" placeholder="เช่น BTS ทองหล่อ">
+        <div id="stationSuggest" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-700 shadow-lg max-h-48 overflow-y-auto hide-scrollbar" style="border-radius:14px;"></div>
+      </label>
+      <label>ระยะห่างจากสถานี (เมตร)<input id="f_stationDist" type="number" inputmode="numeric" class="inp" placeholder="เช่น 350"></label>
       <label>ราคา/ค่าเช่า (บาท/เดือน) *<input id="f_rent" type="number" inputmode="numeric" class="inp" placeholder="13000"></label>
       <label>ขนาด (ตร.ม.)<input id="f_size" type="number" inputmode="decimal" class="inp" placeholder="30"></label>
       <label>ห้องนอน<select id="f_type" class="inp"><option>Studio</option><option selected>1 Bed</option><option>2 Bed</option><option>3 Bed</option><option>Duplex</option></select></label>
@@ -1243,7 +1230,7 @@ const AVATAR_KEY = 'staylow_avatar';
 const OCC_KEY = 'staylow_monthly_occupancy_v1';
 
 let units = load(KEY, []).map((u, i) => ({
-  bath: '1', building: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
+  bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
   lastPosted: null, postCount: 0, expiredNotified: false,
   createdAt: Date.now() - (9999 - i) * 1000, ...u
 }));
@@ -1300,7 +1287,7 @@ function load(key, fallback) { try { const s = localStorage.getItem(key); if (s)
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 // Re-read everything from storage after cloud sync wrote remote changes.
 function reloadFromStorage() {
-  units = load(KEY, []).map((u, i) => ({ bath: '1', building: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false, createdAt: Date.now() - (9999 - i) * 1000, ...u }));
+  units = load(KEY, []).map((u, i) => ({ bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false, createdAt: Date.now() - (9999 - i) * 1000, ...u }));
   customers = load(CUST_KEY, []).map(c => ({ name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'', budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'', linkedUnits:[], timeline:[], createdAt: Date.now(), ...c }));
   monthlyOcc = load(OCC_KEY, {});
   try { (window.FX && FX.reloaders || []).forEach(f => f()); } catch (e) {}
@@ -2099,7 +2086,7 @@ function renderDetailView() {
       <div class="flex justify-between items-start mb-3 gap-2">
         <div class="flex-1 min-w-0">
           <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
-          <p class="text-xs text-slate-400 mb-1 inline-edit" onclick="startInlineEdit(this, 'building')">${u.building ? '🏬 ' + esc(u.building) : 'แตะเพื่อใส่อาคาร'}</p>
+          <p class="text-xs text-slate-400 mb-1 inline-edit" onclick="startInlineEdit(this, 'building')">${u.building ? '🏬 ' + esc(u.building) : 'แตะเพื่อใส่อาคาร'}</p><p class="text-xs text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'station')">${u.station ? esc(stationLabel(u)) : 'แตะเพื่อใส่สถานี BTS/MRT'}</p>
           <h2 class="text-2xl font-bold text-ink tracking-tight">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
         </div>
         <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
@@ -2276,7 +2263,7 @@ async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
   try { await req(tx('readwrite').delete(photoId)); await refreshCounts(); await renderFormPhotos(); render(); toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
-const F = ['project','room','floor','building','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
+const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
 function showProjectSuggest() {
   const input = document.getElementById('f_project'), box = document.getElementById('projectSuggest');
@@ -2287,6 +2274,17 @@ function showProjectSuggest() {
   box.classList.remove('hidden');
 }
 function pickProject(name) { document.getElementById('f_project').value = name; document.getElementById('projectSuggest').classList.add('hidden'); }
+function stationLabel(u) { if (!u || !u.station) return ''; return '🚇 ' + u.station + (Number(u.stationDist) ? ' ' + Number(u.stationDist).toLocaleString('th-TH') + ' ม.' : ''); }
+function allStations() { const m = new Map(); units.forEach(u => { const t = (u.station || '').trim(); if (t) m.set(t.toLowerCase(), t); }); return [...m.values()].sort((a, b) => a.localeCompare(b, 'th')); }
+function showStationSuggest() {
+  const input = document.getElementById('f_station'), box = document.getElementById('stationSuggest'); if (!input || !box) return;
+  const q = input.value.trim().toLowerCase(); const list = allStations().filter(n => !q || n.toLowerCase().includes(q)).filter(n => n.toLowerCase() !== q).slice(0, 12);
+  if (!list.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = list.map(n => `<button type="button" data-st="${esc(n)}" onmousedown="event.preventDefault()" onclick="pickStation(this.dataset.st)" class="w-full text-left px-3 py-2.5 text-[15px] border-b border-slate-800 last:border-0 active:bg-brick-50">🚇 ${esc(n)}</button>`).join('');
+  box.classList.remove('hidden');
+}
+function pickStation(n) { document.getElementById('f_station').value = n; document.getElementById('stationSuggest').classList.add('hidden'); const d = document.getElementById('f_stationDist'); if (d && !d.value) d.focus(); }
+document.addEventListener('click', e => { if (!e.target.closest('#f_station') && !e.target.closest('#stationSuggest')) { const b = document.getElementById('stationSuggest'); if (b) b.classList.add('hidden'); } });
 function hideProjectSuggest() { const b = document.getElementById('projectSuggest'); if (b) b.classList.add('hidden'); }
 document.addEventListener('click', e => { if (!e.target.closest('#f_project') && !e.target.closest('#projectSuggest')) hideProjectSuggest(); });
 
@@ -2342,6 +2340,7 @@ function saveUnit() {
   if (!data.project || !data.room) return toast('กรอกชื่อโครงการและเลขห้อง');
   data.rent = Number(data.rent) || 0; data.size = Number(data.size) || 0;
   data.salePrice = data.salePrice ? Number(data.salePrice) : '';
+  data.stationDist = data.stationDist !== '' && !isNaN(Number(data.stationDist)) ? Number(data.stationDist) : '';
   if (id && !isTemp) {
     const t = units.find(x => x.id === id);
     const wasOccupied = t.status === 'OCCUPIED';
@@ -2636,7 +2635,7 @@ function render() {
   if (selectedProject) list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
   else if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
-    const hay = u => [u.project, u.building, u.room, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
+    const hay = u => [u.project, u.building, u.station, u.room, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase();
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
   }
   const lt = document.getElementById('listTitle');
@@ -2700,7 +2699,7 @@ function cardRowHTML(x) {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
-          ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}
+          ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}${x.station ? `<p class="text-[10px] text-slate-500 truncate mb-0.5">${esc(stationLabel(x))}</p>` : ''}
           <h3 class="text-base font-bold text-ink truncate tracking-tight">ห้อง ${esc(x.room)}</h3>
           ${Number(x.rent) > 0 || !Number(x.salePrice) ? `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>` : ''}${Number(x.salePrice) > 0 ? (Number(x.rent) > 0 ? `<p class="text-[11px] font-semibold text-brick-700 mt-0.5">ขาย ${baht(x.salePrice)}</p>` : `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-[10px] font-semibold text-slate-400">ขาย</span><span class="text-base font-bold text-brick-600">${baht(x.salePrice)}</span></div>`) : ''}
         </div>
@@ -2740,7 +2739,7 @@ function listRowHTML(x) {
       </div>
       <div class="flex-1 text-left min-w-0">
         <div class="flex items-center gap-1.5 flex-wrap"><p class="text-xs font-semibold text-ink truncate">${esc(x.project)}${x.building ? ' · ' + esc(x.building) : ''} · ${esc(x.room)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
-        <p class="text-[11px] text-slate-400 truncate">${esc(x.type)} ${esc(x.bath)}B${x.size ? ' · ' + esc(x.size) + ' ตร.ม.' : ''}${pic ? ' · 📷 ' + pic : ''}</p>
+        <p class="text-[11px] text-slate-400 truncate">${esc(x.type)} ${esc(x.bath)}B${x.size ? ' · ' + esc(x.size) + ' ตร.ม.' : ''}${pic ? ' · 📷 ' + pic : ''}</p>${x.station ? `<p class="text-[10px] text-slate-500 truncate">${esc(stationLabel(x))}</p>` : ''}
         <p class="text-[10px] ${ps.cls} mt-0.5">${ps.label}</p>
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0">
@@ -3611,8 +3610,8 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
-<script src="features.js?v=33"></script>
+<script src="features.js?v=34"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=33"></script>
+<script src="sync.js?v=34"></script>
 </body>
 </html>

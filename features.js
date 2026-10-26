@@ -235,7 +235,7 @@ async function cloudLink(u, o, withPhotos) {
 }
 async function buildLink(u, opts) {
   const c = cfg();
-  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').replace(new RegExp('(?:ห้อง(?:เลขที่)?|room|unit|no\\.?|#)?\\s*[:：#]?\\s*' + String(u.room).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').replace(/[ \t]{2,}/g, ' ').trim() : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', sn: u.station || '', sd: Number(u.stationDist) || 0, st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').replace(new RegExp('(?:ห้อง(?:เลขที่)?|room|unit|no\\.?|#)?\\s*[:：#]?\\s*' + String(u.room).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').replace(/[ \t]{2,}/g, ' ').trim() : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
   if (!opts.long) {
     let err;
     for (let t = 0; t < 2; t++) { try { return await cloudLink(u, o, !!opts.photo); } catch (e) { err = e; console.warn('cloud share failed', e); if (!navigator.onLine) break; await new Promise(r => setTimeout(r, 1500)); } }
@@ -253,7 +253,7 @@ async function buildLink(u, opts) {
   return link;
 }
 function shareText(u, link) {
-  return `${u.project || ''}${u.type ? ' · ' + u.type : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}\nค่าเช่า ${B(u.rent)}/เดือน\nดูรายละเอียดและรูป: ${link}`;
+  return `${u.project || ''}${u.type ? ' · ' + u.type : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.station ? '\n🚇 ' + u.station + (Number(u.stationDist) ? ' ' + Number(u.stationDist).toLocaleString('th-TH') + ' ม.' : '') : ''}\nค่าเช่า ${B(u.rent)}/เดือน\nดูรายละเอียดและรูป: ${link}`;
 }
 async function renderShare() {
   const u = units_().find(x => x.id === shareState.id); if (!u) return;
@@ -851,7 +851,7 @@ FX.addBackup('catalog', getC, v => { if (v && v.id && v.secret) setC(v); });
 const SITE = () => location.origin + location.pathname.replace(/[^/]*$/, '');
 const avail = () => units_().filter(u => u.status === 'AVAILABLE');
 const linkOf = c => SITE() + 'a/' + c.id + '/';
-const sigOf = () => JSON.stringify(avail().map(u => [u.id, u.share && u.share.id, u.rent, u.salePrice, u.project, u.type, u.size, u.bath, u.floor])) + '|' + JSON.stringify([cfg().agentName, cfg().phone, cfg().lineId]);
+const sigOf = () => JSON.stringify(avail().map(u => [u.id, u.share && u.share.id, u.rent, u.salePrice, u.project, u.type, u.size, u.bath, u.floor, u.station, u.stationDist])) + '|' + JSON.stringify([cfg().agentName, cfg().phone, cfg().lineId]);
 async function avatarThumb() {
   try { const src = localStorage.getItem(typeof AVATAR_KEY !== 'undefined' ? AVATAR_KEY : 'staylow_avatar'); if (!src) return '';
     const img = new Image(); img.src = src; await img.decode(); const c = document.createElement('canvas'); c.width = c.height = 160;

@@ -19,7 +19,7 @@ const str = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 const num = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x >= 0 && x < 1e10 ? x : 0; };
 function clean(d: any) {
   d = d && typeof d === "object" ? d : {}; const a = d.a && typeof d.a === "object" ? d.a : {};
-  return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), st: str(d.st, 20), d: str(d.d, 900), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
+  return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), sn: str(d.sn, 60), sd: num(d.sd), st: str(d.st, 20), d: str(d.d, 900), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
 }
 const sha256 = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t))), b => b.toString(16).padStart(2, "0")).join("");
 async function canEdit(id: string, secret: unknown) {
