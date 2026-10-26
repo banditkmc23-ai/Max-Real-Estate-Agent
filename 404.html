@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>MAX Agent</title>
 <script>
-(function(){var m=location.pathname.match(/^(.*)\/r\/([A-Za-z0-9]{4,12})\/?$/);
+(function(){var m=location.pathname.match(/^(.*)\/r\/([A-Za-z0-9]{4,12})(?:[^\/]*)\/?$/);
 var a=location.pathname.match(/^(.*)\/a\/([A-Za-z0-9]{6})\/?$/);
 location.replace(a?a[1]+'/agent.html?id='+a[2]:m?m[1]+'/room.html?id='+m[2]:'/Max-Real-Estate-Agent/');})();
 </script></head><body></body></html>

@@ -116,7 +116,9 @@ a{color:inherit;text-decoration:none}
     let d;
     if (qid) {
       document.getElementById('app').innerHTML = '<p class="mut" style="text-align:center;margin-top:96px">กำลังโหลด...</p>';
-      try { const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(qid)}`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.data) throw 0; d = j.data; }
+      const get = async id => { const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(id)}`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.data) throw 0; return j.data; };
+      // links glued to following text (e.g. r/K82gDC01.jpg) -> try the 6-char room id
+      try { try { d = await get(qid); } catch (e) { if (qid.length > 6 && /^[A-Za-z0-9]{6}/.test(qid)) { d = await get(qid.slice(0, 6)); history.replaceState(null, '', location.pathname + '?id=' + qid.slice(0, 6)); } else throw e; } }
       catch (e) { return fail('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่'); }
     } else if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
     if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }
