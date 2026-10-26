@@ -1,5 +1,5 @@
 // MAX Agent service worker: network-first (bypassing HTTP cache) for same-origin files, cache-first for pinned CDN assets.
-const VERSION = 'v48';
+const VERSION = 'v49';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
 const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js','catalog-hero.webp', 'vendor/qrcode.js', 'vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'];
