@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=39">
+<link rel="stylesheet" href="tailwind.min.css?v=40">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -260,9 +260,23 @@
   }
   @media (max-width: 639px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .room-grid { grid-template-columns: 1fr !important; }
+    .room-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 10px !important; }
     .cust-grid { grid-template-columns: 1fr !important; }
   }
+  /* v40 grid cards */
+  .g-card{background:#fff;border:1px solid #ece6e1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+  .g-img{position:relative;aspect-ratio:4/3;background:#f1ede9;display:flex;align-items:center;justify-content:center}
+  .g-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+  .g-badge{position:absolute;left:6px;top:6px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background-color:#fff}
+  .g-fav{position:absolute;right:4px;top:4px}.g-fav .fav-btn{background:rgba(255,255,255,.9);border-radius:999px}
+  .g-cnt{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px}
+  .g-body{padding:8px 9px 9px;display:flex;flex-direction:column;gap:1px;flex:1}
+  .g-title{font-size:12.5px;font-weight:700;color:#2b2420;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-sub{font-size:11px;color:#8e8680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-price{font-size:15px;font-weight:700;color:#c2552d;margin-top:1px}.g-price span{font-size:10px;font-weight:400;color:#8e8680;margin-left:2px}
+  .g-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:auto;padding-top:7px}
+  .g-btns button{display:flex;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;padding:7px 2px;border-radius:999px;white-space:nowrap}
+  .g-b1{background:#c2552d;color:#fff}.g-b2{background:#fbeee7;color:#c2552d}.g-b2.off{background:#eee;color:#aaa}
   /* v33: no iOS focus-zoom, no horizontal overflow */
   input, select, textarea, .inp, .sheet label .inp, input.inline-input, select.inline-select, textarea.inline-textarea, #priceMin, #priceMax { font-size:16px !important; }
   html, body { max-width:100%; overflow-x:hidden; }
@@ -332,7 +346,7 @@
         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard
         <span class="ml-auto text-[10px] opacity-60">⌘D</span>
       </button>
-      <button onclick="switchView('rooms')" data-nav="rooms" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
+      <button onclick="openRoomsTab()" data-nav="rooms" class="nav-link w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium mb-0.5">
         <i data-lucide="building-2" class="w-4 h-4"></i>ห้องพัก
         <span class="ml-auto text-[10px] opacity-60">⌘R</span>
       </button>
@@ -455,10 +469,6 @@
           <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
           <span id="advFilterDotDesktop" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-brick-500 border-2 border-white"></span>
         </button>
-        <div class="view-toggle">
-          <button onclick="setView('card')" id="vtCardD" title="การ์ด"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
-          <button onclick="setView('list')" id="vtListD" title="ตาราง"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
-        </div>
       </div>
     </header>
 
@@ -690,10 +700,6 @@
               <h2 class="text-xl lg:text-2xl font-bold text-ink tracking-tight">ห้องพัก</h2>
               <p class="text-xs lg:text-sm text-slate-400 mt-0.5" id="listTitle">ทั้งหมด 0 ห้อง</p>
             </div>
-            <div class="view-toggle lg:hidden">
-              <button onclick="setView('card')" id="vtCard" title="การ์ด"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></button>
-              <button onclick="setView('list')" id="vtList" title="ตาราง"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
-            </div>
           </div>
 
           <div class="flex gap-1.5 text-[11px] mb-3 overflow-x-auto hide-scrollbar pb-1">
@@ -779,7 +785,7 @@
 
     <nav class="bottom-nav-new lg:hidden">
       <button onclick="switchView('dashboard')" data-nav="dashboard" class="bottom-nav-item"><i data-lucide="home"></i><span>ภาพรวม</span></button>
-      <button onclick="switchView('rooms')" data-nav="rooms" class="bottom-nav-item"><i data-lucide="building-2"></i><span>ห้องพัก</span></button>
+      <button onclick="openRoomsTab()" data-nav="rooms" class="bottom-nav-item"><i data-lucide="building-2"></i><span>ห้องพัก</span></button>
       <button onclick="openSheet('add')" class="fab-btn" aria-label="เพิ่มห้องใหม่"><i data-lucide="plus"></i></button>
       <button onclick="switchView('customers')" data-nav="customers" class="bottom-nav-item"><i data-lucide="users"></i><span>ลูกค้า</span></button>
       <button onclick="openSettings()" class="bottom-nav-item"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
@@ -1130,7 +1136,7 @@
   </div>
 
   <div class="space-y-1 mb-4">
-    <button onclick="switchView('rooms'); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
+    <button onclick="openRoomsTab(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
       <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-ink">รายการห้องพัก</p><p class="text-[11px] text-slate-400">ดูทั้งหมด / ค้นหา / กรอง</p></div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
@@ -1281,7 +1287,7 @@ let customers = load(CUST_KEY, []).map(c => ({
   linkedUnits:[], timeline:[], createdAt: Date.now(), ...c
 }));
 
-let activeFilters = new Set(['all']);
+let activeFilters = new Set(['FAV']);
 let activeCustFilters = new Set(['all']);
 let sortDir = 'new';
 let selectedProject = null;
@@ -1696,6 +1702,12 @@ function switchView(v) {
   document.querySelector('.main-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// v40: opening ห้องพัก defaults to ⭐ น่าสนใจ
+function openRoomsTab() {
+  activeFilters = new Set(['FAV']); selectedProject = null;
+  switchView('rooms');
+  setTimeout(() => { const b = document.querySelector('#viewRooms .filter-btn[data-f="FAV"]'); if (b && b.parentElement) { const p = b.parentElement; if (b.offsetLeft - p.offsetLeft + b.offsetWidth > p.scrollLeft + p.clientWidth || b.offsetLeft - p.offsetLeft < p.scrollLeft) p.scrollLeft = Math.max(0, b.offsetLeft - p.offsetLeft - 12); }; }, 50);
+}
 // ============= ROOM FILTERS =============
 function gotoFilter(filterName) {
   activeFilters = new Set([filterName]);
@@ -2736,7 +2748,7 @@ function render() {
     if (selectedProject && list.length === 0) {
       ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)}</p></div><p class="text-xs text-slate-500 text-center py-8 col-span-full">ไม่พบห้องในโครงการนี้ตามเงื่อนไข</p>`;
     } else if (selectedProject) {
-      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p></div>${viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('')}`;
+      ul.innerHTML = `<div class="col-span-full mb-2 flex items-center justify-between gap-2"><button onclick="backToProjectList()" class="flex items-center gap-1.5 text-[11px] text-brick-600 font-semibold bg-brick-500/10 px-3 py-1.5 rounded-full active:scale-95"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>กลับไปรายชื่อโครงการ</button><p class="text-[11px] text-slate-400 font-medium truncate">${esc(selectedProject)} · ${list.length} ห้อง</p></div>${list.map(cardRowHTML).join('')}`;
     } else if (!units.length) {
       ul.innerHTML = emptyStateHTML('home', 'ยังไม่มีห้องในระบบ', 'เริ่มต้นด้วยการเพิ่มห้องแรก แล้วจัดการสถานะ รูป และการโพสต์ได้ที่นี่', 'เพิ่มห้องแรก', "openSheet('add')");
     } else if (list.length === 0) {
@@ -2745,8 +2757,8 @@ function render() {
       const projects = getUniqueProjects(q);
       if (projects.length > 0) {
         ul.innerHTML = `<div class="col-span-full mb-2"><p class="text-[11px] text-slate-400 font-medium">พบ ${projects.length} โครงการ</p></div>${projects.map(p => `<button onclick="selectProject('${p.name.replace(/'/g, "\\'")}')" class="w-full bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 hover:border-brick-500 transition-all active:scale-[0.98] text-left shadow-sm"><div class="w-11 h-11 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="building-2" class="w-5 h-5 text-brick-600"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-bold text-ink truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 mt-0.5">${p.count} ห้อง · ว่าง ${p.available} · มีผู้เช่า ${p.occupied}</p></div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 shrink-0"></i></button>`).join('')}`;
-      } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
-    } else ul.innerHTML = viewMode === 'card' ? list.map(cardRowHTML).join('') : list.map(listRowHTML).join('');
+      } else ul.innerHTML = list.map(cardRowHTML).join('');
+    } else ul.innerHTML = list.map(cardRowHTML).join('');
   }
   if (detailUnitId) renderDetailView();
   lucide.createIcons();
@@ -2754,45 +2766,26 @@ function render() {
 }
 
 function cardRowHTML(x) {
-  const m = statusOf(x), ps = postedState(x);
+  const m = statusOf(x);
   const pic = photoCount[x.id] || 0;
-  const hasUrl = x.sourceUrl && isValidUrl(normalizeUrl(x.sourceUrl));
-  const hasPhone = x.ownerPhone && /^\+?\d{6,}$/.test((x.ownerPhone || '').replace(/[^0-9+]/g, ''));
-  const hasLine = !!x.ownerLine;
-  const ownerBtnCount = (hasPhone ? 1 : 0) + (hasLine ? 1 : 0) + (hasUrl ? 1 : 0);
-  const hasNote = !!(x.internalNote || '').trim();
-  const linkedCount = customers.filter(c => (c.linkedUnits || []).includes(x.id)).length;
-  return `<div class="unit-card bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
-    <div class="p-4">
-      <div class="flex items-start gap-3 mb-2">
-        <div class="shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
-          ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
-          ${pic ? `<span class="absolute bottom-0 right-0 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-1 py-0.5 rounded-tl">${pic}</span>` : ''}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap"><p class="text-[11px] text-slate-400 font-medium truncate">${esc(x.project)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
-          ${x.building ? `<p class="text-[10px] text-slate-400 truncate mb-0.5">🏬 ${esc(x.building)}</p>` : ''}${x.station ? `<p class="text-[10px] text-slate-500 truncate mb-0.5">${esc(stationLabel(x))}</p>` : ''}
-          <h3 class="text-base font-bold text-ink truncate tracking-tight">ห้อง ${esc(x.room)}</h3>
-          ${Number(x.rent) > 0 || !Number(x.salePrice) ? `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-base font-bold text-brick-600">${baht(x.rent)}</span><span class="text-[10px] text-slate-400">/เดือน</span></div>` : ''}${Number(x.salePrice) > 0 ? (Number(x.rent) > 0 ? `<p class="text-[11px] font-semibold text-brick-700 mt-0.5">ขาย ${baht(x.salePrice)}</p>` : `<div class="flex items-baseline gap-1.5 mt-1"><span class="text-[10px] font-semibold text-slate-400">ขาย</span><span class="text-base font-bold text-brick-600">${baht(x.salePrice)}</span></div>`) : ''}
-        </div>
-        <div class="flex flex-col items-end gap-1 shrink-0"><button onclick="event.stopPropagation(); cycleStatus('${x.id}')" class="status-btn text-[10px] ${m.cls} border px-2.5 py-1 rounded-full font-semibold shrink-0 whitespace-nowrap">${m.short ? m.short : m.label}</button>${favBtn(x)}</div>
+  const rentShown = Number(x.rent) > 0 || !Number(x.salePrice);
+  const sz = Number(x.size) ? ` · ${esc(x.size)} ตร.ม.` : '';
+  return `<div class="unit-card g-card" onclick="openDetailView('${x.id}')">
+    <div class="g-img">
+      ${pic ? `<img id="mini-${x.id}" alt="">` : `<i data-lucide="image" class="w-7 h-7 text-slate-300"></i>`}
+      <span class="g-badge ${m.cls} border">${m.short ? m.short : m.label}</span>
+      <span class="g-fav" onclick="event.stopPropagation()">${favBtn(x)}</span>
+      ${pic ? `<span class="g-cnt">${pic} รูป</span>` : ''}
+    </div>
+    <div class="g-body">
+      <p class="g-title">${esc(x.project || '-')}</p>
+      <p class="g-sub">${esc(x.type || '-')}${sz}</p>
+      ${rentShown ? `<p class="g-price">${baht(x.rent)}<span>/เดือน</span></p>` : `<p class="g-price"><span style="margin:0 3px 0 0">ขาย</span>${baht(x.salePrice)}</p>`}
+      ${x.station ? `<p class="g-sub">${esc(stationLabel(x))}</p>` : ''}
+      <div class="g-btns" onclick="event.stopPropagation()">
+        <button onclick="quickCopy('${x.id}')" class="g-b1"><i data-lucide="copy" class="w-3 h-3"></i>คัดข้อความ</button>
+        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="g-b2 ${pic ? '' : 'off'}"><i data-lucide="images" class="w-3 h-3"></i>รูปภาพ</button>
       </div>
-      <div class="flex items-center gap-3 text-[11px] text-slate-500 mb-2 flex-wrap">
-        <span class="flex items-center gap-1"><i data-lucide="bed" class="w-3 h-3"></i>${esc(x.type)}</span>
-        <span class="flex items-center gap-1"><i data-lucide="bath" class="w-3 h-3"></i>${esc(x.bath)} Bath</span>
-        ${x.size ? `<span class="flex items-center gap-1"><i data-lucide="maximize" class="w-3 h-3"></i>${esc(x.size)} ตร.ม.</span>` : ''}
-      </div>
-      <p class="text-[10px] ${ps.cls} mb-3">${ps.label}</p>
-      <div class="grid grid-cols-3 gap-1.5 mb-2" onclick="event.stopPropagation()">
-        <button onclick="quickCopy('${x.id}')" class="bg-brick-500 hover:bg-brick-600 text-white font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i>ข้อความ</button>
-        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="${pic ? 'bg-brick-300 hover:bg-brick-400 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95"><i data-lucide="images" class="w-3 h-3"></i>รูป</button>
-        <button onclick="openSheet('edit','${x.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[11px] py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 border border-slate-200"><i data-lucide="pencil" class="w-3 h-3"></i>แก้ไข</button>
-      </div>
-      ${ownerBtnCount > 0 ? `<div class="grid gap-1.5" style="grid-template-columns: repeat(${ownerBtnCount}, minmax(0, 1fr));" onclick="event.stopPropagation()">
-        ${hasPhone ? `<button onclick="contactOwner('${x.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทร</button>` : ''}
-        ${hasLine ? `<button onclick="openOwnerLine('${x.id}')" class="owner-action line"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
-        ${hasUrl ? `<button onclick="openSourceUrl('${x.id}')" class="owner-action source"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>ต้นทาง</button>` : ''}
-      </div>` : ''}
     </div>
   </div>`;
 }
@@ -3659,7 +3652,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.6';
+const APP_VERSION = '9.7';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3756,8 +3749,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=39"></script>
+<script src="features.js?v=40"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=39"></script>
+<script src="sync.js?v=40"></script>
 </body>
 </html>
