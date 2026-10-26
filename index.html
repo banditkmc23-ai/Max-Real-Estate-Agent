@@ -1706,7 +1706,7 @@ function switchView(v) {
 function openRoomsTab() {
   activeFilters = new Set(['FAV']); selectedProject = null;
   switchView('rooms');
-  setTimeout(() => { const b = document.querySelector('#viewRooms .filter-btn[data-f="FAV"]'); if (b && b.parentElement) { const p = b.parentElement; if (b.offsetLeft - p.offsetLeft + b.offsetWidth > p.scrollLeft + p.clientWidth || b.offsetLeft - p.offsetLeft < p.scrollLeft) p.scrollLeft = Math.max(0, b.offsetLeft - p.offsetLeft - 12); }; }, 50);
+  setTimeout(() => { const b = document.querySelector('#viewRooms .filter-btn[data-f="FAV"]'); if (b && b.parentElement) { const p = b.parentElement, br = b.getBoundingClientRect(), pr = p.getBoundingClientRect(); if (br.right > pr.right) p.scrollLeft += br.right - pr.right + 12; else if (br.left < pr.left) p.scrollLeft -= pr.left - br.left + 12; }; }, 50);
 }
 // ============= ROOM FILTERS =============
 function gotoFilter(filterName) {
