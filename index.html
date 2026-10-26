@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=36">
+<link rel="stylesheet" href="tailwind.min.css?v=37">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -137,6 +137,10 @@
   .url-open-btn { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:4px; padding:10px 16px; margin-top:6px; background:#0ea5e9; color:#fff; border-radius:9999px; font-size:12px; font-weight:600; transition:all .15s; }
   .url-open-btn:active { transform:scale(.96); background:#0284c7; }
   .url-open-btn:disabled { background:#e4dfd9; color:#8a8078; cursor:not-allowed; }
+.dv-car{position:relative;aspect-ratio:4/3}.dv-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.dv-track::-webkit-scrollbar{display:none}.dv-sl{flex:0 0 100%;height:100%;scroll-snap-align:start;cursor:pointer}.dv-sl img{width:100%;height:100%;object-fit:cover;display:block}
+  .dv-cnt{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;padding:2px 8px;border-radius:20px}.dv-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none}.dv-dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.6);transition:all .3s}.dv-dots i.on{width:16px;background:#fff}
+  .dv-btn{display:flex;align-items:center;justify-content:center;gap:4px;font-weight:600;font-size:11.5px;padding:9px 4px;border-radius:12px;line-height:1.2;text-align:center}.dv-btn:active{transform:scale(.96)}
+  .dv-tabs{display:flex;background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden}.dv-tabs button{flex:1;padding:10px 4px;font-size:13px;color:#9a918a;border-bottom:2px solid transparent}.dv-tabs button.on{color:#c2552d;border-bottom-color:#c2552d;font-weight:600}
   .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:9999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
   .owner-action.phone { background:#fdf4ee; color:#a04d2c; border-color:#f0c4a8; }
@@ -2090,15 +2094,42 @@ function closeDetailView() {
   document.body.style.overflow = '';
 }
 function dvDelete() { if (detailUnitId) { document.getElementById('f_id').value = detailUnitId; deleteUnit(); } }
+let dvTimer = null, dvIdx = 0, dvPause = 0;
+function dvSetTab(k) { window.dvTab = k; document.querySelectorAll('#detailContent [data-dvtab]').forEach(e => e.style.display = e.dataset.dvtab === k ? '' : 'none'); document.querySelectorAll('#detailContent .dv-tabs button').forEach((b, i) => b.classList.toggle('on', ['desc','travel','owner'][i] === k)); }
+function dvGo(i, user) {
+  const tr = document.getElementById('dvTrack'); if (!tr) return;
+  const n = tr.children.length; if (!n) return; dvIdx = (i + n) % n;
+  tr.scrollTo({ left: dvIdx * tr.clientWidth, behavior: 'smooth' });
+  if (user) dvPause = Date.now() + 8000;
+}
+function dvSync() {
+  const tr = document.getElementById('dvTrack'); if (!tr) return; const n = tr.children.length;
+  const i = Math.round(tr.scrollLeft / (tr.clientWidth || 1)); dvIdx = i;
+  const c = document.getElementById('dvCnt'); if (c) c.textContent = (i + 1) + '/' + n;
+  document.querySelectorAll('#dvDots i').forEach((d, k) => d.classList.toggle('on', k === i));
+}
 async function loadDetailCover(unitId) {
+  clearInterval(dvTimer); window.dvTab = window.dvTabFor === unitId ? window.dvTab : 'desc'; window.dvTabFor = unitId;
   if (!db) return;
   try {
     const ps = await getUnitPhotos(unitId);
-    const wrap = document.getElementById('dvCoverStrip'), img = document.getElementById('dvCoverImg');
-    if (!wrap || !img) return;
+    const wrap = document.getElementById('dvCoverStrip'), tr = document.getElementById('dvTrack');
+    if (!wrap || !tr || detailUnitId !== unitId) return;
     if (!ps.length) { wrap.classList.add('hidden'); return; }
-    img.src = URL.createObjectURL(ps[0].thumb);
-    wrap.classList.remove('hidden');
+    ps.sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0));
+    tr.innerHTML = ps.map((p, i) => `<div class="dv-sl" onclick="openGallery('${unitId}')"><img data-i="${i}" alt="" ${i > 1 ? 'loading="lazy"' : ''}></div>`).join('');
+    const imgs = tr.querySelectorAll('img');
+    ps.forEach((p, i) => { if (p.thumb) imgs[i].src = URL.createObjectURL(p.thumb); if (i < 2 && typeof fullBlobOf === "function") fullBlobOf(p).then(b => { if (b && b !== p.thumb) imgs[i].src = URL.createObjectURL(b); }).catch(() => {}); });
+    document.getElementById('dvDots').innerHTML = ps.length > 1 ? ps.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
+    document.getElementById('dvCnt').textContent = '1/' + ps.length;
+    wrap.classList.remove('hidden'); dvIdx = 0;
+    tr.onscroll = () => { clearTimeout(tr._t); tr._t = setTimeout(dvSync, 60); };
+    ['touchstart', 'pointerdown'].forEach(ev => tr.addEventListener(ev, () => { dvPause = Date.now() + 8000; }, { passive: true }));
+    if (ps.length > 1) dvTimer = setInterval(() => {
+      if (detailUnitId !== unitId || !document.getElementById('dvTrack')) return clearInterval(dvTimer);
+      if (document.hidden || Date.now() < dvPause || document.querySelector('#detailContent .editing')) return;
+      dvGo(dvIdx + 1);
+    }, 2500);
   } catch (e) {}
 }
 function renderDetailView() {
@@ -2113,38 +2144,57 @@ function renderDetailView() {
     : `<span class="${d <= EXPIRY_DAYS ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'bg-slate-100 text-slate-500 border-slate-700'} border text-[10px] font-semibold px-2 py-0.5 rounded">⏱ เหลือสัญญา ${d} วัน</span>`;
   const linkedCusts = customers.filter(c => (c.linkedUnits || []).includes(u.id));
 
+  const dist = Number(u.stationDist) || 0, walk = dist ? Math.max(1, Math.round(dist / 80)) : 0;
+  const spec = [u.type ? esc(u.type) : '', u.bath ? esc(u.bath) + ' ห้องน้ำ' : '', u.size ? esc(u.size) + ' ตร.ม.' : '', u.floor ? 'ชั้น ' + esc(u.floor) : ''].filter(Boolean).join(' · ');
+  const tab = window.dvTab || 'desc', T = k => `data-dvtab="${k}" ${tab === k ? '' : 'style="display:none"'}`;
   document.getElementById('detailContent').innerHTML = `
-    <div id="dvCoverStrip" onclick="openGallery('${u.id}')" class="rounded-2xl overflow-hidden bg-slate-100 ${photoCount[u.id] ? '' : 'hidden'}" style="aspect-ratio:16/10;cursor:pointer;"><img id="dvCoverImg" class="w-full h-full object-cover" alt=""></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
-      <div class="flex justify-between items-start mb-3 gap-2">
-        <div class="flex-1 min-w-0">
-          <p class="text-sm text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
-          <p class="text-xs text-slate-400 mb-1 inline-edit" onclick="startInlineEdit(this, 'building')">${u.building ? '🏬 ' + esc(u.building) : 'แตะเพื่อใส่อาคาร'}</p><p class="text-xs text-slate-500 mb-1 inline-edit" onclick="startInlineEdit(this, 'station')">${u.station ? esc(stationLabel(u)) : 'แตะเพื่อใส่สถานี BTS/MRT'}</p>
-          <h2 class="text-2xl font-bold text-ink tracking-tight">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span></h2>
-        </div>
-        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
+    <div id="dvCoverStrip" class="dv-car rounded-2xl overflow-hidden bg-slate-100 ${pic ? '' : 'hidden'}"><div id="dvTrack" class="dv-track"></div><div id="dvCnt" class="dv-cnt">1/${pic}</div><div id="dvDots" class="dv-dots"></div></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+        <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
+        <button onclick="toggleFav('${u.id}', event)" class="px-2.5 py-1 rounded-full border text-xs font-semibold flex items-center gap-1 ${u.fav ? 'bg-amber-50 border-amber-300 text-amber-600' : 'bg-white border-slate-700 text-slate-500'}"><i data-lucide="star" class="w-3 h-3" ${u.fav ? 'fill="#f2a33a"' : ''}></i>${u.fav ? 'น่าสนใจ' : 'ติดดาว'}</button>
+        <span class="ml-auto text-xs text-slate-500 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${Number(u.salePrice) ? 'ขาย <b class="text-brick-700">' + baht(u.salePrice) + '</b>' : '+ ราคาขาย'}</span>
       </div>
-      <div class="flex items-baseline gap-2 mb-4"><span class="text-3xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span><span class="text-sm text-slate-400">/เดือน</span><button onclick="toggleFav('${u.id}', event)" class="ml-auto px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1 ${u.fav ? 'bg-amber-50 border-amber-300 text-amber-600' : 'bg-white border-slate-700 text-slate-500'}"><i data-lucide="star" class="w-3.5 h-3.5" ${u.fav ? 'fill="#f2a33a"' : ''}></i>${u.fav ? 'น่าสนใจ' : 'ติดดาว'}</button></div>
-      <div class="grid grid-cols-2 gap-2 mb-2">
-        <button onclick="quickCopy('${u.id}')" class="bg-brick-500 hover:bg-brick-600 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-500/25"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด</button>
-        ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="bg-brick-300 hover:bg-brick-400 active:scale-95 text-white font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 shadow-md shadow-brick-300/25"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูป (${pic})</button>` : `<button disabled class="bg-slate-100 text-slate-400 font-semibold text-xs py-3 rounded-full flex items-center justify-center gap-1.5 cursor-not-allowed"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
+      <p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'project')">${esc(u.project || 'แตะเพื่อใส่โครงการ')}</p>
+      ${u.building ? `<p class="text-xs text-slate-400 inline-edit" onclick="startInlineEdit(this, 'building')">🏬 ${esc(u.building)}</p>` : ''}
+      <p class="text-xs text-slate-500 mt-0.5">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span>${spec ? ' · ' + spec : ''}</p>
+      <div class="flex items-baseline gap-1.5 mt-2 mb-3"><span class="text-2xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span><span class="text-xs text-slate-400">/เดือน</span></div>
+      <div class="grid grid-cols-3 gap-1.5 mb-1.5">
+        <button onclick="quickCopy('${u.id}')" class="dv-btn bg-brick-500 text-white"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด</button>
+        ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูปภาพ (${pic})</button>` : `<button disabled class="dv-btn bg-slate-100 text-slate-400"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
+        <button id="fxShareBtn" onclick="FX.openShare('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="link" class="w-3.5 h-3.5"></i>แชร์ให้ลูกค้า</button>
       </div>
-      ${(hasPhone || hasLine || hasUrl) ? `<div class="grid gap-2" style="grid-template-columns: repeat(${(hasPhone?1:0)+(hasLine?1:0)+(hasUrl?1:0)}, minmax(0, 1fr));">
-        ${hasPhone ? `<button onclick="contactOwner('${u.id}')" class="owner-action phone"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรเจ้าของ</button>` : ''}
-        ${hasLine ? `<button onclick="openOwnerLine('${u.id}')" class="owner-action line"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>LINE</button>` : ''}
-        ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="owner-action source"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิดลิงก์</button>` : ''}
-      </div>` : ''}
+      <div class="grid grid-cols-2 gap-1.5">
+        <button ${hasPhone ? `onclick="contactOwner('${u.id}')"` : 'disabled'} class="dv-btn owner-action phone ${hasPhone ? '' : '" style="opacity:.4'}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรหาเจ้าของ</button>
+        <button ${hasLine ? `onclick="openOwnerLine('${u.id}')"` : 'disabled'} class="dv-btn ${hasLine ? 'text-white' : 'bg-slate-100 text-slate-400'}" ${hasLine ? 'style="background:#06C755"' : ''}><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>${hasLine ? 'LINE หาเจ้าของ' : 'ไม่มี LINE'}</button>
+      </div>
+      ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="w-full mt-1.5 text-[11px] text-slate-500 flex items-center justify-center gap-1 py-1"><i data-lucide="external-link" class="w-3 h-3"></i>เปิดลิงก์ต้นทาง</button>` : ''}
+    </div>
+    <div class="dv-tabs">${[['desc','รายละเอียด'],['travel','การเดินทาง'],['owner','เจ้าของ']].map(([k,l]) => `<button onclick="dvSetTab('${k}')" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+
+    <div ${T('desc')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-2"><p class="text-xs text-slate-400 font-semibold">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
+      <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
+    </div>
+    <div ${T('desc')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm text-sm">
+      ${[['ห้องนอน','type','select',u.type],['ห้องน้ำ','bath','select',u.bath],['ขนาด (ตร.ม.)','size','number',u.size],['ชั้น','floor','text',u.floor],['วิว','view','text',u.view]].map(([l,f,t,v]) => `<div class="flex justify-between py-1.5 border-b border-slate-100 last:border-0"><span class="text-slate-400">${l}</span><span class="font-semibold text-ink inline-edit" onclick="startInlineEdit(this, '${f}', '${t}')">${esc(v || '—')}</span></div>`).join('')}
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องนอน</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'type', 'select')">${esc(u.type || '-')}</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ห้องน้ำ</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'bath', 'select')">${esc(u.bath || '-')} Bath</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ขนาด</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'size', 'number')">${esc(u.size || '-')} ตร.ม.</p></div>
-      <div class="bg-white border border-slate-700 rounded-2xl p-4 text-center shadow-sm"><p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">ชั้น</p><p class="text-base font-bold text-ink inline-edit" onclick="startInlineEdit(this, 'floor')">${esc(u.floor || '-')}</p></div>
+    <div ${T('travel')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
+      <p class="text-sm font-semibold text-ink mb-3">🚆 การเดินทาง</p>
+      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-50 flex items-center justify-center shrink-0"><i data-lucide="train-front" class="w-5 h-5 text-brick-600"></i></div>
+        <div class="flex-1 min-w-0"><p class="font-semibold text-ink inline-edit" onclick="startInlineEdit(this, 'station')">${u.station ? esc(u.station) : '<span class="text-slate-400 font-normal text-sm">แตะเพื่อใส่สถานี BTS/MRT</span>'}</p>
+        <p class="text-xs text-slate-500 inline-edit" onclick="startInlineEdit(this, 'stationDist', 'number')">${dist ? 'เดิน ~' + walk + ' นาที · ' + dist.toLocaleString('th-TH') + ' ม.' : 'แตะเพื่อใส่ระยะ (เมตร)'}</p></div></div>
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center gap-3 shadow-sm"><i data-lucide="eye" class="w-4 h-4 text-brick-600"></i><span class="text-sm text-slate-500">วิว:</span><span class="text-sm font-semibold text-ink inline-edit flex-1" onclick="startInlineEdit(this, 'view')">${esc(u.view || 'แตะเพื่อใส่')}</span></div>
-    <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm"><span class="text-sm text-slate-500">ราคาขาย (ถ้ามี)</span><span class="text-base font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'salePrice', 'number')">${u.salePrice ? baht(u.salePrice) : '— ไม่มี —'}</span></div>
+    <div ${T('owner')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
+        <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-slate-500 mb-1"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span></div>
+      <div class="flex items-center gap-2 text-sm text-slate-500"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span></div>
+    </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-4 flex items-center justify-between shadow-sm">
       <div><p class="text-xs text-slate-400 mb-0.5">สถานะการโพสต์</p><p class="text-sm font-semibold ${ps.cls}">${ps.label}</p></div>
@@ -2166,15 +2216,6 @@ function renderDetailView() {
       }).join('') : '<p class="text-xs text-slate-500 text-center py-3">ยังไม่มีลูกค้าที่สนใจห้องนี้</p>'}
     </div>
 
-    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs">OW</div>
-        <div class="flex-1 min-w-0"><p class="text-xs text-slate-400">เจ้าของห้อง (Owner)</p><p class="text-base font-semibold text-ink truncate inline-edit" onclick="startInlineEdit(this, 'owner')">${esc(u.owner || 'แตะเพื่อใส่ชื่อเจ้าของ')}</p></div>
-      </div>
-      <div class="flex items-center gap-2 text-sm text-slate-500 mb-1"><i data-lucide="phone" class="w-4 h-4 text-brick-600"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerPhone', 'tel')">${esc(u.ownerPhone || 'แตะเพื่อใส่เบอร์โทร')}</span></div>
-      <div class="flex items-center gap-2 text-sm text-slate-500"><i data-lucide="message-circle" class="w-4 h-4 text-[#06C755]"></i><span class="inline-edit flex-1" onclick="startInlineEdit(this, 'ownerLine')">${esc(u.ownerLine || 'แตะเพื่อใส่ LINE ID')}</span></div>
-    </div>
-
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-600"></i><p class="text-sm font-semibold text-amber-800">โน้ต (ภายใน)</p></div><span class="text-[10px] text-amber-600">${(u.internalNote || '').length} ตัวอักษร</span></div>
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน')}</div>
@@ -2186,11 +2227,6 @@ function renderDetailView() {
         <div class="flex items-center gap-2"><span class="w-16">เริ่ม:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'start', 'date')">${fmtDate(u.start)}</span></div>
         <div class="flex items-center gap-2"><span class="w-16">สิ้นสุด:</span><span class="text-ink font-medium inline-edit flex-1" onclick="startInlineEdit(this, 'end', 'date')">${fmtDate(u.end)}</span></div>
       </div>
-    </div>
-
-    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm">
-      <div class="flex items-center justify-between mb-3"><p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
-      <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
@@ -3582,7 +3618,7 @@ renderCustomers();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '9.3';
+const APP_VERSION = '9.4';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3679,8 +3715,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=36"></script>
+<script src="features.js?v=37"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=36"></script>
+<script src="sync.js?v=37"></script>
 </body>
 </html>
