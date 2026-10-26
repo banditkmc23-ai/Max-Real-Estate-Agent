@@ -136,6 +136,8 @@ let shareState = {}; let shareNote = '';
 const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
 const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
 const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+// share-room writes need the owner's login token
+async function authH() { let s = null; try { s = FX.sbc && (await FX.sbc.auth.getSession()).data.session; } catch (e) {} if (!s || !s.access_token) throw new Error('กรุณาเข้าสู่ระบบก่อนแชร์ลิงก์'); return { apikey: SB_KEY, Authorization: 'Bearer ' + s.access_token }; }
 const cloudCache = {};
 // eslint-disable-next-line
 const _rid = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r = crypto.getRandomValues(new Uint8Array(6)); return Array.from(r, x => a[x % a.length]).join(''); };
@@ -177,7 +179,7 @@ async function cloudLink(u, o, withPhotos) {
   // unchanged room (or a text-only link): the permanent link is returned instantly, nothing is uploaded
   if (sh && (sh.sig === sig || !withPhotos)) { FX.lastShareStats = { uploaded: 0, reused: sorted.length, instant: true }; return linkOf(sh.id); }
   const say = t => { const el = $('fxShareLink'); if (el) el.textContent = t; if (shareProg) shareProg(t); };
-  const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...SB_H, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
+  const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...(await authH()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
   const PUBP = SB_URL + '/storage/v1/object/public/room-photos/';
   // photos that already have a public cloud URL are reused as-is; the rest get a stable per-room path
   const needKey = sorted.filter(p => !(p.url && p.url.startsWith(PUBP)));
@@ -290,7 +292,7 @@ FX.scheduleShareUpdate = (ms) => { clearTimeout(bgTimer); bgTimer = setTimeout((
 { const _pp = window.persist; if (_pp) window.persist = function () { const r = _pp.apply(this, arguments); FX.scheduleShareUpdate(); return r; }; }
 addEventListener('online', () => FX.scheduleShareUpdate(3000));
 setInterval(() => FX.scheduleShareUpdate(0), 180000);
-FX.sb = { url: SB_URL, h: SB_H };
+FX.sb = { url: SB_URL, h: SB_H, auth: authH };
 FX.shareRetry = () => renderShare();
 FX.shareLong = async function () {
   const u = units_().find(x => x.id === shareState.id); if (!u) return; const el = $('fxShareBody');
@@ -879,7 +881,7 @@ async function publish(progress) {
     const c = getC(); const c2 = cfg();
     const secret = c && c.secret || Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
     const body = { action: 'catalog', id: c && c.id || '', secret, agent: { n: c2.agentName || '', l: c2.lineId || '', ph: c2.phone || '', av: await avatarThumb() }, rooms };
-    const r = await fetch(`${FX.sb.url}/functions/v1/share-room`, { method: 'POST', headers: { ...FX.sb.h, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(`${FX.sb.url}/functions/v1/share-room`, { method: 'POST', headers: { ...(await FX.sb.auth()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.id) throw new Error(r.status === 429 ? 'อัปเดตถี่เกินไป รอสักครู่' : r.status === 403 ? 'แก้หน้านี้จากเครื่องนี้ไม่ได้' : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ (' + r.status + ')');
     const nc = { id: j.id, secret, sig: sigOf(), at: Date.now(), count: j.count, first: !(c && c.id) };

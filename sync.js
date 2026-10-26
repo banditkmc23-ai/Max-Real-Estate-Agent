@@ -13,6 +13,7 @@ const tfetch = (url, opt = {}) => { const ac = new AbortController(), ms = /\/st
   if (opt.signal) opt.signal.addEventListener('abort', () => ac.abort());
   return fetch(url, { ...opt, signal: ac.signal }).finally(() => clearTimeout(t)); };
 const sb = supabase.createClient(FX.sb.url, FX.sb.h.apikey, { global: { fetch: tfetch }, auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'max_auth' } });
+FX.sbc = sb;
 const BUCKET = 'user-photos';
 
 /* ---------- what syncs ---------- */
