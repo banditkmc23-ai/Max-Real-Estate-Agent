@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=38">
+<link rel="stylesheet" href="tailwind.min.css?v=39">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -140,6 +140,8 @@
 .dv-car{position:relative;aspect-ratio:4/3}.dv-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.dv-track::-webkit-scrollbar{display:none}.dv-sl{flex:0 0 100%;height:100%;scroll-snap-align:start;cursor:pointer}.dv-sl img{width:100%;height:100%;object-fit:cover;display:block}
   .dv-cnt{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;padding:2px 8px;border-radius:20px}.dv-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none}.dv-dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.6);transition:all .3s}.dv-dots i.on{width:16px;background:#fff}
   .dv-btn{white-space:nowrap;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:4px;font-weight:600;font-size:11.5px;padding:9px 4px;border-radius:12px;line-height:1.2;text-align:center}.dv-btn:active{transform:scale(.96)}
+  .dv-kv{display:grid;grid-template-columns:76px 1fr;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3eeea;font-size:14px}.dv-kv:last-of-type{border-bottom:0}.dv-kv>span{color:#9a918a;font-size:12px}.dv-kv>div{font-weight:600;min-height:32px;display:flex;align-items:center;min-width:0}.dv-kv em{font-style:normal;font-weight:400;color:#b5aca4;font-size:13px}.dv-kv>div.editing{padding:0!important;margin:0!important;background:none!important;border:0!important;box-shadow:none!important;outline:0!important}.dv-kv input.inline-input{width:100%!important;padding:6px 10px;box-shadow:none}
+  .swipe-back-shade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:44}
   .dv-tabs{display:flex;background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden}.dv-tabs button{flex:1;padding:10px 4px;font-size:13px;color:#9a918a;border-bottom:2px solid transparent}.dv-tabs button.on{color:#c2552d;border-bottom-color:#c2552d;font-weight:600}
   .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:9999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
@@ -2181,10 +2183,10 @@ function renderDetailView() {
     </div>
 
     <div ${T('travel')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
-      <p class="text-sm font-semibold text-ink mb-3">🚆 การเดินทาง</p>
-      <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-50 flex items-center justify-center shrink-0"><i data-lucide="train-front" class="w-5 h-5 text-brick-600"></i></div>
-        <div class="flex-1 min-w-0"><p class="font-semibold text-ink inline-edit" onclick="startInlineEdit(this, 'station')">${u.station ? esc(u.station) : '<span class="text-slate-400 font-normal text-sm">แตะเพื่อใส่สถานี BTS/MRT</span>'}</p>
-        <p class="text-xs text-slate-500 inline-edit" onclick="startInlineEdit(this, 'stationDist', 'number')">${dist ? 'เดิน ~' + walk + ' นาที · ' + dist.toLocaleString('th-TH') + ' ม.' : 'แตะเพื่อใส่ระยะ (เมตร)'}</p></div></div>
+      <p class="text-sm font-semibold text-ink mb-2">🚆 การเดินทาง</p>
+      <div class="dv-kv"><span>สถานี</span><div class="inline-edit" onclick="startInlineEdit(this, 'station')">${u.station ? esc(u.station) : '<em>แตะเพื่อใส่สถานี BTS/MRT</em>'}</div></div>
+      <div class="dv-kv"><span>ระยะ (ม.)</span><div class="inline-edit" onclick="startInlineEdit(this, 'stationDist', 'number')">${dist ? dist.toLocaleString('th-TH') + ' ม.' : '<em>แตะเพื่อใส่ระยะ</em>'}</div></div>
+      ${dist ? `<p class="text-xs text-slate-500 mt-2 flex items-center gap-1"><i data-lucide="footprints" class="w-3.5 h-3.5 text-brick-600"></i>เดินประมาณ ${walk} นาที${u.station ? ' ถึง ' + esc(u.station) : ''}</p>` : ''}
     </div>
 
     <div ${T('owner')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
@@ -2263,6 +2265,7 @@ function startInlineEdit(el, field, type = 'text') {
       : field === 'bath' ? [['1','1 Bath'],['2','2 Bath'],['3','3 Bath'],['4','4 Bath']] : [];
     options.forEach(([val, label]) => { const opt = document.createElement('option'); opt.value = val; opt.textContent = label; if (String(currentValue) === String(val)) opt.selected = true; editor.appendChild(opt); });
   } else { editor = document.createElement('input'); editor.type = type; editor.value = currentValue; editor.className = 'inline-input'; if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; } }
+  if (field === 'station') { let dl = document.getElementById('dvStationList'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dvStationList'; document.body.appendChild(dl); } dl.innerHTML = [...new Set(units.map(x => (x.station || '').trim()).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join(''); editor.setAttribute('list', 'dvStationList'); editor.placeholder = 'เช่น BTS อ่อนนุช'; }
   el.innerHTML = ''; el.appendChild(editor); editor.focus(); if (editor.select) editor.select();
   let saved = false;
   const save = () => {
@@ -3618,7 +3621,45 @@ renderCustomers();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '9.5';
+// ============= SWIPE-BACK (iOS-style edge swipe) =============
+(function () {
+  const EDGE = 30, DIST = 80;
+  let st = null;
+  function topTarget() {
+    const open = [...document.querySelectorAll('.sheet.open')].map(el => ({ el, z: +getComputedStyle(el).zIndex || 0 })).sort((a, b) => b.z - a.z)[0];
+    if (open) {
+      const ov = open.el.previousElementSibling;
+      return { el: open.el, close: () => { if (ov && ov.getAttribute('onclick')) { (new Function(ov.getAttribute('onclick'))).call(ov); } else closeAllSheets(); } };
+    }
+    const dvc = document.getElementById('detailViewContent');
+    if (dvc && dvc.classList.contains('show')) return { el: dvc, close: closeDetailView };
+    return null;
+  }
+  function blocked(t) { return t && t.closest && t.closest('input,textarea,select,[contenteditable="true"],.editing'); }
+  document.addEventListener('touchstart', e => {
+    st = null; if (e.touches.length !== 1) return;
+    const t = e.touches[0]; if (t.clientX > EDGE || blocked(e.target)) return;
+    const tg = topTarget(); if (!tg) return;
+    st = { x: t.clientX, y: t.clientY, tg, lock: 0, dx: 0 };
+  }, { passive: true, capture: true });
+  document.addEventListener('touchmove', e => {
+    if (!st) return; const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+    if (!st.lock) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; st.lock = (dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.5) ? 1 : -1; if (st.lock === 1) { st.tg.el.style.transition = 'none'; } }
+    if (st.lock !== 1) { st = null; return; }
+    e.preventDefault(); e.stopPropagation();
+    st.dx = Math.max(0, dx); st.tg.el.style.translate = st.dx + 'px 0';
+  }, { passive: false, capture: true });
+  function end() {
+    if (!st || st.lock !== 1) { st = null; return; }
+    const { tg, dx } = st, el = tg.el; st = null;
+    el.style.transition = 'translate .2s ease';
+    if (dx > DIST) { el.style.translate = window.innerWidth + 'px 0'; setTimeout(() => { tg.close(); setTimeout(() => { el.style.transition = ''; el.style.translate = ''; }, 320); }, 180); }
+    else { el.style.translate = '0px 0'; setTimeout(() => { el.style.transition = ''; el.style.translate = ''; }, 220); }
+  }
+  document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
+})();
+
+const APP_VERSION = '9.6';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3715,8 +3756,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=38"></script>
+<script src="features.js?v=39"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=38"></script>
+<script src="sync.js?v=39"></script>
 </body>
 </html>
