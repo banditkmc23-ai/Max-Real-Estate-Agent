@@ -114,6 +114,9 @@
   .pick-cell { transition: transform .12s; cursor:pointer; }
   .pick-cell:active { transform: scale(.96); }
   .pick-cell.selected { outline: 3px solid #b85c38; outline-offset: -3px; }
+  #galGrid .photo-cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y}
+  html.reordering, html.reordering *{-webkit-user-select:none;user-select:none}
+  html.reordering #gallery{overflow-y:hidden;touch-action:none}
   .pick-cell .order-badge { position:absolute; top:4px; left:4px; min-width:22px; height:22px; border-radius:11px; background:#b85c38; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; }
   .inp { display:block; width:100%; margin-top:6px; background:#fff; border:1.5px solid #e4dfd9; border-radius:16px; padding:11px 14px; font-size:13px; color:#1c1917; transition: border-color .15s, box-shadow .15s, background .15s; }
   .inp:hover { border-color:#d6cec4; }
@@ -3491,6 +3494,84 @@ async function renderGallery() {
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
 }
+// ---- touch/mouse long-press drag reorder for gallery grid ----
+(function () {
+  const LP = 350, MOVE_TOL = 8;
+  let st = null; // {cell,id,timer,x0,y0,drag,ghost,ids,rects,over,raf,sx,sy,ptr}
+  const grid = () => document.getElementById('galGrid'), sheet = () => document.getElementById('gallery');
+  const cells = () => [...grid().querySelectorAll('.photo-cell')];
+  function cancel() { if (st) { clearTimeout(st.timer); cancelAnimationFrame(st.raf); } st = null; }
+  function down(e) {
+    const cell = e.target.closest && e.target.closest('#galGrid .photo-cell'); if (!cell || (e.pointerType === 'mouse' && e.button !== 0) || st) return;
+    st = { cell, id: cell.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ptr: e.pointerId, drag: false };
+    st.timer = setTimeout(() => lift(), LP);
+  }
+  function lift() {
+    if (!st) return; st.drag = true;
+    const list = cells(); st.ids = list.map(c => c.dataset.id); st.from = st.ids.indexOf(st.id); st.over = st.from;
+    st.rects = list.map(c => c.getBoundingClientRect());
+    const r = st.rects[st.from]; st.dx = st.x - r.left; st.dy = st.y - r.top;
+    const g = st.cell.cloneNode(true); g.removeAttribute('onclick');
+    Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', zIndex: 9999, pointerEvents: 'none', transition: 'transform .15s', transform: 'scale(1.08)', boxShadow: '0 12px 28px rgba(0,0,0,.3)', margin: 0 });
+    document.body.appendChild(g); st.ghost = g; st.cell.style.opacity = '0.25';
+    list.forEach(c => c.style.transition = 'transform .2s ease');
+    document.documentElement.classList.add('reordering');
+    if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
+    tick();
+  }
+  function layout() {
+    // shift other cells live to preview the new order
+    const list = cells(), order = st.ids.slice(); order.splice(st.from, 1); order.splice(st.over, 0, st.id);
+    list.forEach((c, i) => { if (c === st.cell) return; const ni = order.indexOf(c.dataset.id), a = st.rects[i], b = st.rects[ni]; c.style.transform = `translate(${b.left - a.left}px,${b.top - a.top}px)`; });
+    const b = st.rects[st.over], a = st.rects[st.from]; st.cell.style.transform = `translate(${b.left - a.left}px,${b.top - a.top}px)`;
+  }
+  function tick() {
+    if (!st || !st.drag) return;
+    const sh = sheet(), sr = sh.getBoundingClientRect(), EDGE = 60; let v = 0;
+    if (st.y < sr.top + EDGE) v = -Math.ceil((sr.top + EDGE - st.y) / 6); else if (st.y > sr.bottom - EDGE) v = Math.ceil((st.y - sr.bottom + EDGE) / 6);
+    if (v) { const before = sh.scrollTop; sh.scrollTop += v; const d = sh.scrollTop - before; if (d) { st.rects = st.rects.map(r => ({ left: r.left, top: r.top - d, width: r.width, height: r.height, right: r.right, bottom: r.bottom - d })); pick(); } }
+    st.raf = requestAnimationFrame(tick);
+  }
+  function pick() {
+    let best = st.over, bd = Infinity;
+    st.rects.forEach((r, i) => { const d = Math.hypot(r.left + r.width / 2 - st.x, r.top + r.height / 2 - st.y); if (d < bd) { bd = d; best = i; } });
+    if (best !== st.over) { st.over = best; layout(); if (navigator.vibrate) try { navigator.vibrate(5); } catch (e) {} }
+  }
+  function move(e) {
+    if (!st || e.pointerId !== st.ptr) return; st.x = e.clientX; st.y = e.clientY;
+    if (!st.drag) { if (Math.hypot(st.x - st.x0, st.y - st.y0) > MOVE_TOL) cancel(); return; }
+    e.preventDefault();
+    st.ghost.style.left = (st.x - st.dx) + 'px'; st.ghost.style.top = (st.y - st.dy) + 'px'; pick();
+  }
+  async function up(e) {
+    if (!st || (e && e.pointerId !== st.ptr)) return;
+    const s = st; cancel(); if (!s.drag) return;
+    document.documentElement.classList.remove('reordering');
+    s.ghost.remove(); cells().forEach(c => { c.style.transition = ''; c.style.transform = ''; c.style.opacity = ''; });
+    window.__suppressGalClick = Date.now();
+    if (s.over === s.from) return;
+    const order = s.ids.slice(); order.splice(s.from, 1); order.splice(s.over, 0, s.id);
+    await saveGalleryOrder(order);
+  }
+  window.saveGalleryOrder = async function (ids) {
+    const byId = new Map(galleryPhotos.map(p => [p.id, p])), base = Date.now(), store = tx('readwrite');
+    ids.forEach((id, i) => { const p = byId.get(id); if (!p) return; p.order = base + i; p.cover = i === 0; store.put(p); });
+    await new Promise(r => { store.transaction ? (store.transaction.oncomplete = r, store.transaction.onerror = r) : setTimeout(r, 50); });
+    await renderGallery(); miniPhotoCache.delete(galleryUnitId); render();
+    toast(ids[0] === galleryPhotos[0]?.id ? 'จัดลำดับรูปแล้ว' : 'จัดลำดับรูปแล้ว');
+  };
+  const init = () => {
+    const g = grid(); if (!g) return;
+    g.addEventListener('pointerdown', down);
+    addEventListener('pointermove', move, { passive: false });
+    addEventListener('pointerup', up); addEventListener('pointercancel', e => { if (st && st.drag) up({ pointerId: st.ptr }); else cancel(); });
+    // block page/sheet scroll while dragging (iOS needs touchmove preventDefault)
+    g.addEventListener('touchmove', e => { if (st && st.drag) e.preventDefault(); }, { passive: false });
+    g.addEventListener('contextmenu', e => e.preventDefault());
+    g.addEventListener('click', e => { if (window.__suppressGalClick && Date.now() - window.__suppressGalClick < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
 function openLightboxById(id) { const idx = galleryPhotos.findIndex(p => p.id === id); if (idx > -1) openLightbox(idx); }
 function openLightbox(i) { lbIndex = i; showLb(); const lb = document.getElementById('lightbox'); lb.classList.remove('hidden'); lb.classList.add('flex'); }
 function showLb() { try { lbResetZoom(); } catch (e) {} const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox(); document.getElementById('lbImg').src = fullUrlOf(p); document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`; }
@@ -3673,7 +3754,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.12';
+const APP_VERSION = '9.13';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
