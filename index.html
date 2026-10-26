@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="MAX Agent — Property Dashboard">
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
-<link rel="stylesheet" href="tailwind.min.css?v=37">
+<link rel="stylesheet" href="tailwind.min.css?v=38">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -139,7 +139,7 @@
   .url-open-btn:disabled { background:#e4dfd9; color:#8a8078; cursor:not-allowed; }
 .dv-car{position:relative;aspect-ratio:4/3}.dv-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.dv-track::-webkit-scrollbar{display:none}.dv-sl{flex:0 0 100%;height:100%;scroll-snap-align:start;cursor:pointer}.dv-sl img{width:100%;height:100%;object-fit:cover;display:block}
   .dv-cnt{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;padding:2px 8px;border-radius:20px}.dv-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;pointer-events:none}.dv-dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.6);transition:all .3s}.dv-dots i.on{width:16px;background:#fff}
-  .dv-btn{display:flex;align-items:center;justify-content:center;gap:4px;font-weight:600;font-size:11.5px;padding:9px 4px;border-radius:12px;line-height:1.2;text-align:center}.dv-btn:active{transform:scale(.96)}
+  .dv-btn{white-space:nowrap;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:4px;font-weight:600;font-size:11.5px;padding:9px 4px;border-radius:12px;line-height:1.2;text-align:center}.dv-btn:active{transform:scale(.96)}
   .dv-tabs{display:flex;background:#fff;border:1px solid #eee;border-radius:14px;overflow:hidden}.dv-tabs button{flex:1;padding:10px 4px;font-size:13px;color:#9a918a;border-bottom:2px solid transparent}.dv-tabs button.on{color:#c2552d;border-bottom-color:#c2552d;font-weight:600}
   .owner-action { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; font-size:12px; padding:10px 8px; border-radius:9999px; transition:all .15s; border:1px solid; }
   .owner-action:active { transform:scale(.96); }
@@ -2159,14 +2159,14 @@ function renderDetailView() {
       ${u.building ? `<p class="text-xs text-slate-400 inline-edit" onclick="startInlineEdit(this, 'building')">🏬 ${esc(u.building)}</p>` : ''}
       <p class="text-xs text-slate-500 mt-0.5">ห้อง <span class="inline-edit" onclick="startInlineEdit(this, 'room')">${esc(u.room || '-')}</span>${spec ? ' · ' + spec : ''}</p>
       <div class="flex items-baseline gap-1.5 mt-2 mb-3"><span class="text-2xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span><span class="text-xs text-slate-400">/เดือน</span></div>
-      <div class="grid grid-cols-3 gap-1.5 mb-1.5">
+      <div class="grid grid-cols-2 gap-1.5 mb-1.5">
         <button onclick="quickCopy('${u.id}')" class="dv-btn bg-brick-500 text-white"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด</button>
         ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูปภาพ (${pic})</button>` : `<button disabled class="dv-btn bg-slate-100 text-slate-400"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
-        <button id="fxShareBtn" onclick="FX.openShare('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="link" class="w-3.5 h-3.5"></i>แชร์ให้ลูกค้า</button>
       </div>
-      <div class="grid grid-cols-2 gap-1.5">
-        <button ${hasPhone ? `onclick="contactOwner('${u.id}')"` : 'disabled'} class="dv-btn owner-action phone ${hasPhone ? '' : '" style="opacity:.4'}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรหาเจ้าของ</button>
-        <button ${hasLine ? `onclick="openOwnerLine('${u.id}')"` : 'disabled'} class="dv-btn ${hasLine ? 'text-white' : 'bg-slate-100 text-slate-400'}" ${hasLine ? 'style="background:#06C755"' : ''}><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>${hasLine ? 'LINE หาเจ้าของ' : 'ไม่มี LINE'}</button>
+      <div class="grid grid-cols-3 gap-1.5">
+        <button ${hasPhone ? `onclick="contactOwner('${u.id}')"` : 'disabled'} class="dv-btn owner-action phone ${hasPhone ? '' : '" style="opacity:.4'}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรติดต่อ</button>
+        <button ${hasLine ? `onclick="openOwnerLine('${u.id}')"` : 'disabled'} class="dv-btn ${hasLine ? 'text-white' : 'bg-slate-100 text-slate-400'}" ${hasLine ? 'style="background:#06C755"' : ''}><i data-lucide="message-circle" class="w-3.5 h-3.5"></i>${hasLine ? 'LINE' : 'LINE'}</button>
+        <button id="fxShareBtn" onclick="FX.openShare('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="link" class="w-3.5 h-3.5"></i>แชร์ลูกค้า</button>
       </div>
       ${hasUrl ? `<button onclick="openSourceUrl('${u.id}')" class="w-full mt-1.5 text-[11px] text-slate-500 flex items-center justify-center gap-1 py-1"><i data-lucide="external-link" class="w-3 h-3"></i>เปิดลิงก์ต้นทาง</button>` : ''}
     </div>
@@ -3618,7 +3618,7 @@ renderCustomers();
 switchView(currentView);
 checkBackupReminder();
 
-const APP_VERSION = '9.4';
+const APP_VERSION = '9.5';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3715,8 +3715,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=37"></script>
+<script src="features.js?v=38"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=37"></script>
+<script src="sync.js?v=38"></script>
 </body>
 </html>
