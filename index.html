@@ -342,6 +342,30 @@
   .sf-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:20}
   .sf-btn{flex:1;border-radius:10px;padding:11px;font-size:14.5px;font-weight:600;border:1px solid #e4ddd7;background:#fff;color:#5c534c}
   .sf-pri{background:#c2552d;color:#fff;border-color:#c2552d;box-shadow:0 4px 12px #c2552d40}
+
+  /* advanced filter A (v55) */
+  #advFilterSheet .af-hd{position:sticky;top:0;z-index:2;background:#fff;padding:8px 16px 12px;text-align:center;border-radius:24px 24px 0 0}
+  #advFilterSheet .af-hd h2{font-size:17px;font-weight:700;color:#1f2937}
+  #advFilterSheet .af-x{position:absolute;right:12px;bottom:9px;color:#64748b;padding:4px}
+  #advFilterSheet .af-body{padding:2px 12px 12px}
+  #advFilterSheet .af-card{background:#fff;border-radius:14px;padding:14px;margin-top:10px}
+  #advFilterSheet .af-t{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#1f2937;margin-bottom:10px}
+  #advFilterSheet .af-t svg{color:#c2552d}
+  #advFilterSheet .af-t small{margin-left:auto;font-size:13px;font-weight:400;color:#c2552d}
+  #advFilterSheet .af-row{display:flex;align-items:flex-end;gap:8px}
+  #advFilterSheet .af-f{flex:1;min-width:0}#advFilterSheet .af-f span{display:block;font-size:13px;color:#6b7280;margin-bottom:4px}
+  #advFilterSheet .af-dash{color:#9ca3af;padding-bottom:11px}
+  #advFilterSheet .af-sel{flex:1;width:100%;min-width:0;height:42px;border:1px solid #e5e7eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#1f2937;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+  #advFilterSheet .af-grid{display:grid;gap:8px}.af-g2{grid-template-columns:repeat(2,1fr)}.af-g3{grid-template-columns:repeat(3,1fr)}.af-g4{grid-template-columns:repeat(4,1fr)}
+  #advFilterSheet .af-c{height:38px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:15px;color:#1f2937}
+  #advFilterSheet .af-p{border:1px solid #e5e7eb;border-radius:999px;padding:6px 13px;font-size:14px;background:#fff;color:#1f2937;white-space:nowrap}
+  #advFilterSheet .af-c.on,#advFilterSheet .af-p.on{border-color:#c2552d;background:#fbeee8;color:#c2552d;font-weight:600}
+  #advFilterSheet .af-lt{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#374151;margin:12px 0 6px}#advFilterSheet .af-lt:first-child{margin-top:0}
+  #advFilterSheet .af-dot{width:10px;height:10px;border-radius:50%}
+  #advFilterSheet .af-wrap{display:flex;flex-wrap:wrap;gap:8px}
+  #advFilterSheet .af-bar{position:sticky;bottom:0;z-index:2;background:#fff;border-top:1px solid #eee;padding:10px 16px max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px}
+  #advFilterSheet .af-clear{width:84px;font-size:15px;color:#6b7280}
+  #advFilterSheet .af-go{flex:1;height:46px;border-radius:12px;background:#c2552d;color:#fff;font-size:16px;font-weight:600}
 </style>
 </head>
 <body>
@@ -823,91 +847,22 @@
 </div>
 
 <div id="advFilterOverlay" class="fixed inset-0 bg-black/40 z-[80] hidden" onclick="closeAdvancedFilter()" ontouchstart="event.preventDefault(); closeAdvancedFilter();" style="touch-action: manipulation;"></div>
-<div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto bg-white lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] p-5 pb-[max(20px,env(safe-area-inset-bottom))] max-h-[88vh] overflow-y-auto hide-scrollbar" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-  <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-4 lg:hidden"></div>
-  <div class="flex justify-between items-center mb-4">
-    <div class="flex items-center gap-2">
-      <div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="sliders-horizontal" class="w-5 h-5 text-brick-600"></i></div>
-      <div><h2 class="text-base font-bold text-ink">ตัวกรองขั้นสูง</h2><p class="text-[11px] text-slate-400">กำหนดเงื่อนไขการค้นหาแบบละเอียด</p></div>
-    </div>
-    <button onclick="closeAdvancedFilter()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+<div id="advFilterSheet" class="sheet fixed bottom-0 lg:top-1/2 lg:bottom-auto left-0 right-0 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 max-w-[calc(100vw-24px)] lg:max-w-[500px] mx-auto lg:rounded-3xl border-t lg:border border-slate-700 rounded-t-3xl z-[81] max-h-[88vh] overflow-y-auto hide-scrollbar" style="background:#f5f3f0;padding:0" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+  <div class="af-hd"><div class="w-9 h-1 bg-slate-300 rounded-full mx-auto mb-2 lg:hidden"></div><h2>ตัวกรอง</h2><button onclick="closeAdvancedFilter()" class="af-x" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+  <div class="af-body">
+    <div class="af-card"><div class="af-t"><i data-lucide="banknote" class="w-[18px] h-[18px]"></i>ช่วงราคา (บาท/เดือน)</div>
+      <div class="af-row"><label class="af-f"><span>ต่ำสุด</span><select id="advPriceMin" class="af-sel" onchange="advDraftChanged()"><option value="">ไม่ระบุ</option><option value="5000">5,000</option><option value="8000">8,000</option><option value="10000">10,000</option><option value="12000">12,000</option><option value="15000">15,000</option><option value="18000">18,000</option><option value="20000">20,000</option><option value="25000">25,000</option><option value="30000">30,000</option><option value="35000">35,000</option><option value="40000">40,000</option><option value="50000">50,000</option><option value="60000">60,000</option><option value="80000">80,000</option><option value="100000">100,000</option><option value="150000">150,000</option></select></label><span class="af-dash">–</span><label class="af-f"><span>สูงสุด</span><select id="advPriceMax" class="af-sel" onchange="advDraftChanged()"><option value="">ไม่ระบุ</option><option value="5000">5,000</option><option value="8000">8,000</option><option value="10000">10,000</option><option value="12000">12,000</option><option value="15000">15,000</option><option value="18000">18,000</option><option value="20000">20,000</option><option value="25000">25,000</option><option value="30000">30,000</option><option value="35000">35,000</option><option value="40000">40,000</option><option value="50000">50,000</option><option value="60000">60,000</option><option value="80000">80,000</option><option value="100000">100,000</option><option value="150000">150,000</option></select></label></div></div>
+    <div class="af-card"><div class="af-t"><i data-lucide="bed-double" class="w-[18px] h-[18px]"></i>ประเภทห้อง</div>
+      <div class="af-grid af-g3" data-grp="types"><button type="button" class="af-c" data-v="Studio" onclick="advChip(this)">Studio</button><button type="button" class="af-c" data-v="1 Bed" onclick="advChip(this)">1 Bed</button><button type="button" class="af-c" data-v="2 Bed" onclick="advChip(this)">2 Bed</button></div>
+      <div class="af-grid af-g2 mt-2" data-grp="types"><button type="button" class="af-c" data-v="3 Bed" onclick="advChip(this)">3 Bed</button><button type="button" class="af-c" data-v="Duplex" onclick="advChip(this)">Duplex</button></div></div>
+    <div class="af-card"><div class="af-t"><i data-lucide="bath" class="w-[18px] h-[18px]"></i>ห้องน้ำ</div>
+      <div class="af-grid af-g4" data-grp="baths"><button type="button" class="af-c" data-v="1" onclick="advChip(this)">1</button><button type="button" class="af-c" data-v="2" onclick="advChip(this)">2</button><button type="button" class="af-c" data-v="3" onclick="advChip(this)">3</button><button type="button" class="af-c" data-v="4" onclick="advChip(this)">4+</button></div></div>
+    <div class="af-card"><div class="af-t"><i data-lucide="ruler" class="w-[18px] h-[18px]"></i>ขนาดพื้นที่ (ตร.ม.)</div>
+      <div class="af-row"><select id="advSizeMin" class="af-sel" onchange="advDraftChanged()"><option value="">ต่ำสุด</option><option value="20">20 ตร.ม.</option><option value="25">25 ตร.ม.</option><option value="30">30 ตร.ม.</option><option value="35">35 ตร.ม.</option><option value="40">40 ตร.ม.</option><option value="50">50 ตร.ม.</option><option value="60">60 ตร.ม.</option><option value="80">80 ตร.ม.</option><option value="100">100 ตร.ม.</option><option value="150">150 ตร.ม.</option></select><span class="af-dash">–</span><select id="advSizeMax" class="af-sel" onchange="advDraftChanged()"><option value="">สูงสุด</option><option value="20">20 ตร.ม.</option><option value="25">25 ตร.ม.</option><option value="30">30 ตร.ม.</option><option value="35">35 ตร.ม.</option><option value="40">40 ตร.ม.</option><option value="50">50 ตร.ม.</option><option value="60">60 ตร.ม.</option><option value="80">80 ตร.ม.</option><option value="100">100 ตร.ม.</option><option value="150">150 ตร.ม.</option></select></div></div>
+    <div class="af-card"><div class="af-t"><i data-lucide="train-front" class="w-[18px] h-[18px]"></i>โซน BTS / MRT<small id="advStaCount"></small></div>
+      <div id="advStations"></div></div>
   </div>
-
-  <div class="space-y-4 text-sm">
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">ช่วงราคา (บาท/เดือน)</label>
-      <div class="flex items-center gap-2">
-        <input id="advPriceMin" type="number" inputmode="numeric" placeholder="ต่ำสุด" class="inp !mt-0 flex-1">
-        <span class="text-slate-400">—</span>
-        <input id="advPriceMax" type="number" inputmode="numeric" placeholder="สูงสุด" class="inp !mt-0 flex-1">
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">ขนาดพื้นที่ (ตร.ม.)</label>
-      <div class="flex items-center gap-2">
-        <input id="advSizeMin" type="number" inputmode="decimal" placeholder="ต่ำสุด" class="inp !mt-0 flex-1">
-        <span class="text-slate-400">—</span>
-        <input id="advSizeMax" type="number" inputmode="decimal" placeholder="สูงสุด" class="inp !mt-0 flex-1">
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">ประเภทห้อง</label>
-      <div class="grid grid-cols-3 gap-2">
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-type inp-check" value="Studio"> Studio</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-type inp-check" value="1 Bed"> 1 Bed</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-type inp-check" value="2 Bed"> 2 Bed</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-type inp-check" value="3 Bed"> 3 Bed</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-type inp-check" value="Duplex"> Duplex</label>
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">จำนวนห้องน้ำ</label>
-      <div class="flex flex-wrap gap-3">
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="1"> 1 Bath</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="2"> 2 Bath</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="3"> 3 Bath</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-bath inp-check" value="4"> 4 Bath</label>
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">สถานะห้อง</label>
-      <div class="flex flex-wrap gap-2">
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-status inp-check" value="AVAILABLE"> ว่าง</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-status inp-check" value="OCCUPIED"> มีผู้เช่า</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-status inp-check" value="RESERVED"> จอง</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-status inp-check" value="PENDING"> รอตรวจ</label>
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">สถานะการโพสต์</label>
-      <div class="flex flex-wrap gap-2">
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-post inp-check" value="posted"> โพสต์แล้ว</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-post inp-check" value="unposted"> ยังไม่โพสต์</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-post inp-check" value="stale"> โพสต์เกิน 7 วัน</label>
-      </div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-semibold text-slate-500 mb-1.5">อื่นๆ</label>
-      <div class="flex flex-wrap gap-2">
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-misc inp-check" value="hasPhotos"> มีรูป</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-misc inp-check" value="noPhotos"> ไม่มีรูป</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-misc inp-check" value="hasNotes"> มีรายละเอียด</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-misc inp-check" value="noNotes"> ไม่มีรายละเอียด</label>
-        <label class="flex items-center gap-2 text-slate-600 text-xs"><input type="checkbox" class="adv-misc inp-check" value="forSale"> ประกาศขาย</label>
-      </div>
-    </div>
-  </div>
-
-  <div class="flex gap-2 mt-6">
-    <button onclick="clearAdvancedFilter()" class="flex-1 bg-slate-100 text-slate-600 border border-slate-200 py-2.5 rounded-full text-sm font-semibold">ล้างค่า</button>
-    <button onclick="applyAdvancedFilter()" class="flex-[2] bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">ใช้ตัวกรอง</button>
-  </div>
+  <div class="af-bar"><button type="button" onclick="clearAdvancedFilter()" class="af-clear">ล้างค่า</button><button type="button" onclick="applyAdvancedFilter()" class="af-go" id="advGoBtn">แสดงรายการ</button></div>
 </div>
 
 <div id="custOverlay" class="fixed inset-0 bg-black/40 z-[82] hidden" onclick="closeCustSheet()" ontouchstart="event.preventDefault(); closeCustSheet();" style="touch-action: manipulation;"></div>
@@ -1327,9 +1282,47 @@ let currentExpiryUnitId = null;
 let advFilter = {
   priceMin: null, priceMax: null,
   sizeMin: null, sizeMax: null,
-  types: [], baths: [],
-  statuses: [], post: [], misc: []
+  types: [], baths: [], stations: []
 };
+// ---- BTS/MRT zones (extend: add stations or aliases here) ----
+const STATION_LINES = [
+  { line: 'BTS สุขุมวิท', color: '#5aa832', stations: [
+    { name: 'เพลินจิต', alias: ['ploenchit','phloen chit'] }, { name: 'นานา', alias: ['nana'] }, { name: 'อโศก', alias: ['asok','asoke'] },
+    { name: 'พร้อมพงษ์', alias: ['phrom phong','phromphong','prompong'] }, { name: 'ทองหล่อ', alias: ['thonglor','thong lo','thonglo','thong lor'] },
+    { name: 'เอกมัย', alias: ['ekkamai','ekamai'] }, { name: 'พระโขนง', alias: ['phra khanong','phrakhanong','prakanong'] },
+    { name: 'อ่อนนุช', alias: ['on nut','onnut'] }, { name: 'บางจาก', alias: ['bang chak','bangchak'] }, { name: 'ปุณณวิถี', alias: ['punnawithi'] } ] },
+  { line: 'BTS สีลม', color: '#0e7a5a', stations: [ { name: 'สุรศักดิ์', alias: ['surasak'] } ] },
+  { line: 'MRT สายสีน้ำเงิน', color: '#1d4f9c', stations: [
+    { name: 'พระราม 9', alias: ['พระรามเก้า','rama 9','rama9','rama ix'] }, { name: 'เพชรบุรี', alias: ['phetchaburi','petchaburi'] },
+    { name: 'สุขุมวิท', key: 'MRT สุขุมวิท', alias: ['mrt สุขุมวิท','mrt sukhumvit'], strict: true },
+    { name: 'ศูนย์ฯ สิริกิติ์', alias: ['ศูนย์ประชุมสิริกิติ์','ศูนย์ประชุมแห่งชาติสิริกิติ์','sirikit','qsncc'] } ] },
+  { line: 'Airport Link', color: '#9b1c2e', stations: [ { name: 'มักกะสัน', alias: ['makkasan'] } ] }
+];
+const STATION_INDEX = {};
+STATION_LINES.forEach(l => l.stations.forEach(st => { const k = st.key || st.name; STATION_INDEX[k] = (st.strict ? [] : [st.name]).concat(st.alias || []).map(x => x.toLowerCase().replace(/\s+/g, '')); }));
+function unitMatchesStations(u, keys) {
+  if (!keys || !keys.length) return true;
+  const hay = [u.station, u.notes, u.project, u.building, u.view].join(' ').toLowerCase().replace(/\s+/g, '');
+  return keys.some(k => (STATION_INDEX[k] || []).some(a => hay.includes(a)));
+}
+function renderStationChips() {
+  const box = document.getElementById('advStations'); if (!box || box.dataset.done) return;
+  box.innerHTML = STATION_LINES.map(l => `<div class="af-lt"><span class="af-dot" style="background:${l.color}"></span>${l.line}</div><div class="af-wrap" data-grp="stations">` + l.stations.map(st => `<button type="button" class="af-p" data-v="${st.key || st.name}" onclick="advChip(this)">${st.name}</button>`).join('') + '</div>').join('');
+  box.dataset.done = '1';
+}
+function readAdvDraft() {
+  const num = id => { const v = document.getElementById(id).value; return v ? Number(v) : null; };
+  const grp = g => [...document.querySelectorAll(`#advFilterSheet [data-grp="${g}"] .on`)].map(b => b.dataset.v);
+  return { priceMin: num('advPriceMin'), priceMax: num('advPriceMax'), sizeMin: num('advSizeMin'), sizeMax: num('advSizeMax'), types: grp('types'), baths: grp('baths'), stations: grp('stations') };
+}
+function advChip(btn) { btn.classList.toggle('on'); advDraftChanged(); }
+function advDraftChanged() {
+  const d = readAdvDraft();
+  const sc = document.getElementById('advStaCount'); if (sc) sc.textContent = d.stations.length ? `เลือกแล้ว ${d.stations.length}` : '';
+  const go = document.getElementById('advGoBtn');
+  if (go) { let n = null; try { n = typeof window.__countAdv === 'function' ? window.__countAdv(d) : null; } catch (e) {} go.textContent = n === null ? 'แสดงรายการ' : `แสดงรายการ (${n})`; }
+}
+function advIsOn(f) { f = f || advFilter; return !!(f.priceMin || f.priceMax || f.sizeMin || f.sizeMax || f.baths.length || f.types.length || (f.stations || []).length); }
 
 const FILTER_LABELS = {
   'all': 'ทั้งหมด', 'FAV': '⭐ น่าสนใจ', 'AVAILABLE': 'ว่าง', 'OCCUPIED': 'มีผู้เช่า', 'RESERVED': 'จอง',
@@ -1660,15 +1653,14 @@ function clearParseInput() {
 
 // ============= ADVANCED FILTER =============
 function openAdvancedFilter() {
+  renderStationChips();
   document.getElementById('advPriceMin').value = advFilter.priceMin ?? '';
   document.getElementById('advPriceMax').value = advFilter.priceMax ?? '';
   document.getElementById('advSizeMin').value = advFilter.sizeMin ?? '';
   document.getElementById('advSizeMax').value = advFilter.sizeMax ?? '';
-  document.querySelectorAll('.adv-type').forEach(cb => cb.checked = advFilter.types.includes(cb.value));
-  document.querySelectorAll('.adv-bath').forEach(cb => cb.checked = advFilter.baths.includes(cb.value));
-  document.querySelectorAll('.adv-status').forEach(cb => cb.checked = advFilter.statuses.includes(cb.value));
-  document.querySelectorAll('.adv-post').forEach(cb => cb.checked = advFilter.post.includes(cb.value));
-  document.querySelectorAll('.adv-misc').forEach(cb => cb.checked = advFilter.misc.includes(cb.value));
+  ['types','baths','stations'].forEach(g => document.querySelectorAll(`#advFilterSheet [data-grp="${g}"] [data-v]`).forEach(b => b.classList.toggle('on', (advFilter[g] || []).includes(b.dataset.v))));
+  advDraftChanged();
+  if (window.lucide) lucide.createIcons();
   document.getElementById('advFilterOverlay').classList.remove('hidden');
   const sheetEl = document.getElementById('advFilterSheet');
   sheetEl.classList.add('open');
@@ -1682,32 +1674,22 @@ function closeAdvancedFilter() {
   document.body.style.overflow = '';
 }
 function applyAdvancedFilter() {
-  advFilter.priceMin = document.getElementById('advPriceMin').value ? Number(document.getElementById('advPriceMin').value) : null;
-  advFilter.priceMax = document.getElementById('advPriceMax').value ? Number(document.getElementById('advPriceMax').value) : null;
-  advFilter.sizeMin = document.getElementById('advSizeMin').value ? Number(document.getElementById('advSizeMin').value) : null;
-  advFilter.sizeMax = document.getElementById('advSizeMax').value ? Number(document.getElementById('advSizeMax').value) : null;
-  advFilter.types = [...document.querySelectorAll('.adv-type:checked')].map(cb => cb.value);
-  advFilter.baths = [...document.querySelectorAll('.adv-bath:checked')].map(cb => cb.value);
-  advFilter.statuses = [...document.querySelectorAll('.adv-status:checked')].map(cb => cb.value);
-  advFilter.post = [...document.querySelectorAll('.adv-post:checked')].map(cb => cb.value);
-  advFilter.misc = [...document.querySelectorAll('.adv-misc:checked')].map(cb => cb.value);
-  const hasFilter = advFilter.priceMin || advFilter.priceMax || advFilter.sizeMin || advFilter.sizeMax ||
-                    advFilter.baths.length || advFilter.types.length || advFilter.statuses.length ||
-                    advFilter.post.length || advFilter.misc.length;
+  advFilter = readAdvDraft();
+  const hasFilter = advIsOn();
   ['advFilterDot','advFilterDotDesktop'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !hasFilter);
   });
   closeAdvancedFilter(); render();
-  toast(hasFilter ? 'ใช้ตัวกรองขั้นสูงแล้ว' : 'ไม่ได้เลือกเงื่อนไข');
+  toast(hasFilter ? 'ใช้ตัวกรองแล้ว' : 'ไม่ได้เลือกเงื่อนไข');
 }
 function clearAdvancedFilter() {
-  advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], statuses: [], post: [], misc: [] };
-  document.querySelectorAll('.adv-type, .adv-bath, .adv-status, .adv-post, .adv-misc').forEach(cb => cb.checked = false);
+  advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], stations: [] };
+  document.querySelectorAll('#advFilterSheet [data-v].on').forEach(b => b.classList.remove('on'));
   ['advPriceMin','advPriceMax','advSizeMin','advSizeMax'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['advFilterDot','advFilterDotDesktop'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.add('hidden');
   });
-  render();
+  render(); advDraftChanged();
 }
 
 // ============= SWITCH VIEW =============
@@ -1749,8 +1731,8 @@ function gotoProject(projectName) {
 function clearFilters() { activeFilters = new Set(['all']); render(); }
 function clearAllFilters() {
   activeFilters = new Set(['all']); selectedProject = null;
-  try { advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], statuses: [], post: [], misc: [] };
-    document.querySelectorAll('.adv-type, .adv-bath, .adv-status, .adv-post, .adv-misc').forEach(cb => cb.checked = false);
+  try { advFilter = { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], stations: [] };
+    document.querySelectorAll('#advFilterSheet [data-v].on').forEach(b => b.classList.remove('on'));
     ['advPriceMin','advPriceMax','advSizeMin','advSizeMax'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     ['advFilterDot','advFilterDotDesktop'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }); } catch (e) {}
   try { syncSearch(''); } catch (e) {}
@@ -2706,21 +2688,9 @@ function render() {
     if (advFilter.priceMax !== null && rent > advFilter.priceMax) return false;
     if (advFilter.sizeMin !== null && size < advFilter.sizeMin) return false;
     if (advFilter.sizeMax !== null && size > advFilter.sizeMax) return false;
-    if (advFilter.baths.length && !advFilter.baths.includes(String(u.bath))) return false;
+    if (advFilter.baths.length && !advFilter.baths.some(b => b === '4' ? Number(u.bath) >= 4 : String(u.bath) === b)) return false;
     if (advFilter.types.length && !advFilter.types.includes(u.type)) return false;
-    if (advFilter.statuses.length && !advFilter.statuses.includes(u.status)) return false;
-    if (advFilter.post.length) {
-      const ps = postedState(u);
-      const ok = advFilter.post.some(p => p === 'posted' ? !!u.lastPosted : p === 'unposted' ? !u.lastPosted : ps.level === 'stale');
-      if (!ok) return false;
-    }
-    if (advFilter.misc.length) {
-      const hasPhotos = (photoCount[u.id] || 0) > 0;
-      const hasNotes = !!(u.notes || '').trim();
-      const forSale = !!u.salePrice;
-      const ok = advFilter.misc.some(m => m === 'hasPhotos' ? hasPhotos : m === 'noPhotos' ? !hasPhotos : m === 'hasNotes' ? hasNotes : m === 'noNotes' ? !hasNotes : forSale);
-      if (!ok) return false;
-    }
+    if ((advFilter.stations || []).length && !unitMatchesStations(u, advFilter.stations)) return false;
     if (activeFilters.has('all')) return true;
     const checks = [];
     if (activeFilters.has('FAV')) checks.push(!!u.fav);
@@ -2739,6 +2709,10 @@ function render() {
     if (activeFilters.has('POSTED_TODAY')) checks.push(isPostedToday(u));
     return checks.every(Boolean);
   };
+  window.__countAdv = draft => { const saved = advFilter; advFilter = draft; try { let l = units.filter(matchesFilter);
+      if (selectedProject) l = l.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
+      else if (q) { const ts = q.split(/\s+/).filter(Boolean); const hy = u => [u.project, u.building, u.station, u.room, u.owner, u.notes, u.view, u.type, u.sourceUrl].join(' ').toLowerCase(); l = l.filter(u => ts.every(t => hy(u).includes(t))); }
+      return l.length; } finally { advFilter = saved; } };
   let list = units.filter(matchesFilter);
   if (activeFilters.has('EXPIRING') && !q && !selectedProject) list.sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
   else if (roomSort === 'new' || roomSort === 'old') list.sort((a, b) => roomSort === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
@@ -2752,7 +2726,7 @@ function render() {
   const lt = document.getElementById('listTitle');
   if (lt) { lt.innerHTML = selectedProject ? `${esc(selectedProject)} · <b>${list.length}</b> ห้อง` : `แสดง <b>${list.length}</b> จาก ${units.length} ห้อง<span class="hidden lg:inline"> · เรียง: ${roomSort === 'status' ? 'ว่างก่อน' : SORT_LABELS[roomSort] + 'ก่อน'}</span>`; }
   { const sl = document.getElementById('sortLbl'); if (sl) sl.textContent = SORT_LABELS[roomSort]; }
-  { const advOn = !!(advFilter.priceMin || advFilter.priceMax || advFilter.sizeMin || advFilter.sizeMax || advFilter.baths.length || advFilter.types.length || advFilter.statuses.length || advFilter.post.length || advFilter.misc.length);
+  { const advOn = advIsOn();
     const priceOn = priceMin !== null || priceMax !== null, tabOn = !activeFilters.has('all');
     const lc = document.getElementById('lhClear'); if (lc) lc.classList.toggle('hidden', !(advOn || priceOn || tabOn || selectedProject));
     ['advFilterDot','advFilterDotDesktop'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !(advOn || priceOn || tabOn)); });
@@ -2767,6 +2741,7 @@ function render() {
     const advChips = [];
     if (advFilter.types.length) advChips.push(advFilter.types.join(', '));
     if (advFilter.baths.length) advChips.push(advFilter.baths.map(b => b + 'B').join(', '));
+    if ((advFilter.stations || []).length) advChips.push(advFilter.stations.join(', '));
     if (active.length || priceChips.length || advChips.length) {
       summary.classList.remove('hidden');
       chips.innerHTML = active.map(f => `<span class="inline-flex items-center gap-1 bg-brick-500/10 text-brick-700 px-2 py-0.5 rounded-full font-medium">${FILTER_LABELS[f] || f}<button onclick="event.stopPropagation(); toggleFilter('${f}')" class="hover:bg-brick-500/20 rounded-full p-0.5"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></span>`).join('') 
@@ -3763,7 +3738,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.21';
+const APP_VERSION = '9.22';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
