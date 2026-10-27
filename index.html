@@ -287,6 +287,7 @@
   .lh-pill{height:30px;padding:0 12px;border-radius:9999px !important;font-size:12px;font-weight:500;background:#fff;border:1px solid #ece6e1;color:#5b534d;white-space:nowrap}
   .lh-pill.on{background:#fbeee7;border-color:#c2552d;color:#c2552d;font-weight:600}
   .lh-sum{display:flex;align-items:center;gap:8px;font-size:12px;color:#8e8680;min-height:20px}
+  #sortMenu .sm-i{display:flex;align-items:center;width:100%;padding:12px 16px;font-size:15px;color:#2b2420;text-align:left}#sortMenu .sm-i+.sm-i{border-top:.5px solid #e5e5ea}#sortMenu .sm-ck{margin-left:auto;color:#c2552d;font-weight:700}
   .lh-sum b{color:#2b2420;font-weight:600}
   #lhClear{font-size:12px;font-weight:600;color:#c2552d;white-space:nowrap}
   .pp-in{flex:1;min-width:0;height:44px;border:1px solid #ece6e1;border-radius:12px !important;padding:0 12px;background:#faf8f6}
@@ -731,7 +732,7 @@
           </div>
             <button onclick="openPricePop()" id="priceBtn" class="lh-pill shrink-0">฿ ราคา</button>
           </div>
-          <div class="lh-sum"><span id="listTitle" class="flex-1 min-w-0 truncate">แสดง 0 ห้อง</span><button type="button" id="lhClear" onclick="clearPriceRangeSilent(); clearAllFilters()" class="hidden">ล้างตัวกรอง</button></div>
+          <div class="lh-sum"><span id="listTitle" class="flex-1 min-w-0 truncate">แสดง 0 ห้อง</span><button type="button" id="sortBtn" onclick="openSortMenu(event)" class="lg:hidden shrink-0" style="color:#c2552d;font-weight:600;white-space:nowrap">⇅ <span id="sortLbl">ว่างก่อน</span> ▾</button><button type="button" id="lhClear" onclick="clearPriceRangeSilent(); clearAllFilters()" class="hidden">ล้างตัวกรอง</button></div>
           <div id="pricePopOv" class="hidden fixed inset-0 z-[80] bg-black/30" onclick="closePricePop()"></div>
           <div id="pricePop" class="hidden fixed left-3 right-3 z-[81] bg-white p-4 shadow-xl" style="top:30%;border-radius:18px">
             <div class="flex items-center mb-3"><b class="flex-1 text-[15px] text-ink">ช่วงราคาเช่า / เดือน</b><button onclick="closePricePop()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" aria-label="ปิด"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button></div>
@@ -1306,6 +1307,12 @@ let customers = load(CUST_KEY, []).map(c => ({
 let activeFilters = new Set(['FAV']);
 let activeCustFilters = new Set(['all']);
 let sortDir = 'new';
+const SORT_KEY = 'staylow_room_sort';
+const SORT_LABELS = { status: 'ว่างก่อน', new: 'เพิ่มล่าสุด', old: 'เพิ่มเก่าสุด' };
+let roomSort = (() => { try { const v = localStorage.getItem(SORT_KEY); return SORT_LABELS[v] ? v : 'status'; } catch (e) { return 'status'; } })();
+function openSortMenu(ev) { if (ev) ev.stopPropagation(); closeSortMenu(); const b = document.getElementById('sortBtn'); const r = b.getBoundingClientRect(); const opts = [['status','ว่างก่อน <span style="color:#8e8e93;font-size:12px;margin-left:6px">(เดิม)</span>'],['new','เพิ่มล่าสุดก่อน'],['old','เพิ่มเก่าสุดก่อน']]; const ov = document.createElement('div'); ov.id = 'sortMenuOv'; ov.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.25)'; ov.onclick = closeSortMenu; const m = document.createElement('div'); m.id = 'sortMenu'; m.style.cssText = `position:fixed;z-index:91;top:${r.bottom + 6}px;right:16px;width:230px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden`; m.innerHTML = opts.map(([k, l]) => `<button type="button" class="sm-i" data-sort="${k}" onclick="setRoomSort('${k}')">${l}${roomSort === k ? '<span class="sm-ck">✓</span>' : ''}</button>`).join(''); document.body.append(ov, m); }
+function closeSortMenu() { ['sortMenuOv','sortMenu'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); }
+function setRoomSort(k) { roomSort = SORT_LABELS[k] ? k : 'status'; try { localStorage.setItem(SORT_KEY, roomSort); } catch (e) {} closeSortMenu(); render(); }
 let selectedProject = null;
 let priceMin = null;
 let priceMax = null;
@@ -2734,6 +2741,7 @@ function render() {
   };
   let list = units.filter(matchesFilter);
   if (activeFilters.has('EXPIRING') && !q && !selectedProject) list.sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
+  else if (roomSort === 'new' || roomSort === 'old') list.sort((a, b) => roomSort === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0));
   else { const RK = { AVAILABLE: 0, RESERVED: 1, PENDING: 1, OCCUPIED: 2 }; list.sort((a, b) => ((RK[a.status] ?? 1) - (RK[b.status] ?? 1)) || ((b.fav ? 1 : 0) - (a.fav ? 1 : 0)) || (sortDir === 'new' ? (b.createdAt || 0) - (a.createdAt || 0) : (a.createdAt || 0) - (b.createdAt || 0))); }
   if (selectedProject) list = list.filter(u => (u.project || '').trim().toLowerCase() === selectedProject.trim().toLowerCase());
   else if (q) {
@@ -2742,7 +2750,8 @@ function render() {
     list = list.filter(u => terms.every(t => hay(u).includes(t)));
   }
   const lt = document.getElementById('listTitle');
-  if (lt) { lt.innerHTML = selectedProject ? `${esc(selectedProject)} · <b>${list.length}</b> ห้อง` : `แสดง <b>${list.length}</b> จาก ${units.length} ห้อง · เรียง: ว่างก่อน`; }
+  if (lt) { lt.innerHTML = selectedProject ? `${esc(selectedProject)} · <b>${list.length}</b> ห้อง` : `แสดง <b>${list.length}</b> จาก ${units.length} ห้อง<span class="hidden lg:inline"> · เรียง: ${roomSort === 'status' ? 'ว่างก่อน' : SORT_LABELS[roomSort] + 'ก่อน'}</span>`; }
+  { const sl = document.getElementById('sortLbl'); if (sl) sl.textContent = SORT_LABELS[roomSort]; }
   { const advOn = !!(advFilter.priceMin || advFilter.priceMax || advFilter.sizeMin || advFilter.sizeMax || advFilter.baths.length || advFilter.types.length || advFilter.statuses.length || advFilter.post.length || advFilter.misc.length);
     const priceOn = priceMin !== null || priceMax !== null, tabOn = !activeFilters.has('all');
     const lc = document.getElementById('lhClear'); if (lc) lc.classList.toggle('hidden', !(advOn || priceOn || tabOn || selectedProject));
@@ -3754,7 +3763,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.19';
+const APP_VERSION = '9.20';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
