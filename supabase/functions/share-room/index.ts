@@ -3,8 +3,34 @@ const ORIGINS = ["https://banditkmc23-ai.github.io", "http://localhost:8799"];
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const PUB = Deno.env.get("SUPABASE_URL") + "/storage/v1/object/public/room-photos/";
 const MAX_IMG = 2 * 1024 * 1024, MAX_N = 40, MAX_BODY = 30 * 1024 * 1024;
-const hits = new Map<string, number[]>();
-function limited(ip: string, max = 120) { const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < 3600_000); a.push(now); hits.set(ip, a); return a.length > max; }
+const buckets = new Map<string, Map<string, number[]>>();
+function limited(ip: string, max = 120, kind = "w", win = 3600_000) { const hits = buckets.get(kind) || new Map<string, number[]>(); buckets.set(kind, hits); const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < win); a.push(now); hits.set(ip, a); if (hits.size > 5000) for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > win) hits.delete(k); return a.length > max; }
+const ipOf = (req: Request) => (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "?";
+const OWNER = "051c9fdb-a563-4b3c-8a33-2e3661d7b4cc";
+async function isOwner(req: Request) {
+  const tok = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!tok || tok.split(".").length !== 3) return false;
+  const { data, error } = await sb.auth.getUser(tok);
+  return !error && !!data?.user && data.user.id === OWNER;
+}
+function extract(desc, sn, sd) {
+  desc = String(desc || ""); sn = String(sn || ""); sd = Number(sd) || 0;
+  if (!sn) { const m = desc.match(/(BTS|MRT|ARL|Airport Link)\s*([ก-๙A-Za-z0-9 ]+?)(?:\s*(?:เพียง|ประมาณ)?\s*([\d,.]+)\s*(ม\.|เมตร|m|km|กม\.))?(?=[\s|,·\n]|$)/); if (m) { sn = (m[1] + " " + m[2].replace(/\s*(ฟรี|free)$/i, "")).trim().slice(0, 60); if (m[3]) sd = parseFloat(m[3].replace(/,/g, "")) * (/k|กม/.test(m[4]) ? 1000 : 1) || 0; } }
+  const cn = /ห้องมุม|corner/i.test(desc) ? 1 : 0;
+  const tm = []; let m;
+  if ((m = desc.match(/สัญญา[^\n\d]*?(\d+)\s*(ปี|เดือน)/))) tm.push(["สัญญาขั้นต่ำ", m[1] + " " + m[2]]);
+  else if ((m = desc.match(/minimum[^\n\d]*?(\d+)[\s-]*(year|month)/i))) tm.push(["สัญญาขั้นต่ำ", m[1] + " " + (/y/i.test(m[2]) ? "ปี" : "เดือน")]);
+  if ((m = desc.match(/ล่วงหน้า\s*(\d+)\s*เดือน/))) tm.push(["ล่วงหน้า", m[1] + " เดือน"]);
+  if ((m = desc.match(/(?:ประกัน|มัดจำ)\s*(\d+)\s*เดือน/))) tm.push(["เงินประกัน", m[1] + " เดือน"]);
+  return { sn, sd, cn, tm };
+}
+
+// public view of a room: never expose the free-text description
+function pub(d: any) {
+  d = d && typeof d === "object" ? { ...d } : {};
+  if ("d" in d) { const x = extract(d.d, d.sn, d.sd); d.sn = x.sn; d.sd = x.sd; d.cn = d.cn ?? x.cn; d.tm = d.tm ?? x.tm; delete d.d; }
+  return d;
+}
 function cors(req: Request) { const o = req.headers.get("origin") || ""; return { "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin" }; }
 const J = (req: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json" } });
 function sniff(b: Uint8Array): [string, string] | null {
@@ -17,10 +43,11 @@ const A = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), x => A[x % A.length]).join("");
 const str = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 const num = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x >= 0 && x < 1e10 ? x : 0; };
-function clean(d: any) {
+function clean0(d: any) {
   d = d && typeof d === "object" ? d : {}; const a = d.a && typeof d.a === "object" ? d.a : {};
-  return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), sn: str(d.sn, 60), sd: num(d.sd), st: str(d.st, 20), d: str(d.d, 900), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
+  return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), sn: str(d.sn, 60), sd: num(d.sd), st: str(d.st, 20), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
 }
+function clean(d: any) { const c: any = clean0(d); const x = extract(str(d && d.d, 4000), c.sn, c.sd); c.sn = x.sn.slice(0, 60); c.sd = num(x.sd); c.cn = x.cn; c.tm = x.tm; return c; }
 const sha256 = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t))), b => b.toString(16).padStart(2, "0")).join("");
 async function canEdit(id: string, secret: unknown) {
   if (typeof secret !== "string" || secret.length < 16 || secret.length > 128) return false;
@@ -34,7 +61,7 @@ const fmt = (n: number) => "฿" + Number(n || 0).toLocaleString("en-US");
 function ogHtml(id: string, d: any, img: string, rev = "") {
   const title = [d.p || "ห้องให้เช่า", d.r ? "ห้อง " + d.r : ""].filter(Boolean).join(" · ");
   const bits = [d.rent ? fmt(d.rent) + "/เดือน" : "", d.sale ? "ขาย " + fmt(d.sale) : "", d.t, d.sz ? d.sz + " ตร.ม." : "", d.f ? "ชั้น " + d.f : "", d.a && d.a.ph ? "โทร " + d.a.ph : ""].filter(Boolean).join(" · ");
-  const desc = (bits + (d.d ? " — " + String(d.d).replace(/\s+/g, " ").slice(0, 110) : "")).slice(0, 200);
+  const desc = bits.slice(0, 200);
   const url = SITE + "r/" + id + "/", to = "../../room.html?id=" + id;
   return `<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${H(title)} — MAX Agent</title><meta name="description" content="${H(desc)}">
@@ -78,24 +105,38 @@ async function writeGh(path: string, html: string, message: string) {
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
   const url = new URL(req.url);
+  if (req.method === "GET") {
+    const ip = ipOf(req);
+    if (limited(ip, 3000, "r")) return J(req, { error: "rate limited" }, 429);
+  }
   if (req.method === "GET" && url.searchParams.get("cat")) {
+    if ((buckets.get("miss")?.get(ipOf(req)) || []).filter(t => Date.now() - t < 3600_000).length > 60) return J(req, { error: "rate limited" }, 429);
     const id = url.searchParams.get("cat") || "";
     if (!/^[A-Za-z0-9]{6}$/.test(id)) return J(req, { error: "bad id" }, 400);
     const { data } = await sb.from("catalogs").select("data, updated_at").eq("id", id).maybeSingle();
-    if (!data) return J(req, { error: "not found" }, 404);
+    if (!data) { limited(ipOf(req), 60, "miss"); return J(req, { error: "not found" }, 404); }
     return J(req, { data: data.data, updated_at: data.updated_at });
   }
   if (req.method === "GET") {
+    if ((buckets.get("miss")?.get(ipOf(req)) || []).filter(t => Date.now() - t < 3600_000).length > 60) return J(req, { error: "rate limited" }, 429);
     const id = url.searchParams.get("id") || "";
     if (!/^[A-Za-z0-9]{4,12}$/.test(id)) return J(req, { error: "bad id" }, 400);
     const { data, error } = await sb.from("shared_rooms").select("data").eq("id", id).maybeSingle();
     if (error) return J(req, { error: "db" }, 500);
-    if (!data) return J(req, { error: "not found" }, 404);
-    return J(req, { data: data.data });
+    if (!data) {
+      // legacy links glued to extra chars (e.g. "K82gDC01.jpg"): match the longest known id prefix
+      const pre = []; for (let n = id.length - 1; n >= 4; n--) pre.push(id.slice(0, n));
+      const { data: hits } = pre.length ? await sb.from("shared_rooms").select("id,data").in("id", pre) : { data: [] };
+      const hit = (hits || []).sort((a: any, b: any) => b.id.length - a.id.length)[0];
+      if (hit) return J(req, { data: pub(hit.data), id: hit.id });
+      limited(ipOf(req), 60, "miss"); return J(req, { error: "not found" }, 404);
+    }
+    return J(req, { data: pub(data.data), id });
   }
   if (req.method !== "POST") return J(req, { error: "method" }, 405);
-  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "?";
-  if (limited(ip)) return J(req, { error: "rate limited" }, 429);
+  const ip = ipOf(req);
+  if (limited(ip, 300)) return J(req, { error: "rate limited" }, 429);
+  if (!(await isOwner(req))) return J(req, { error: "login required" }, 401);
   if (Number(req.headers.get("content-length") || 0) > MAX_BODY) return J(req, { error: "payload too large" }, 413);
   let body: any; try { const t = await req.text(); if (t.length > MAX_BODY) return J(req, { error: "payload too large" }, 413); body = JSON.parse(t); } catch { return J(req, { error: "bad json" }, 400); }
   if (body && body.action === "catalog") {
@@ -171,31 +212,15 @@ Deno.serve(async req => {
     const row = { data: { ...cd, imgs: urls }, updated_at: new Date().toISOString() };
     const { error } = isUpdate ? await sb.from("shared_rooms").update(row).eq("id", id) : await sb.from("shared_rooms").insert({ id, ...row, edit_hash: await sha256(body.secret) });
     if (error) return J(req, { error: "save failed" }, 500);
+    // photos the owner deleted in the app: drop their stable files (<id>/p-<key>.jpg) unless this commit still uses them
+    let pruned = 0;
+    if (isUpdate && Array.isArray(body.gone) && urls.length) {
+      const live = new Set(own);
+      const del = body.gone.slice(0, 200).map((k: unknown) => String(k)).filter((k: string) => /^[A-Za-z0-9_-]{1,60}$/.test(k)).map((k: string) => `p-${k}.jpg`).filter((n: string) => has2(n) && !live.has(n) && !urls.some(u => u.endsWith("/" + n)));
+      if (del.length) { const { error: e2 } = await sb.storage.from("room-photos").remove(del.map((n: string) => `${id}/${n}`)); if (!e2) pruned = del.length; }
+    }
     const page = await writeOgPage(id, cd, ogName ? PUB + id + "/" + ogName : (urls[0] || ""), v);
-    return J(req, { id, imgs: urls, page, og: ogName, updated: isUpdate, ...(page ? {} : { pageErr: lastGh }) });
+    return J(req, { id, imgs: urls, page, og: ogName, updated: isUpdate, pruned, ...(page ? {} : { pageErr: lastGh }) });
   }
-  const imgs: unknown[] = Array.isArray(body.images) ? body.images : [];
-  if (imgs.length > MAX_N) return J(req, { error: "too many images (max 12)" }, 400);
-  const files: ([Uint8Array, string, string] | string)[] = [];
-  const PUBRE = new RegExp("^" + PUB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[A-Za-z0-9]{4,12}/\\d{1,2}\\.(jpg|png|webp)$");
-  for (const s of imgs) {
-    if (s && typeof s === "object" && typeof (s as any).url === "string") { if (!PUBRE.test((s as any).url)) return J(req, { error: "bad image url" }, 400); files.push((s as any).url); continue; }
-    if (typeof s !== "string" || s.length > MAX_IMG * 1.4) return J(req, { error: "image too large (max 2MB)" }, 413);
-    let b: Uint8Array; try { b = Uint8Array.from(atob(s.replace(/^data:[^,]*,/, "")), c => c.charCodeAt(0)); } catch { return J(req, { error: "bad image encoding" }, 400); }
-    if (b.length > MAX_IMG) return J(req, { error: "image too large (max 2MB)" }, 413);
-    const t = sniff(b); if (!t) return J(req, { error: "only jpeg/png/webp allowed" }, 415);
-    files.push([b, t[0], t[1]]);
-  }
-  const data = clean(body.data); const id = rid(); const urls: string[] = [];
-  for (let i = 0; i < files.length; i++) {
-    const f = files[i];
-    if (typeof f === "string") { urls.push(f); continue; }
-    const path = `${id}/${i + 1}.${f[2]}`;
-    const { error } = await sb.storage.from("room-photos").upload(path, f[0], { contentType: f[1], upsert: false });
-    if (error) return J(req, { error: "upload failed" }, 500);
-    urls.push(PUB + path);
-  }
-  const { error } = await sb.from("shared_rooms").insert({ id, data: { ...data, imgs: urls } });
-  if (error) return J(req, { error: "insert failed" }, 500);
-  return J(req, { id, imgs: urls });
+  return J(req, { error: "unknown action" }, 400);
 });

@@ -202,7 +202,7 @@ async function applyPhotos(rows) {
   async function one(r) {
     const k = 'photo|' + r.id;
     try {
-      if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; }
+      if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; try { window.photoGone && photoGone([r.id]); } catch (e) {} }
       else {
         const m = r.data || {}, cur = await idb(pstore('readonly').get(r.id));
         let rec;

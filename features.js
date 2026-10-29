@@ -167,11 +167,15 @@ async function offloadUploaded(sorted, sent, urls) {
 // Photos are stored once per room at a stable path (<roomId>/p-<photoKey>.jpg) and reused by every later share,
 // so re-sharing never re-uploads a photo that is already in the cloud.
 const photoKey = p => String(p.id).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 60);
+// photos the user deleted in the app: remembered so the next share commit also removes their files from the cloud (room-photos/<room>/p-<key>.jpg)
+const GONE_K = 'max_gone_photos';
+function goneList() { try { const a = JSON.parse(localStorage.getItem(GONE_K) || '[]'); const cut = Date.now() - 60 * 864e5; return a.filter(x => x && x.k && x.t > cut).slice(-300); } catch (e) { return []; } }
+window.photoGone = function (ids) { try { const a = goneList(), have = new Set(a.map(x => x.k)); (ids || []).forEach(id => { const k = photoKey({ id }); if (!have.has(k)) a.push({ k, t: Date.now() }); }); localStorage.setItem(GONE_K, JSON.stringify(a.slice(-300))); if (window.FX && FX.scheduleShareUpdate) FX.scheduleShareUpdate(5000); } catch (e) {} };
 const MAX_PHOTOS = 40;
 let shareProg = null;
 async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
-  const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => [])) : [];
+  let psOk = true; const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => { psOk = false; return []; })) : [];
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, MAX_PHOTOS);
   const sig = JSON.stringify(o) + '|' + sorted.map(p => p.id).join(',');
   const linkOf = id => BASE().replace(/room\.html$/, 'r/') + id + '/';
@@ -219,7 +223,8 @@ async function cloudLink(u, o, withPhotos) {
   const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
   const ogName = init.og ? init.og.name : (sh && sh.ogKey === coverKey ? sh.og : '');
   say('กำลังบันทึกลิงก์...');
-  const j = await call({ action: 'commit', id: init.id, data: o, images: keep.map(i => images[i]), secret, v: init.v, og: ogName });
+  const liveKeys = new Set(sorted.map(photoKey)); const gone = psOk ? goneList().map(x => x.k).filter(k => !liveKeys.has(k)).slice(-200) : [];
+  const j = await call({ action: 'commit', id: init.id, data: o, images: keep.map(i => images[i]), secret, v: init.v, og: ogName, ...(gone.length ? { gone } : {}) });
   if (failed.size) shareNote = `อัปโหลดรูปไม่สำเร็จ ${failed.size} รูป ระบบจะลองใหม่ครั้งถัดไป`;
   const keptSorted = keep.map(i => sorted[i]), keptSent = keep.map(i => sent[i]);
   u.share = { id: j.id, secret, sig: failed.size ? '' : sig, at: Date.now(), cover: (j.imgs || [])[0] || '', og: j.og || ogName || '', ogKey: (j.og || ogName) ? coverKey : '', opts: u.share && u.share.opts };
@@ -276,14 +281,25 @@ const tog = (key, label) => `<label class="flex items-center justify-between gap
 FX.buildRoomLink = buildLink;
 // Background auto-update: rooms that already have a link get it refreshed (new photos only) a few seconds after an edit.
 let shareBusy = 0, bgTimer = null, bgRun = false;
+async function inferOpts(u) {
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(u.share.id)}`, { headers: SB_H }); if (!r.ok) return null;
+    const d = (await r.json()).data; if (!d) return null;
+    if (!(d.imgs && d.imgs.length) && !u.share.cover) return null;   // text-only link: nothing to refresh
+    return { hideRoom: !!d.hr || !d.r, showPhone: !!(d.a && d.a.ph), photo: true };
+  } catch (e) { return null; }
+}
 async function bgShareUpdate() {
   if (bgRun || shareBusy || !navigator.onLine) return; bgRun = true;
   try {
-    for (const u of units_().filter(x => x.share && x.share.id && x.share.secret && x.share.opts)) {
+    let changed = 0;
+    for (const u of units_().filter(x => x.share && x.share.id && x.share.secret)) {
       if (shareBusy || !navigator.onLine) break;
+      // older links were created without remembered options -> read them from the published room once (keeps hidden room number / phone as the link already is)
+      if (!u.share.opts) { const op = await inferOpts(u); if (!op) continue; u.share.opts = op; try { window.persist(); } catch (e) {} }
       const before = u.share.sig; const nw = FX.noWait; FX.noWait = true;
       try { await buildLink(u, { ...u.share.opts }); } catch (e) { console.warn('bg share update failed', u.id, e); } finally { FX.noWait = nw; }
-      if (u.share && u.share.sig !== before) console.log('link auto-updated', u.share.id, FX.lastShareStats);
+      if (u.share && u.share.sig !== before) { console.log('link auto-updated', u.share.id, FX.lastShareStats); if (++changed >= 6) { FX.scheduleShareUpdate(20000); break; } }
     }
   } finally { bgRun = false; }
 }
@@ -853,7 +869,7 @@ FX.addBackup('catalog', getC, v => { if (v && v.id && v.secret) setC(v); });
 const SITE = () => location.origin + location.pathname.replace(/[^/]*$/, '');
 const avail = () => units_().filter(u => u.status === 'AVAILABLE');
 const linkOf = c => SITE() + 'a/' + c.id + '/';
-const sigOf = () => JSON.stringify(avail().map(u => [u.id, u.share && u.share.id, u.rent, u.salePrice, u.project, u.type, u.size, u.bath, u.floor, u.station, u.stationDist])) + '|' + JSON.stringify([cfg().agentName, cfg().phone, cfg().lineId]);
+const sigOf = () => JSON.stringify(avail().map(u => [u.id, u.share && u.share.id, u.rent, u.salePrice, u.project, u.type, u.size, u.bath, u.floor, u.station, u.stationDist, u.share && u.share.cover || ''])) + '|' + JSON.stringify([cfg().agentName, cfg().phone, cfg().lineId]);
 async function avatarThumb() {
   try { const src = localStorage.getItem(typeof AVATAR_KEY !== 'undefined' ? AVATAR_KEY : 'staylow_avatar'); if (!src) return '';
     const img = new Image(); img.src = src; await img.decode(); const c = document.createElement('canvas'); c.width = c.height = 160;
@@ -873,7 +889,7 @@ async function publish(progress) {
       const u = list[i]; say(`เตรียมลิงก์ห้อง ${i + 1}/${list.length}...`);
       if (!(u.share && u.share.id)) { try { await FX.buildRoomLink(u, { photo: true, hideRoom: true, showPhone: so.showPhone !== false }); } catch (e) { console.warn('room link failed', u.id, e); continue; } }
       if (!(u.share && u.share.id)) continue;
-      if (u.share.cover === undefined) { try { const r = await fetch(`${FX.sb.url}/functions/v1/share-room?id=${u.share.id}`, { headers: FX.sb.h }); const j = await r.json(); u.share.cover = (j.data && j.data.imgs && j.data.imgs[0]) || ''; } catch (e) {} }
+      if (!u.share.cover) { try { const r = await fetch(`${FX.sb.url}/functions/v1/share-room?id=${u.share.id}`, { headers: FX.sb.h }); const j = await r.json(); u.share.cover = (j.data && j.data.imgs && j.data.imgs[0]) || ''; } catch (e) {} }
       rooms.push({ id: u.share.id, p: u.project || '', b: u.building || '', t: u.type || '', sz: Number(u.size) || 0, bt: u.bath || '', f: u.floor || '', vw: u.view || '', rent: Number(u.rent) || 0, sale: Number(u.salePrice) || 0, cover: u.share.cover || '' });
     }
     try { window.persist(); } catch (e) {}

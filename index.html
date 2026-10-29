@@ -2336,7 +2336,7 @@ async function importFormPhotos(files) {
   }
   prog.classList.add('hidden');
   document.getElementById('formFileAlbum').value = ''; document.getElementById('formFileCamera').value = '';
-  await refreshCounts(); await renderFormPhotos(); miniPhotoCache.delete(currentFormUnitId); render();
+  await refreshCounts(); await renderFormPhotos(); miniPhotoCache.delete(currentFormUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   toast(failed === 0 ? `เพิ่ม ${ok} รูป` : `บันทึก ${ok}/${files.length}`);
 }
 async function renderFormPhotos() {
@@ -2353,7 +2353,7 @@ async function renderFormPhotos() {
 }
 async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
-  try { await req(tx('readwrite').delete(photoId)); await refreshCounts(); await renderFormPhotos(); render(); toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
+  try { await req(tx('readwrite').delete(photoId)); try { window.photoGone && photoGone([photoId]); } catch (e) {} await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
 const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
@@ -3363,7 +3363,7 @@ async function refreshCounts() {
   if (!db) return;
   try { const all = await req(tx('readonly').getAll()); Object.keys(photoCount).forEach(k => delete photoCount[k]); all.forEach(p => photoCount[p.unitId] = (photoCount[p.unitId] || 0) + 1); } catch (e) {}
 }
-async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); await refreshCounts(); } catch (e) {} }
+async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); try { window.photoGone && photoGone(ps.map(p => p.id)); } catch (e) {} await refreshCounts(); } catch (e) {} }
 
 // ============== WATERMARK ==============
 const WM_KEY = 'staylow_wm';
@@ -3452,7 +3452,7 @@ async function importPhotos(files) {
   }
   prog.classList.add('hidden');
   document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
-  await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render();
+  await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   toast(failed === 0 ? `เพิ่ม ${ok} รูป` : `บันทึก ${ok}/${files.length}`);
 }
 async function openGallery(unitId) {
@@ -3541,7 +3541,7 @@ async function renderGallery() {
     const byId = new Map(galleryPhotos.map(p => [p.id, p])), base = Date.now(), store = tx('readwrite');
     ids.forEach((id, i) => { const p = byId.get(id); if (!p) return; p.order = base + i; p.cover = i === 0; store.put(p); });
     await new Promise(r => { store.transaction ? (store.transaction.oncomplete = r, store.transaction.onerror = r) : setTimeout(r, 50); });
-    await renderGallery(); miniPhotoCache.delete(galleryUnitId); render();
+    await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
     toast(ids[0] === galleryPhotos[0]?.id ? 'จัดลำดับรูปแล้ว' : 'จัดลำดับรูปแล้ว');
   };
   const init = () => {
@@ -3574,9 +3574,9 @@ function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % gallery
 function closeLightbox() { try { lbResetZoom(); } catch (e) {} const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
 async function deleteCurrentPhoto() {
   const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
-  await req(tx('readwrite').delete(p.id));
+  await req(tx('readwrite').delete(p.id)); try { window.photoGone && photoGone([p.id]); } catch (e) {}
   const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && e.fullUrl.startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
-  await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render();
+  await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
   toast('ลบแล้ว');
 }
@@ -3585,7 +3585,7 @@ async function setCover() {
   const s = tx('readwrite');
   const minOrder = Math.min(...galleryPhotos.map(x => x.order ?? x.ts ?? 0));
   p.order = minOrder - 1; s.put(p);
-  await renderGallery(); miniPhotoCache.delete(galleryUnitId); render();
+  await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
 
@@ -3835,8 +3835,8 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=42"></script>
+<script src="features.js?v=43"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=42"></script>
+<script src="sync.js?v=43"></script>
 </body>
 </html>

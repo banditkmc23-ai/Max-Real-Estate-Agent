@@ -24,7 +24,7 @@ a{color:inherit;text-decoration:none}
 #app{max-width:560px;margin:0 auto;padding-bottom:110px}
 .mut{color:#8e8680;font-size:13px}.sec{padding:0 16px}.h2{font-size:17px;font-weight:600;margin-bottom:10px}
 .car{position:relative;height:520px;max-height:68vh;min-height:360px;overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#cf7a56,#83401f)}
-.trk{display:flex;height:100%}.trk img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block}
+.trk{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y;scrollbar-width:none}.trk::-webkit-scrollbar{display:none}.trk img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;display:block;scroll-snap-align:start;scroll-snap-stop:always;-webkit-user-drag:none;user-select:none}
 .fade{position:absolute;left:0;right:0;bottom:0;height:18%;background:linear-gradient(rgba(247,244,241,0),#f7f4f1);pointer-events:none}
 .dots{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
 .dot{width:6px;height:6px;border-radius:3px;background:#fff;opacity:.6;transition:.3s;box-shadow:0 0 3px #0003}.dot.on{width:18px;opacity:1}
@@ -185,16 +185,34 @@ a{color:inherit;text-decoration:none}
     if (qid) nearby(qid, d);
     if (!imgs.length) return;
     const car = document.getElementById('car'), trk = document.getElementById('trk'), dots = car.querySelectorAll('.dot'), n = imgs.length;
-    let i = 0;
-    const go = () => { i++; trk.style.transition = 'transform .6s ease'; trk.style.transform = `translateX(${-i * 100}%)`; dots.forEach((e, k) => e.classList.toggle('on', k === i % n)); if (i === n) setTimeout(() => { trk.style.transition = 'none'; trk.style.transform = 'translateX(0)'; i = 0; }, 650); };
-    const start = () => { clearInterval(timer); if (n > 1) timer = setInterval(go, 2500); };
+    // top carousel: native scroll-snap (finger swipe works on iPhone) + auto-advance loop; auto-advance pauses while touching, resumes after 4s
+    let i = 0, touching = false, resumeT, settleT, ticking = false;
+    const W = () => trk.clientWidth || 1;
+    const setI = k => { if (k !== i) { i = k; dots.forEach((e, x) => e.classList.toggle('on', x === i % n)); } };
+    const goTo = k => trk.scrollTo({ left: k * W(), behavior: 'smooth' });
+    const go = () => { if (touching || gal0.classList.contains('on')) return; goTo(i + 1); };
+    const start = () => { clearInterval(timer); clearTimeout(resumeT); if (n > 1) timer = setInterval(go, 3000); };
+    const hold = () => { touching = true; clearInterval(timer); clearTimeout(resumeT); };
+    const release = () => { touching = false; clearTimeout(resumeT); resumeT = setTimeout(start, 4000); };
+    const gal0 = document.getElementById('gal');
+    if (n > 1) {
+      trk.addEventListener('scroll', () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; setI(Math.round(trk.scrollLeft / W()) % n); }); }
+        clearTimeout(settleT);
+        settleT = setTimeout(() => { if (Math.round(trk.scrollLeft / W()) >= n) { const p = trk.style.scrollSnapType; trk.style.scrollSnapType = 'none'; trk.scrollLeft = 0; requestAnimationFrame(() => { trk.style.scrollSnapType = p; }); setI(0); } }, 140);
+      }, { passive: true });
+      ['touchstart', 'mousedown'].forEach(ev => trk.addEventListener(ev, hold, { passive: true }));
+      ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(ev => trk.addEventListener(ev, () => { if (touching) release(); }, { passive: true }));
+      document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInterval(timer); } else if (!touching) start(); });
+    }
     start();
-    const gal = document.getElementById('gal'), gt = document.getElementById('gtrk'), gc = document.getElementById('gc');
+    const gal = gal0, gt = document.getElementById('gtrk'), gc = document.getElementById('gc');
     const upd = () => { gc.textContent = `${Math.round(gt.scrollLeft / gt.clientWidth) + 1} / ${n}`; };
     gt.addEventListener('scroll', upd, { passive: true });
     const close = () => { gal.classList.remove('on'); document.documentElement.style.overflow = ''; start(); };
     const openG = k => { clearInterval(timer); gal.classList.add('on'); document.documentElement.style.overflow = 'hidden'; gt.scrollLeft = k * gt.clientWidth; upd(); };
-    car.addEventListener('click', () => openG(i % n));
+    let lastMove = 0; trk.addEventListener('scroll', () => { lastMove = Date.now(); }, { passive: true });
+    car.addEventListener('click', () => { if (Date.now() - lastMove < 250) return; openG(i % n); });
     document.querySelectorAll('.thumbs img').forEach(t => t.onclick = () => openG(+t.dataset.k));
     const step = dx => gt.scrollBy({ left: dx * gt.clientWidth, behavior: 'smooth' });
     if (n > 1) { document.getElementById('gp').onclick = () => step(-1); document.getElementById('gn').onclick = () => step(1); }
