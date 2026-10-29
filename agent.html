@@ -12,6 +12,7 @@
 *{box-sizing:border-box}body{margin:0;font-family:'Poppins','Noto Sans Thai',-apple-system,sans-serif;background:#f6f2ee;color:#1c1917;-webkit-font-smoothing:antialiased}
 .w{max-width:1100px;margin:0 auto;padding-bottom:90px}
 .hd{background:linear-gradient(180deg,rgba(28,25,23,.55) 0%,rgba(28,25,23,.2) 45%,rgba(246,242,238,.85) 80%,#f6f2ee 100%),url(catalog-hero.webp) center 40%/cover no-repeat #f6f2ee;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35);border-radius:0;padding-bottom:16px!important;padding:14px 16px 12px;padding-top:max(14px,env(safe-area-inset-top))}
+.lt{display:flex;justify-content:flex-end;margin-bottom:10px}
 .ag{display:flex;align-items:center;gap:10px}.av{width:44px;height:44px;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#fff3;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .ag h1{margin:0;font-size:17px;line-height:1.15}.ag p{margin:1px 0 0;font-size:12px;opacity:.88}
 .ib{margin-left:auto;display:flex;gap:8px}.ib a{height:38px;min-width:38px;padding:0 12px;border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;text-decoration:none}
@@ -38,34 +39,37 @@
 <script>
 (function(){
   const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = window.MAXGEO_KEY, G=window.MAXGEO;
-  const {esc,fmt,card}=G;
+  const {esc,fmt,card,t}=G;
+  const nrm=n=>t(n+' ห้อง',n+(n==1?' room':' rooms'));
+  const zd=k=>k===OTHER?t('อื่นๆ','Other'):G.stn(k).n;
+  const fabTxt=()=>view==='map'?t('☰ รายการ','☰ List'):t('📍 แผนที่','📍 Map');
   const id=(new URLSearchParams(location.search).get('id')||'').replace(/[^A-Za-z0-9]/g,'');
   const app=document.getElementById('app'),fab=document.getElementById('fab'),mapEl=document.getElementById('map'),sheet=document.getElementById('sheet'),mtop=document.getElementById('mtop');
   let D,mode='rent',zone='',q='',view='list',M=null,cl=null;
   const OTHER='อื่นๆ';
   const zkey=r=>r.sl?r.sl+' '+r.sn:OTHER;
   const price=r=>mode==='sale'?r.sale:r.rent;
-  const list=()=>(D.rooms||[]).filter(r=>(mode==='sale'?r.sale>0:r.rent>0)&&(!q||(r.p+' '+(r.cn||'')+' '+(r.sn||'')).toLowerCase().includes(q.toLowerCase())));
+  const list=()=>(D.rooms||[]).filter(r=>(mode==='sale'?r.sale>0:r.rent>0)&&(!q||(r.p+' '+(r.cn||'')+' '+(r.sn||'')+' '+G.nameOf(r)+' '+(r.sn?G.stn(r.sn).n:'')).toLowerCase().includes(q.toLowerCase())));
   const href=r=>'r/'+r.id+'/';
   function zones(L){const z={};L.forEach(r=>(z[zkey(r)]=z[zkey(r)]||[]).push(r));return Object.entries(z).sort((a,b)=>(a[0]===OTHER)-(b[0]===OTHER)||b[1].length-a[1].length)}
   function head(){const a=D.agent||{},all=D.rooms||[],tel=String(a.ph||'').replace(/[^0-9+]/g,''),hasSale=all.some(r=>r.sale>0),np=new Set(all.map(r=>r.cn||r.p)).size;
-    return '<div class="hd"><div class="ag">'+(a.av?'<img class="av" src="'+esc(a.av)+'" alt="">':'<div class="av">'+esc((a.n||'A').slice(0,1))+'</div>')+'<div><h1>'+esc(a.n||'เอเจนต์')+'</h1><p>ห้องว่าง '+all.length+' ห้อง · '+np+' โครงการ</p></div><div class="ib">'+(a.l?'<a class="line" href="https://line.me/R/ti/p/~'+encodeURIComponent(a.l)+'" target="_blank">LINE</a>':'')+(tel?'<a class="call" href="tel:'+esc(tel)+'" aria-label="โทร">📞</a>':'')+'</div></div>'
-    +'<div class="sr"><input id="q" type="search" placeholder="🔍 ค้นหาโครงการ, BTS…" value="'+esc(q)+'">'+(hasSale?'<div class="tg"><button data-m="rent" class="'+(mode==='rent'?'on':'')+'">เช่า</button><button data-m="sale" class="'+(mode==='sale'?'on':'')+'">ขาย</button></div>':'')+'</div>'
+    return '<div class="hd"><div class="lt">'+G.sw()+'</div><div class="ag">'+(a.av?'<img class="av" src="'+esc(a.av)+'" alt="">':'<div class="av">'+esc((a.n||'A').slice(0,1))+'</div>')+'<div><h1>'+esc(a.n||t('เอเจนต์','Agent'))+'</h1><p>'+t('ห้องว่าง '+all.length+' ห้อง · '+np+' โครงการ',all.length+(all.length==1?' vacant room':' vacant rooms')+' · '+np+(np==1?' project':' projects'))+'</p></div><div class="ib">'+(a.l?'<a class="line" href="https://line.me/R/ti/p/~'+encodeURIComponent(a.l)+'" target="_blank">LINE</a>':'')+(tel?'<a class="call" href="tel:'+esc(tel)+'" aria-label="'+t('โทร','Call')+'">📞</a>':'')+'</div></div>'
+    +'<div class="sr"><input id="q" type="search" placeholder="'+t('🔍 ค้นหาโครงการ, BTS…','🔍 Search project, BTS…')+'" value="'+esc(q)+'">'+(hasSale?'<div class="tg"><button data-m="rent" class="'+(mode==='rent'?'on':'')+'">'+t('เช่า','Rent')+'</button><button data-m="sale" class="'+(mode==='sale'?'on':'')+'">'+t('ขาย','Sale')+'</button></div>':'')+'</div>'
     +'<div class="chips" id="chips"></div></div>'}
   function render(){
     const L=list(),Z=zones(L);
     if(!app.querySelector('.hd')){app.innerHTML=head()+'<div id="body"></div>';bindHead()}
-    document.getElementById('chips').innerHTML='<button class="chip'+(zone?'':' on')+'" data-z="">ทุกโซน</button>'+Z.map(([k])=>'<button class="chip'+(zone===k?' on':'')+'" data-z="'+esc(k)+'">'+esc(k.replace(/^(BTS|MRT|ARL) /,''))+'</button>').join('');
+    document.getElementById('chips').innerHTML='<button class="chip'+(zone?'':' on')+'" data-z="">'+t('ทุกโซน','All areas')+'</button>'+Z.map(([k])=>'<button class="chip'+(zone===k?' on':'')+'" data-z="'+esc(k)+'">'+esc(k===OTHER?zd(k):G.stn(k).n)+'</button>').join('');
     document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{zone=b.dataset.z;render();if(view==='map')showMap();else scrollTo(0,0)});
     const body=document.getElementById('body');let h='';
-    if(!L.length)h='<p class="em">ไม่พบห้องที่ค้นหา</p>';
-    else if(zone){const rs=(Z.find(z=>z[0]===zone)||[0,[]])[1];h='<div class="bk"><button data-z2="">‹ ทุกโซน</button><span>'+(zone===OTHER?OTHER:'ใกล้ '+esc(zone))+' · '+rs.length+' ห้อง</span></div><div class="grid">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>'}
-    else h=Z.map(([k,rs])=>'<div class="zh"><b>'+(k===OTHER?'🏙️ '+OTHER:'🚆 ใกล้ '+esc(k))+'</b><span>'+rs.length+' ห้อง</span><a data-z2="'+esc(k)+'">ดูทั้งหมด ›</a></div><div class="mq">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>').join('');
-    body.innerHTML=h+'<p class="ft">อัปเดตล่าสุด '+new Date(D._u).toLocaleString('th-TH')+' · MAX Agent</p>';
+    if(!L.length)h='<p class="em">'+t('ไม่พบห้องที่ค้นหา','No rooms found')+'</p>';
+    else if(zone){const rs=(Z.find(z=>z[0]===zone)||[0,[]])[1];h='<div class="bk"><button data-z2="">‹ '+t('ทุกโซน','All areas')+'</button><span>'+(zone===OTHER?zd(OTHER):t('ใกล้ ','Near ')+esc(G.stn(zone).n))+' · '+nrm(rs.length)+'</span></div><div class="grid">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>'}
+    else h=Z.map(([k,rs])=>'<div class="zh"><b>'+(k===OTHER?'🏙️ '+zd(OTHER):'🚆 '+t('ใกล้ ','Near ')+esc(G.stn(k).n))+'</b><span>'+nrm(rs.length)+'</span><a data-z2="'+esc(k)+'">'+t('ดูทั้งหมด ›','See all ›')+'</a></div><div class="mq">'+rs.map(r=>card(r,href(r),mode)).join('')+'</div>').join('');
+    body.innerHTML=h+'<p class="ft">'+t('อัปเดตล่าสุด ','Last updated ')+new Date(D._u).toLocaleString(t('th-TH','en-GB'))+' · MAX Agent</p>';
     body.querySelectorAll('[data-z2]').forEach(b=>b.onclick=()=>{zone=b.dataset.z2;render();scrollTo(0,0)});
     body.querySelectorAll('.mq').forEach(el=>G.loop(el));
     paintCounts();
-    fab.style.display='';fab.textContent=view==='map'?'☰ รายการ':'📍 แผนที่';
+    fab.style.display='';fab.textContent=fabTxt();
   }
   function bindHead(){
     const qi=document.getElementById('q');qi.oninput=()=>{q=qi.value.trim();render();if(view==='map')showMap()};
@@ -73,32 +77,35 @@
   }
   /* photo counts: lazily read each room's share data once (cached per session) */
   let CNT={};try{CNT=JSON.parse(sessionStorage.getItem('max_cnt_'+id)||'{}')}catch(e){}
-  function paintCounts(){document.querySelectorAll('a.xc').forEach(a=>{const rid=(a.getAttribute('href').match(/([A-Za-z0-9]{6})\/?$/)||[])[1];const n=CNT[rid];if(n&&!a.querySelector('.xn'))a.querySelector('.xp').insertAdjacentHTML('beforeend','<span class="xn">'+n+' รูป</span>')})}
+  function paintCounts(){document.querySelectorAll('a.xc').forEach(a=>{const rid=(a.getAttribute('href').match(/([A-Za-z0-9]{6})\/?$/)||[])[1];const n=CNT[rid];if(n&&!a.querySelector('.xn'))a.querySelector('.xp').insertAdjacentHTML('beforeend','<span class="xn">'+n+t(' รูป',n==1?' photo':' photos')+'</span>')})}
   async function loadCounts(){const ids=(D.rooms||[]).map(r=>r.id).filter(x=>CNT[x]===undefined);let i=0;
     const worker=async()=>{while(i<ids.length){const x=ids[i++];try{const r=await fetch(SB_URL+'/functions/v1/share-room?id='+x,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});const j=await r.json();CNT[x]=(j.data&&j.data.imgs||[]).length}catch(e){CNT[x]=0}}};
     await Promise.all([1,2,3,4,5,6].map(worker));try{sessionStorage.setItem('max_cnt_'+id,JSON.stringify(CNT))}catch(e){}paintCounts()}
   /* map */
   function lib(){return window.L&&L.markerClusterGroup?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=()=>{const t=document.createElement('script');t.src='https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';t.onload=ok;t.onerror=no;document.head.appendChild(t)};s.onerror=no;document.head.appendChild(s)})}
   const kk=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':Math.round(n/1000)+'k';
-  async function showMap(){view='map';mapEl.style.display='block';mtop.style.display='block';document.body.style.overflow='hidden';fab.textContent='☰ รายการ';sheet.style.display='none';
-    try{await lib()}catch(e){document.getElementById('mtx').textContent='โหลดแผนที่ไม่สำเร็จ';return}
+  async function showMap(){view='map';mapEl.style.display='block';mtop.style.display='block';document.body.style.overflow='hidden';fab.textContent=fabTxt();sheet.style.display='none';
+    try{await lib()}catch(e){document.getElementById('mtx').textContent=t('โหลดแผนที่ไม่สำเร็จ','Could not load the map');return}
     if(!M){M=L.map(mapEl,{zoomControl:false}).setView([13.725,100.585],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(M);M.on('click',()=>{sheet.style.display='none'})}
     if(cl)M.removeLayer(cl);
     cl=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:45,iconCreateFunction:c=>{const n=c.getAllChildMarkers().reduce((s,m)=>s+m.options.rc,0);return L.divIcon({className:'lf',html:'<div class="cl">'+n+'</div>',iconSize:[40,40]})}});
-    const g={};list().filter(r=>r.lat&&(!zone||zkey(r)===zone)).forEach(r=>{const k=r.cn;(g[k]=g[k]||{n:k,lat:r.lat,lng:r.lng,rooms:[]}).rooms.push(r)});
+    const g={};list().filter(r=>r.lat&&(!zone||zkey(r)===zone)).forEach(r=>{const k=r.cn;(g[k]=g[k]||{n:G.nameOf(r),lat:r.lat,lng:r.lng,rooms:[]}).rooms.push(r)});
     const gs=Object.values(g);
     gs.forEach(x=>{const min=Math.min(...x.rooms.map(price));const m=L.marker([x.lat,x.lng],{rc:x.rooms.length,icon:L.divIcon({className:'lf',html:'<div class="pin">฿'+kk(min)+(x.rooms.length>1?' · '+x.rooms.length:'')+'</div>',iconSize:[0,0]})});m.on('click',e=>{L.DomEvent.stopPropagation(e);document.querySelectorAll('.pin.sel').forEach(p=>p.classList.remove('sel'));const el=m.getElement();el&&el.firstChild.classList.add('sel');openSheet(x)});cl.addLayer(m)});
     M.addLayer(cl);const n=gs.reduce((s,x)=>s+x.rooms.length,0);
-    document.getElementById('mtx').innerHTML='📍 <b>'+n+'</b> ห้อง · '+gs.length+' โครงการ'+(zone?' · '+esc(zone):'')+' — แตะหมุดเพื่อดูห้อง';
+    document.getElementById('mtx').innerHTML='📍 <b>'+n+'</b> '+t('ห้อง',n==1?'room':'rooms')+' · '+gs.length+t(' โครงการ',gs.length==1?' project':' projects')+(zone?' · '+esc(zone===OTHER?zd(OTHER):G.stn(zone).full):'')+t(' — แตะหมุดเพื่อดูห้อง',' — tap a pin to see rooms');
     setTimeout(()=>{M.invalidateSize();if(gs.length)M.fitBounds(L.latLngBounds(gs.map(x=>[x.lat,x.lng])),{padding:[40,40],maxZoom:16})},30)}
   function openSheet(x){const rs=x.rooms.slice().sort((a,b)=>price(a)-price(b));
-    sheet.innerHTML='<div class="gr0"></div><div class="sh"><b>'+esc(x.n)+'</b><span>ว่าง '+rs.length+' ห้อง'+(rs[0].sl?' · '+rs[0].sl+' '+esc(rs[0].sn)+' '+G.dtxt(rs[0].sm):'')+'</span><button aria-label="ปิด" id="shx">×</button></div>'
-     +rs.map(r=>'<a class="rw" href="'+href(r)+'"><div class="ph" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"></div><div class="m">'+esc([r.t,r.sz?r.sz+' ตร.ม.':'',r.f?'ชั้น '+r.f:''].filter(Boolean).join(' · '))+'<div class="p">฿'+fmt(price(r))+(mode==='sale'?'':' <small>/เดือน</small>')+'</div></div><em>ดูห้อง ›</em></a>').join('');
+    sheet.innerHTML='<div class="gr0"></div><div class="sh"><b>'+esc(x.n)+'</b><span>'+t('ว่าง '+rs.length+' ห้อง',rs.length+(rs.length==1?' available room':' available rooms'))+(rs[0].sl?' · '+rs[0].sl+' '+esc(G.stn(rs[0].sn).n)+' '+G.dtxt(rs[0].sm):'')+'</span><button aria-label="'+t('ปิด','Close')+'" id="shx">×</button></div>'
+     +rs.map(r=>'<a class="rw" href="'+href(r)+'"><div class="ph" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"></div><div class="m">'+esc([G.typeOf(r.t),r.sz?r.sz+t(' ตร.ม.',' sqm'):'',r.f?t('ชั้น ','Floor ')+r.f:''].filter(Boolean).join(' · '))+'<div class="p">฿'+fmt(price(r))+(mode==='sale'?'':' <small>'+t('/เดือน','/ month')+'</small>')+'</div></div><em>'+t('ดูห้อง ›','View ›')+'</em></a>').join('');
     sheet.style.display='block';document.getElementById('shx').onclick=()=>{sheet.style.display='none'}}
-  function hideMap(){view='list';mapEl.style.display='none';mtop.style.display='none';sheet.style.display='none';document.body.style.overflow='';fab.textContent='📍 แผนที่'}
+  function hideMap(){view='list';mapEl.style.display='none';mtop.style.display='none';sheet.style.display='none';document.body.style.overflow='';fab.textContent=fabTxt()}
+  const setTitle=()=>{document.title=t('ห้องว่าง '+(D.rooms||[]).length+' ห้อง · ',(D.rooms||[]).length+' vacant rooms · ')+((D.agent||{}).n||'MAX Agent')};
+  G.onLang(()=>{if(!D)return;setTitle();app.innerHTML='';render();if(view==='map')showMap()});
+  app.innerHTML='<p class="em">'+t('กำลังโหลด...','Loading...')+'</p>';
   fab.onclick=()=>view==='map'?hideMap():showMap();
   Promise.all([fetch(SB_URL+'/functions/v1/share-room?cat='+id,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.ok?r.json():Promise.reject(r.status)),G.coords()])
-   .then(([j])=>{D=j.data;D._u=j.updated_at;G.attach(D.rooms||[]);if(!(D.rooms||[]).some(r=>r.rent>0))mode='sale';document.title='ห้องว่าง '+(D.rooms||[]).length+' ห้อง · '+((D.agent||{}).n||'MAX Agent');render();if(location.hash==='#map')showMap();loadCounts()})
-   .catch(()=>{app.innerHTML='<p class="em">ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง</p>'});
+   .then(([j])=>{D=j.data;D._u=j.updated_at;G.attach(D.rooms||[]);if(!(D.rooms||[]).some(r=>r.rent>0))mode='sale';setTitle();render();if(location.hash==='#map')showMap();loadCounts()})
+   .catch(()=>{app.innerHTML='<p class="em">'+t('ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง','Page not found, or the link is invalid')+'</p>'});
 })();
 </script></body></html>

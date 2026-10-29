@@ -28,6 +28,7 @@ a{color:inherit;text-decoration:none}
 .fade{position:absolute;left:0;right:0;bottom:0;height:18%;background:linear-gradient(rgba(247,244,241,0),#f7f4f1);pointer-events:none}
 .dots{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
 .dot{width:6px;height:6px;border-radius:3px;background:#fff;opacity:.6;transition:.3s;box-shadow:0 0 3px #0003}.dot.on{width:18px;opacity:1}
+.lsw-pos{position:absolute;right:14px;top:max(12px,env(safe-area-inset-top));z-index:6}
 .pill{position:absolute;top:max(16px,env(safe-area-inset-top));font-size:13px;font-weight:600;padding:4px 10px;border-radius:20px}
 .card{background:#fff;border-radius:14px}
 .row{display:flex;justify-content:space-between;gap:12px;padding:10px 0}.row+.row{border-top:1px solid #f0ebe7}.row b{font-weight:600;text-align:right}
@@ -70,7 +71,7 @@ a{color:inherit;text-decoration:none}
  .pill{top:16px}
 }
 </style>
-<script>window.MAXGEO_KEY='sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';</script><script src="geo.js" defer></script>
+<script>window.MAXGEO_KEY='sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';</script><script src="geo.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -80,7 +81,9 @@ a{color:inherit;text-decoration:none}
   const B = '#c2552d';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const baht = n => '฿' + Number(n || 0).toLocaleString('th-TH');
-  const ST = { AVAILABLE: ['● ว่าง พร้อมเข้าอยู่', '#1a8a4a'], RESERVED: ['● ติดจอง', '#b7791f'], OCCUPIED: ['● มีผู้เช่า (รับจองล่วงหน้า)', '#2b6cb0'], FOR_SALE: ['● ขาย', B] };
+  const G0 = window.MAXGEO, T = G0.t;
+  const ST0 = { AVAILABLE: [['● ว่าง พร้อมเข้าอยู่', '● Available · move-in ready'], '#1a8a4a'], RESERVED: [['● ติดจอง', '● Reserved'], '#b7791f'], OCCUPIED: [['● มีผู้เช่า (รับจองล่วงหน้า)', '● Currently leased · pre-booking open'], '#2b6cb0'], FOR_SALE: [['● ขาย', '● For sale'], B] };
+  const stOf = k => ST0[k] ? [T(ST0[k][0][0], ST0[k][0][1]), ST0[k][1]] : undefined;
   const fromB64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const bin = atob(s); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; };
   async function decode(h) {
     const [ver, data] = [h.slice(0, 1), h.slice(2)];
@@ -91,12 +94,14 @@ a{color:inherit;text-decoration:none}
     }
     return JSON.parse(new TextDecoder().decode(bytes));
   }
-  function fail(msg) { document.getElementById('app').innerHTML = `<div style="padding:80px 32px;text-align:center"><p style="font-weight:600">เปิดลิงก์ห้องไม่ได้</p><p class="mut" style="margin-top:4px">${esc(msg)}</p></div>`; }
+  function fail(msg) { document.getElementById('app').innerHTML = `<div style="padding:80px 32px;text-align:center"><p style="font-weight:600">${T('เปิดลิงก์ห้องไม่ได้', 'Unable to open this room link')}</p><p class="mut" style="margin-top:4px">${esc(msg)}</p></div>`; }
+  let NB = null, DC = null;
   async function nearby(rid, d) {
     const box = document.getElementById('nearby'); if (!box) return;
     for (let t = 0; !window.MAXGEO && t < 50; t++) await new Promise(r => setTimeout(r, 100));
     const G = window.MAXGEO; if (!G) return;
     try {
+      if (NB && NB.rid === rid) { box.innerHTML = NB.html(); return; }
       const h = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
       const cat = await (await fetch(`${SB_URL}/rest/v1/rpc/room_catalog`, { method: 'POST', headers: h, body: JSON.stringify({ rid }) })).json();
       if (!cat || typeof cat !== 'string') return;
@@ -105,7 +110,8 @@ a{color:inherit;text-decoration:none}
       const sale = d.sale && !d.rent, mode = sale ? 'sale' : 'rent';
       const L = all.filter(r => r.id !== rid && (sale ? r.sale > 0 : r.rent > 0)).map(r => { r._d = me.lat && r.lat ? (r.cn === me.cn ? -1 : G.dist(me.lat, me.lng, r.lat, r.lng)) : 1e9; return r; }).sort((a, b) => a._d - b._d).slice(0, 5);
       if (!L.length) return;
-      box.innerHTML = `<div style="max-width:1100px;margin:28px auto 0"><div style="display:flex;align-items:baseline;gap:8px;padding:0 16px 10px"><div class="h2" style="margin:0">ห้องว่างใกล้เคียง</div></div><div class="mq">${L.map(r => G.card(r, 'room.html?id=' + r.id, mode)).join('')}</div></div>`;
+      NB = { rid, html: () => `<div style="max-width:1100px;margin:28px auto 0"><div style="display:flex;align-items:baseline;gap:8px;padding:0 16px 10px"><div class="h2" style="margin:0">${T('ห้องว่างใกล้เคียง', 'Nearby available rooms')}</div></div><div class="mq">${L.map(r => G.card(r, 'room.html?id=' + r.id, mode)).join('')}</div></div>` };
+      box.innerHTML = NB.html();
       G.loop(box.querySelector('.mq'));
     } catch (e) { console.warn('nearby', e); }
   }
@@ -113,17 +119,19 @@ a{color:inherit;text-decoration:none}
   async function main() {
     clearInterval(timer);
     const h = location.hash.slice(1), qid = new URLSearchParams(location.search).get('id');
-    let d;
-    if (qid) {
-      document.getElementById('app').innerHTML = '<p class="mut" style="text-align:center;margin-top:96px">กำลังโหลด...</p>';
+    let d = DC;
+    if (qid && !d) {
+      document.getElementById('app').innerHTML = `<p class="mut" style="text-align:center;margin-top:96px">${T('กำลังโหลด...', 'Loading...')}</p>`;
       const get = async id => { const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(id)}`, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }); const j = await r.json(); if (!r.ok || !j.data) throw 0; if (j.id && j.id !== qid) history.replaceState(null, '', location.pathname + '?id=' + j.id); return j.data; };
       // links glued to following text (e.g. r/K82gDC01.jpg) -> try the 6-char room id
       try { try { d = await get(qid); } catch (e) { if (qid.length > 6 && /^[A-Za-z0-9]{6}/.test(qid)) { d = await get(qid.slice(0, 6)); history.replaceState(null, '', location.pathname + '?id=' + qid.slice(0, 6)); } else throw e; } }
-      catch (e) { return fail('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่'); }
-    } else if (!h) return fail('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์');
-    if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? e.message : 'ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์'); }
+      catch (e) { return fail(T('ไม่พบห้องนี้ หรือการเชื่อมต่อมีปัญหา กรุณาลองใหม่', 'Room not found, or a connection problem. Please try again.')); }
+    } else if (!h && !d) return fail(T('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์', 'Incomplete link. Please ask the agent for a new one.'));
+    if (!d) try { d = await decode(h); } catch (e) { return fail(e.message && e.message.includes('เบราว์เซอร์') ? T(e.message, 'This browser cannot open the link. Please update your browser.') : T('ลิงก์ไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากเอเจนต์', 'Incomplete link. Please ask the agent for a new one.')); }
+    DC = d;
     const desc = String(d.d || '');
-    document.title = (d.p || 'ห้องให้เช่า') + (d.rent ? ' — ' + baht(d.rent) + '/เดือน' : '');
+    const PN = G0.pname(d.p);
+    document.title = (PN || T('ห้องให้เช่า', 'Room for rent')) + (d.rent ? ' — ' + baht(d.rent) + T('/เดือน', '/month') : '');
     const a = d.a || {};
     const lineUrl = a.l ? 'https://line.me/R/ti/p/~' + encodeURIComponent(a.l.replace(/^@?/, a.l.startsWith('@') ? '@' : '')) : '';
     const tel = a.ph ? 'tel:' + a.ph.replace(/[^0-9+]/g, '') : '';
@@ -132,56 +140,60 @@ a{color:inherit;text-decoration:none}
     // station: stored field, else from description (e.g. "BTS พระโขนง 300 ม.")
     let sn = d.sn || '', sd = Number(d.sd) || 0;
     if (!sn) { const m = desc.match(/(BTS|MRT|ARL|Airport Link)\s*([ก-๙A-Za-z0-9 ]+?)(?:\s*(?:เพียง|ประมาณ)?\s*([\d,.]+)\s*(ม\.|เมตร|m|km|กม\.))?(?=[\s|,·\n]|$)/); if (m) { sn = (m[1] + ' ' + m[2].replace(/\s*(ฟรี|free)$/i, '')).trim(); if (m[3]) sd = parseFloat(m[3].replace(/,/g, '')) * (/k|กม/.test(m[4]) ? 1000 : 1); } }
-    const area = sn ? sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '').trim() : (d.b && d.b.length > 2 ? d.b : '');
+    const area = sn ? G0.stn(sn).n : (d.b && d.b.length > 2 ? d.b : '');
+    const snT = sn ? G0.stFull(sn) : '';
     const corner = d.cn != null ? !!d.cn : /ห้องมุม|corner/i.test(desc);
-    const dist = sd ? (sd >= 1000 ? (sd / 1000).toLocaleString('th-TH') + ' กม.' : sd.toLocaleString('th-TH') + ' ม.') : '';
-    const typ = [d.t ? String(d.t).replace(/(\d+)\s*Bed(room)?s?/i, '$1 ห้องนอน').replace(/Studio/i, 'สตูดิโอ') : '', d.bt ? d.bt + ' ห้องน้ำ' : ''].filter(Boolean).join(' · ');
-    const flo = [d.f ? 'ชั้น ' + d.f : '', corner ? 'ห้องมุม' : '', d.r && d.r !== '-' ? 'ห้อง ' + d.r : ''].filter(Boolean).join(' · ');
-    const rows = [['ประเภทห้อง', typ], ['ขนาด', d.sz ? d.sz + ' ตร.ม.' : ''], ['ชั้น / ตำแหน่ง', flo], ['วิว', d.vw || ''], ['การเดินทาง', sn ? sn + (dist ? ' ' + dist : '') : '']].filter(r => r[1]);
+    const dist = sd ? (sd >= 1000 ? (sd / 1000).toLocaleString('en-US') + T(' กม.', ' km') : sd.toLocaleString('en-US') + T(' ม.', ' m')) : '';
+    const typ = [d.t ? G0.typeOf(d.t) : '', d.bt ? G0.bathOf(d.bt) : ''].filter(Boolean).join(' · ');
+    const flo = [d.f ? T('ชั้น ', 'Floor ') + d.f : '', corner ? T('ห้องมุม', 'Corner unit') : '', d.r && d.r !== '-' ? T('ห้อง ', 'Unit ') + d.r : ''].filter(Boolean).join(' · ');
+    const rows = [[T('ประเภทห้อง', 'Room type'), typ], [T('ขนาด', 'Size'), d.sz ? d.sz + T(' ตร.ม.', ' sqm') : ''], [T('ชั้น / ตำแหน่ง', 'Floor / position'), flo], [T('วิว', 'View'), G0.viewOf(d.vw || '')], [T('การเดินทาง', 'Transit'), sn ? snT + (dist ? ' ' + dist : '') : '']].filter(r => r[1]);
     // rental terms parsed from description
     const tm = Array.isArray(d.tm) ? d.tm.filter(x => Array.isArray(x) && x.length === 2).map(x => [String(x[0]), String(x[1])]) : [];
+    const tmT = tm0 => tm0.map(([k, v]) => [G0.tmLabel(k), G0.tmVal(v)]);
     let m;
     if (!d.tm && (m = desc.match(/สัญญา[^\n\d]*?(\d+)\s*(ปี|เดือน)/))) tm.push(['สัญญาขั้นต่ำ', m[1] + ' ' + m[2]]);
     else if ((m = desc.match(/minimum[^\n\d]*?(\d+)[\s-]*(year|month)/i))) tm.push(['สัญญาขั้นต่ำ', m[1] + ' ' + (/y/i.test(m[2]) ? 'ปี' : 'เดือน')]);
     if (!d.tm && (m = desc.match(/ล่วงหน้า\s*(\d+)\s*เดือน/))) tm.push(['ล่วงหน้า', m[1] + ' เดือน']);
     if (!d.tm && (m = desc.match(/(?:ประกัน|มัดจำ)\s*(\d+)\s*เดือน/))) tm.push(['เงินประกัน', m[1] + ' เดือน']);
-    const st = ST[d.st];
+    const st = stOf(d.st);
     const q = encodeURIComponent(d.p || '');
+    const en = G0.en();
     const tbl = list => `<div class="card" style="padding:4px 14px">${list.map(([k, v]) => `<div class="row"><span style="color:#8e8680">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
-    const btns = `${lineUrl ? `<a class="btn" style="background:#06c755" href="${lineUrl}">ทัก LINE</a>` : ''}${tel ? `<a class="btn" style="background:${B}" href="${tel}">โทรหาเอเจนต์</a>` : ''}`;
+    const btns = `${lineUrl ? `<a class="btn" style="background:#06c755" href="${lineUrl}">${T('ทัก LINE', 'Chat on LINE')}</a>` : ''}${tel ? `<a class="btn" style="background:${B}" href="${tel}">${T('โทรหาเอเจนต์', 'Call agent')}</a>` : ''}`;
     document.getElementById('app').innerHTML = `
     <div class="lay"><div class="colL"><div class="car o1" id="car">
       ${imgs.length ? `<div class="trk" id="trk">${imgs.concat(imgs.length > 1 ? [imgs[0]] : []).map((u, i) => `<img src="${esc(u)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div>` : ''}
       <div class="fade"></div>
-      <span class="pill" style="left:16px;background:${B};color:#fff">${isSale ? 'ขาย' : 'ให้เช่า'}${st && d.st === 'AVAILABLE' ? ' · ว่าง' : ''}</span>
-      ${imgs.length ? `<span class="pill" style="right:16px;background:rgba(0,0,0,.55);color:#fff;font-weight:500">📷 ${imgs.length} · แตะดูรูป</span>` : ''}
+      <span class="pill" style="left:16px;background:${B};color:#fff">${isSale ? T('ขาย', 'For sale') : T('ให้เช่า', 'For rent')}${st && d.st === 'AVAILABLE' ? T(' · ว่าง', ' · Available') : ''}</span>
+      <span class="lsw-pos">${G0.sw()}</span>
+      ${imgs.length ? `<span class="pill" style="left:16px;top:auto;bottom:34px;background:rgba(0,0,0,.55);color:#fff;font-weight:500">📷 ${imgs.length} · ${T('แตะดูรูป', 'Tap to view')}</span>` : ''}
       ${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<span class="dot${i ? '' : ' on'}"></span>`).join('')}</div>` : ''}
     </div>
     ${imgs.length > 1 ? `<div class="thumbs">${imgs.slice(0, 12).map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-k="${k}">`).join('')}</div>` : ''}
-    ${d.p ? `<div class="sec o4" style="margin-top:20px"><div class="h2">ทำเลที่ตั้ง</div>
-      <iframe src="https://maps.google.com/maps?q=${q}&z=16&hl=th&output=embed" style="width:100%;height:240px;border:0;border-radius:14px;display:block;background:#eee" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="แผนที่"></iframe>
+    ${d.p ? `<div class="sec o4" style="margin-top:20px"><div class="h2">${T('ทำเลที่ตั้ง', 'Location')}</div>
+      <iframe src="https://maps.google.com/maps?q=${q}&z=16&hl=${en ? 'en' : 'th'}&output=embed" style="width:100%;height:240px;border:0;border-radius:14px;display:block;background:#eee" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${T('แผนที่', 'Map')}"></iframe>
       <a class="card" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener" style="margin-top:12px;padding:12px;display:flex;align-items:center;gap:10px">
         ${sn ? `<span style="width:36px;height:36px;border-radius:10px;background:#62b04a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${esc(sn.split(' ')[0])}</span>` : `<span style="width:36px;height:36px;border-radius:10px;background:#fdf3ee;color:${B};font-size:18px;display:flex;align-items:center;justify-content:center">📍</span>`}
-        <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(sn ? 'สถานี' + sn.replace(/^(BTS|MRT|ARL|Airport Link)\s*/i, '') : d.p)}</div>${sn && dist ? `<div class="mut">ห่างประมาณ ${dist}</div>` : ''}</div>
-        <span style="font-size:13px;color:${B};font-weight:600;white-space:nowrap">เปิด Google Maps ›</span></a></div>` : ''}
+        <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(sn ? (en ? G0.stn(sn).n + ' Station' : 'สถานี' + G0.stn(sn).n) : PN)}</div>${sn && dist ? `<div class="mut">${en ? 'About ' + dist + ' away' : 'ห่างประมาณ ' + dist}</div>` : ''}</div>
+        <span style="font-size:13px;color:${B};font-weight:600;white-space:nowrap">${T('เปิด Google Maps ›', 'Open in Google Maps ›')}</span></a></div>` : ''}
     </div><div class="colR">
     <div class="sec o2" style="margin-top:8px">
-      <div style="font-size:12px;letter-spacing:2px;color:${B};font-weight:600">${isSale ? 'ขาย' : 'ให้เช่า'}${area ? ' · ' + esc(area) : ''}</div>
-      <h1 style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.1;margin-top:2px">${esc(d.p || 'ห้องให้เช่า')}</h1>
+      <div style="font-size:12px;letter-spacing:2px;color:${B};font-weight:600">${isSale ? T('ขาย', 'FOR SALE') : T('ให้เช่า', 'FOR RENT')}${area ? ' · ' + esc(area) : ''}</div>
+      <h1 style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.1;margin-top:2px">${esc(PN || T('ห้องให้เช่า', 'Room for rent'))}</h1>
       <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-top:8px">
-        ${d.rent ? `<span><span style="font-size:26px;font-weight:600;color:${B}">${baht(d.rent)}</span><span style="font-size:15px;color:#7a716b;margin-left:4px">/ เดือน</span></span>` : ''}
-        ${d.sale ? `<span style="font-size:${d.rent ? 13 : 26}px;font-weight:600;color:${d.rent ? '#7a716b' : B}">${d.rent ? 'ราคาขาย ' : ''}${baht(d.sale)}</span>` : ''}
+        ${d.rent ? `<span><span style="font-size:26px;font-weight:600;color:${B}">${baht(d.rent)}</span><span style="font-size:15px;color:#7a716b;margin-left:4px">${T('/ เดือน', '/ month')}</span></span>` : ''}
+        ${d.sale ? `<span style="font-size:${d.rent ? 13 : 26}px;font-weight:600;color:${d.rent ? '#7a716b' : B}">${d.rent ? T('ราคาขาย ', 'Sale price ') : ''}${baht(d.sale)}</span>` : ''}
         ${st ? `<span style="margin-left:auto;font-size:13px;color:${st[1]};font-weight:600">${st[0]}</span>` : ''}
       </div>
     </div>
     ${rows.length ? `<div class="sec o3" style="margin-top:16px">${tbl(rows)}</div>` : ''}
-    ${tm.length ? `<div class="sec o5" style="margin-top:20px"><div class="h2">เงื่อนไขการเช่า</div>${tbl(tm)}</div>` : ''}
-    <div class="sec o6" style="margin-top:16px"><div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:44px;height:44px;border-radius:50%;background:${B};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${esc((a.n || 'M').slice(0, 1))}</div><div><div style="font-weight:600">${esc(a.n || 'เอเจนต์')}</div><div class="mut">${esc([a.ph, a.l ? 'LINE ' + a.l : ''].filter(Boolean).join(' · ') || 'เอเจนต์อสังหาฯ')}</div></div></div></div>
+    ${tm.length ? `<div class="sec o5" style="margin-top:20px"><div class="h2">${T('เงื่อนไขการเช่า', 'Rental terms')}</div>${tbl(tmT(tm))}</div>` : ''}
+    <div class="sec o6" style="margin-top:16px"><div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:44px;height:44px;border-radius:50%;background:${B};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${esc((a.n || 'M').slice(0, 1))}</div><div><div style="font-weight:600">${esc(a.n || T('เอเจนต์', 'Agent'))}</div><div class="mut">${esc([a.ph, a.l ? 'LINE ' + a.l : ''].filter(Boolean).join(' · ') || T('เอเจนต์อสังหาฯ', 'Real estate agent'))}</div></div></div></div>
     ${btns ? `<div class="ibtns">${btns}</div>` : ''}
-    <p class="mut o7" style="font-size:11px;text-align:center;padding:16px 16px 0">ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง</p></div></div>
+    <p class="mut o7" style="font-size:11px;text-align:center;padding:16px 16px 0">${T('ข้อมูลจากเอเจนต์ ณ วันที่ส่งลิงก์ ราคาและสถานะอาจเปลี่ยนแปลง', 'Information provided by the agent as of the date the link was sent. Prices and availability may change.')}</p></div></div>
     <div id="nearby"></div>
     ${btns ? `<div class="bar"><div>${btns}</div></div>` : ''}
-    <div id="gal" role="dialog" aria-modal="true"><div id="gtrk">${imgs.map(u => `<div><img src="${esc(u)}" alt="" loading="lazy"></div>`).join('')}</div><span class="gc" id="gc"></span><button class="gx" id="gx" aria-label="ปิด">✕</button>${imgs.length > 1 ? '<button class="gnav" id="gp" style="left:16px" aria-label="ก่อนหน้า">‹</button><button class="gnav" id="gn" style="right:16px" aria-label="ถัดไป">›</button>' : ''}</div>`;
+    <div id="gal" role="dialog" aria-modal="true"><div id="gtrk">${imgs.map(u => `<div><img src="${esc(u)}" alt="" loading="lazy"></div>`).join('')}</div><span class="gc" id="gc"></span><button class="gx" id="gx" aria-label="${T('ปิด', 'Close')}">✕</button>${imgs.length > 1 ? `<button class="gnav" id="gp" style="left:16px" aria-label="${T('ก่อนหน้า', 'Previous')}">‹</button><button class="gnav" id="gn" style="right:16px" aria-label="${T('ถัดไป', 'Next')}">›</button>` : ''}</div>`;
     if (qid) nearby(qid, d);
     if (!imgs.length) return;
     const car = document.getElementById('car'), trk = document.getElementById('trk'), dots = car.querySelectorAll('.dot'), n = imgs.length;
@@ -203,7 +215,9 @@ a{color:inherit;text-decoration:none}
       }, { passive: true });
       ['touchstart', 'mousedown'].forEach(ev => trk.addEventListener(ev, hold, { passive: true }));
       ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(ev => trk.addEventListener(ev, () => { if (touching) release(); }, { passive: true }));
-      document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInterval(timer); } else if (!touching) start(); });
+      if (window.__vis) document.removeEventListener('visibilitychange', window.__vis);
+      window.__vis = () => { if (document.hidden) { clearInterval(timer); } else if (!touching) start(); };
+      document.addEventListener('visibilitychange', window.__vis);
     }
     start();
     const gal = gal0, gt = document.getElementById('gtrk'), gc = document.getElementById('gc');
@@ -223,7 +237,8 @@ a{color:inherit;text-decoration:none}
     document.onkeydown = e => { if (!gal.classList.contains('on')) return; if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') gt.scrollBy({ left: gt.clientWidth, behavior: 'smooth' }); else if (e.key === 'ArrowLeft') gt.scrollBy({ left: -gt.clientWidth, behavior: 'smooth' }); };
   }
   main();
-  window.addEventListener('hashchange', main);
+  G0.onLang(() => { if (DC) main(); });
+  window.addEventListener('hashchange', () => { DC = null; NB = null; main(); });
 })();
 </script>
 </body>
