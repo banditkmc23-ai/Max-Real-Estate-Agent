@@ -275,6 +275,7 @@
   .g-cnt{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px}
   .g-body{padding:8px 9px 9px;display:flex;flex-direction:column;gap:1px;flex:1}
   .g-title{font-size:12.5px;font-weight:700;color:#2b2420;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-added{font-size:10px;font-weight:600;color:#c2552d;line-height:1.25;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .g-sub{font-size:11px;color:#8e8680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .g-price{font-size:15px;font-weight:700;color:#c2552d;margin-top:1px}.g-price span{font-size:10px;font-weight:400;color:#8e8680;margin-left:2px}
   .g-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:auto;padding-top:7px}
@@ -2787,6 +2788,7 @@ function cardRowHTML(x) {
     </div>
     <div class="g-body">
       <p class="g-title">${esc(x.project || '-')}</p>
+      ${x.createdAt ? `<p class="g-added">ลง ${fmtDateTime(x.createdAt).replace(/(\d{2}) (\d{1,2}:)/, '$1 · $2')}</p>` : ''}
       <p class="g-sub">${esc(x.type || '-')}${sz}</p>
       ${rentShown ? `<p class="g-price">${baht(x.rent)}<span>/เดือน</span></p>` : `<p class="g-price"><span style="margin:0 3px 0 0">ขาย</span>${baht(x.salePrice)}</p>`}
       ${x.station ? `<p class="g-sub">${esc(stationLabel(x))}</p>` : ''}
@@ -3738,7 +3740,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.22';
+const APP_VERSION = '9.23';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
