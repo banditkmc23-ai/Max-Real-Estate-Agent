@@ -125,7 +125,10 @@ async function encode(obj) {
 async function tinyThumb(unitId, w, q) {
   try {
     const ps = await getUnitPhotos(unitId); if (!ps.length) return null;
-    const bmp = await createImageBitmap(ps[0].thumb);
+    let src = ps[0].thumb || ps[0].full;
+    if (!src && ps[0].url) { const r = await fetch(ps[0].url); if (r.ok) src = await r.blob(); }
+    if (!src) return null;
+    const bmp = await createImageBitmap(src);
     const c = document.createElement('canvas'); const r = w / bmp.width; c.width = w; c.height = Math.round(bmp.height * r);
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', q).split(',')[1];
@@ -136,6 +139,7 @@ let shareState = {}; let shareNote = '';
 const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co';
 const SB_KEY = 'sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';
 const SB_H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+const PUBP = SB_URL + '/storage/v1/object/public/room-photos/';
 // share-room writes need the owner's login token
 async function authH() { let s = null; try { s = FX.sbc && (await FX.sbc.auth.getSession()).data.session; } catch (e) {} if (!s || !s.access_token) throw new Error('กรุณาเข้าสู่ระบบก่อนแชร์ลิงก์'); return { apikey: SB_KEY, Authorization: 'Bearer ' + s.access_token }; }
 const cloudCache = {};
@@ -167,6 +171,36 @@ async function offloadUploaded(sorted, sent, urls) {
 // Photos are stored once per room at a stable path (<roomId>/p-<photoKey>.jpg) and reused by every later share,
 // so re-sharing never re-uploads a photo that is already in the cloud.
 const photoKey = p => String(p.id).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 60);
+function shareCleared(unitId) {
+  try {
+    const o = JSON.parse(localStorage.getItem('max_share_cleared') || '{}');
+    const t = Number(o && o[unitId]) || 0;
+    return t > 0 && (Date.now() - t) < 7 * 864e5;
+  } catch (e) { return false; }
+}
+function clearShareCleared(unitId) {
+  try {
+    const o = JSON.parse(localStorage.getItem('max_share_cleared') || '{}');
+    if (!o || !o[unitId]) return;
+    delete o[unitId]; localStorage.setItem('max_share_cleared', JSON.stringify(o));
+  } catch (e) {}
+}
+function shareDecision(opts) {
+  const S = window.MAX_PHOTO_SAFETY;
+  if (S && S.shareImageWrite) return S.shareImageWrite(opts);
+  if (opts.isUpdate && opts.withPhotos && !opts.localCount && !(opts.readOk && opts.explicitClear)) return { action: 'keep', reason: 'safety-module-missing' };
+  return { action: 'commit' };
+}
+async function publishedImgs(id) {
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(id)}`, { headers: SB_H });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || !j.data || typeof j.data !== 'object') return null;
+    const imgs = Array.isArray(j.data.imgs) ? j.data.imgs : [];
+    return imgs.filter(u => typeof u === 'string' && u.startsWith(PUBP));
+  } catch (e) { console.warn('share: read published imgs failed', id, e); return null; }
+}
 // photos the user deleted in the app: remembered so the next share commit also removes their files from the cloud (room-photos/<room>/p-<key>.jpg)
 const GONE_K = 'max_gone_photos';
 function goneList() { try { const a = JSON.parse(localStorage.getItem(GONE_K) || '[]'); const cut = Date.now() - 60 * 864e5; return a.filter(x => x && x.k && x.t > cut).slice(-300); } catch (e) { return []; } }
@@ -177,14 +211,21 @@ async function cloudLink(u, o, withPhotos) {
   if (!navigator.onLine) throw new Error('offline');
   let psOk = true; const ps = withPhotos ? (await getUnitPhotos(u.id).catch(() => { psOk = false; return []; })) : [];
   const sorted = ps.slice().sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0)).slice(0, MAX_PHOTOS);
-  const sig = JSON.stringify(o) + '|' + sorted.map(p => p.id).join(',');
+  const textSig = JSON.stringify(o);
+  const sig = textSig + '|' + sorted.map(p => p.id).join(',');
   const linkOf = id => BASE().replace(/room\.html$/, 'r/') + id + '/';
   const sh = u.share && u.share.id && u.share.secret ? u.share : null;
+  const explicitClear = !!(withPhotos && psOk && sorted.length === 0 && shareCleared(u.id));
   // unchanged room (or a text-only link): the permanent link is returned instantly, nothing is uploaded
   if (sh && (sh.sig === sig || !withPhotos)) { FX.lastShareStats = { uploaded: 0, reused: sorted.length, instant: true }; return linkOf(sh.id); }
+  // Room text is unchanged and we already refused to blank this link: do not call share-room again.
+  if (sh && withPhotos && sorted.length === 0 && !explicitClear && sh.imgsKept && sh.textSig === textSig) {
+    console.warn('share: local photos missing; leaving published imgs in place', sh.id);
+    FX.lastShareStats = { keptImgs: true, id: sh.id };
+    return linkOf(sh.id);
+  }
   const say = t => { const el = $('fxShareLink'); if (el) el.textContent = t; if (shareProg) shareProg(t); };
   const call = async body => { const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...(await authH()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.id) throw new Error('share-room ' + r.status + ' ' + (j.error || '')); return j; };
-  const PUBP = SB_URL + '/storage/v1/object/public/room-photos/';
   // photos that already have a public cloud URL are reused as-is; the rest get a stable per-room path
   const needKey = sorted.filter(p => !(p.url && p.url.startsWith(PUBP)));
   const coverKey = sorted[0] ? sorted[0].id : '';
@@ -223,16 +264,37 @@ async function cloudLink(u, o, withPhotos) {
   const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
   const ogName = init.og ? init.og.name : (sh && sh.ogKey === coverKey ? sh.og : '');
   say('กำลังบันทึกลิงก์...');
-  const liveKeys = new Set(sorted.map(photoKey)); const gone = psOk ? goneList().map(x => x.k).filter(k => !liveKeys.has(k)).slice(-200) : [];
-  const j = await call({ action: 'commit', id: init.id, data: o, images: keep.map(i => images[i]), secret, v: init.v, og: ogName, ...(gone.length ? { gone } : {}) });
+  const liveKeys = new Set(sorted.map(photoKey));
+  let commitImages = keep.map(i => images[i]);
+  let reusedPublished = false, wantClear = false;
+  // share-room commit writes shared_rooms.data.imgs from this list. An empty list
+  // blanks a public page. Never do that unless the user explicitly cleared the room's photos.
+  if (sh && withPhotos && commitImages.length === 0) {
+    const existing = explicitClear ? [] : await publishedImgs(sh.id);
+    const decision = shareDecision({ isUpdate: true, withPhotos: true, localCount: sorted.length, readOk: psOk, explicitClear, publishedCount: existing == null ? null : existing.length });
+    if (decision.action === 'keep') {
+      console.warn('share: refusing to overwrite published imgs with an empty list', sh.id, decision.reason);
+      FX.lastShareStats = { skippedEmpty: true, reason: decision.reason, id: sh.id };
+      return linkOf(sh.id);
+    }
+    if (decision.action === 'reuse') {
+      console.warn('share: local photos missing; keeping published imgs', sh.id, existing.length);
+      commitImages = existing.map(url => ({ url }));
+      reusedPublished = true;
+    }
+    if (decision.action === 'clear') wantClear = true;
+  }
+  const gone = (psOk && !reusedPublished) ? goneList().map(x => x.k).filter(k => !liveKeys.has(k)).slice(-200) : [];
+  const j = await call({ action: 'commit', id: init.id, data: o, images: commitImages, secret, v: init.v, og: reusedPublished ? (sh.og || '') : ogName, ...(gone.length ? { gone } : {}) });
+  if (wantClear) clearShareCleared(u.id);
   if (failed.size) shareNote = `อัปโหลดรูปไม่สำเร็จ ${failed.size} รูป ระบบจะลองใหม่ครั้งถัดไป`;
   const keptSorted = keep.map(i => sorted[i]), keptSent = keep.map(i => sent[i]);
-  u.share = { id: j.id, secret, sig: failed.size ? '' : sig, at: Date.now(), cover: (j.imgs || [])[0] || '', og: j.og || ogName || '', ogKey: (j.og || ogName) ? coverKey : '', opts: u.share && u.share.opts };
+  u.share = { id: j.id, secret, sig: reusedPublished ? (sh.sig || sig) : (failed.size ? '' : sig), textSig, imgsKept: reusedPublished, at: Date.now(), cover: (j.imgs || [])[0] || (reusedPublished ? (sh.cover || '') : ''), og: j.og || (reusedPublished ? (sh.og || '') : (ogName || '')), ogKey: reusedPublished ? (sh.ogKey || '') : ((j.og || ogName) ? coverKey : ''), opts: u.share && u.share.opts };
   try { (window.persist || (() => {}))(); } catch (e) {}
   FX.lastShareStats = { uploaded: todo - [...failed].length, reused: keep.length - (todo - [...failed].length), failed: failed.size, total: sorted.length };
   setTimeout(() => offloadUploaded(keptSorted, keptSent, j.imgs || []).catch(e => console.warn('offload skipped', e)), 0);
   const link = linkOf(j.id);
-  if (j.page && withPhotos && !FX.noWait) {
+  if (j.page && withPhotos && !FX.noWait && !reusedPublished) {
     say('กำลังเตรียมพรีวิว LINE... (ประมาณ 1 นาที)');
     const t0 = Date.now(); let ok = false;
     while (Date.now() - t0 < 180000) { try { const r = await fetch(link + '?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const t = await r.text(); if (t.includes('og:title') && (!init.v || t.includes('content="' + init.v + '"'))) { ok = true; break; } } } catch (e) {} await new Promise(r => setTimeout(r, 5000)); say(`กำลังเตรียมพรีวิว LINE... ${Math.round((Date.now() - t0) / 1000)} วินาที`); }

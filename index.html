@@ -2142,7 +2142,7 @@ async function loadDetailCover(unitId) {
     ps.sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0));
     tr.innerHTML = ps.map((p, i) => `<div class="dv-sl" onclick="openGallery('${unitId}')"><img data-i="${i}" alt="" ${i > 1 ? 'loading="lazy"' : ''}></div>`).join('');
     const imgs = tr.querySelectorAll('img');
-    ps.forEach((p, i) => { if (p.thumb) imgs[i].src = URL.createObjectURL(p.thumb); if (i < 2 && typeof fullBlobOf === "function") fullBlobOf(p).then(b => { if (b && b !== p.thumb) imgs[i].src = URL.createObjectURL(b); }).catch(() => {}); });
+    ps.forEach((p, i) => { const src = coverSrc(p); if (src) imgs[i].src = src; if (i < 2 && typeof fullBlobOf === "function") fullBlobOf(p).then(b => { if (b && b !== p.thumb) imgs[i].src = URL.createObjectURL(b); }).catch(() => {}); });
     document.getElementById('dvDots').innerHTML = ps.length > 1 ? ps.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
     document.getElementById('dvCnt').textContent = '1/' + ps.length;
     wrap.classList.remove('hidden'); dvIdx = 0;
@@ -2354,7 +2354,7 @@ async function renderFormPhotos() {
 }
 async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
-  try { await req(tx('readwrite').delete(photoId)); try { window.photoGone && photoGone([photoId]); } catch (e) {} await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
+  try { await req(tx('readwrite').delete(photoId)); markPhotosUserDeleted([photoId], currentFormUnitId || (document.getElementById('f_id') && document.getElementById('f_id').value), false); await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
 const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
@@ -2501,7 +2501,8 @@ async function copyAndSharePhotos(id) {
   const photos = await getUnitPhotos(id);
   if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
 
-  const files = await Promise.all(photos.map(async (p, i) => new File([await fullBlobOf(p)], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' })));
+  const files = (await Promise.all(photos.map(async (p, i) => fileFromPhoto(p, `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`)))).filter(Boolean);
+  if (!files.length) return toast('โหลดรูปไม่สำเร็จ');
 
   if (navigator.canShare && navigator.canShare({ files })) {
     try {
@@ -2671,7 +2672,7 @@ function renderAvailableScroll() {
 }
 async function loadHScrollPhoto(unitId) {
   const img = document.getElementById('hscroll-' + unitId); if (!img) return;
-  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; img.src = URL.createObjectURL(ps[0].thumb); img.classList.add('w-full','h-full','object-cover'); } catch (e) {}
+  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = coverSrc(ps[0]); if (!url) return; img.src = url; img.classList.add('w-full','h-full','object-cover'); } catch (e) {}
 }
 
 // ============= ROOM RENDER =============
@@ -2834,7 +2835,7 @@ const miniPhotoCache = new Map();
 async function loadMiniCardPhoto(unitId) {
   const img = document.getElementById('mini-' + unitId); if (!img) return;
   if (miniPhotoCache.has(unitId)) { img.src = miniPhotoCache.get(unitId); return; }
-  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = URL.createObjectURL(ps[0].thumb); miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; } catch (e) {}
+  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = coverSrc(ps[0]); if (!url) return; miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; } catch (e) {}
 }
 
 // ============== CRM CORE ==============
@@ -3355,17 +3356,33 @@ function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.r
 // Photos already uploaded to the cloud keep only a small local thumb; the full image lives at p.url.
 const remoteBlobCache = new Map();
 async function fullBlobOf(p) {
+  if (!p) return null;
   if (p.full) return p.full;
-  if (!p.url && p.cloud && window.SYNC && SYNC.fullBlob) { try { const b = await SYNC.fullBlob(p); if (b) return b; } catch (e) {} }
-  if (p.url) { if (remoteBlobCache.has(p.url)) return remoteBlobCache.get(p.url); try { const r = await fetch(p.url); if (r.ok) { const b = await r.blob(); remoteBlobCache.set(p.url, b); return b; } } catch (e) {} }
-  return p.thumb;
+  // Public room-photos URL first. The private user-photos bucket may be empty; waiting on it blocks copy/share.
+  if (p.url) { if (remoteBlobCache.has(p.url)) return remoteBlobCache.get(p.url); try { const r = await fetch(p.url); if (r.ok) { const b = await r.blob(); if (b && b.size) { remoteBlobCache.set(p.url, b); return b; } } } catch (e) {} }
+  if (p.cloud && window.SYNC && SYNC.fullBlob) { try { const b = await SYNC.fullBlob(p); if (b) return b; } catch (e) {} }
+  return p.thumb || null;
+}
+async function fileFromPhoto(p, name) {
+  const b = await fullBlobOf(p);
+  if (!b) return null;
+  return new File([b], name, { type: (b.type && b.type.indexOf('image/') === 0) ? b.type : 'image/jpeg' });
 }
 function getUnitPhotos(unitId) { return req(tx('readonly').index('unit').getAll(unitId)).then(a => a.sort((x, y) => (x.order ?? x.ts ?? 0) - (y.order ?? y.ts ?? 0))); }
 async function refreshCounts() {
   if (!db) return;
   try { const all = await req(tx('readonly').getAll()); Object.keys(photoCount).forEach(k => delete photoCount[k]); all.forEach(p => photoCount[p.unitId] = (photoCount[p.unitId] || 0) + 1); } catch (e) {}
 }
-async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); try { window.photoGone && photoGone(ps.map(p => p.id)); } catch (e) {} await refreshCounts(); } catch (e) {} }
+function markPhotosUserDeleted(ids, unitId, bulk) {
+  const list = (ids || []).filter(Boolean);
+  try { if (list.length && window.SYNC && SYNC.notePhotoDeleted) SYNC.notePhotoDeleted(list, { bulk: !!bulk }); } catch (e) {}
+  try { if (list.length && window.photoGone) photoGone(list); } catch (e) {}
+  if (!unitId) return;
+  const rememberEmpty = () => { try { const o = JSON.parse(localStorage.getItem('max_share_cleared') || '{}'); o[unitId] = Date.now(); localStorage.setItem('max_share_cleared', JSON.stringify(o)); } catch (e) {} };
+  if (bulk) { rememberEmpty(); return; }
+  getUnitPhotos(unitId).then(left => { if (!left || !left.length) rememberEmpty(); }).catch(() => {});
+}
+async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); markPhotosUserDeleted(ps.map(p => p.id), unitId, true); await refreshCounts(); } catch (e) {} }
 
 // ============== WATERMARK ==============
 const WM_KEY = 'staylow_wm';
@@ -3440,9 +3457,15 @@ async function makeCollage(selectedPhotos) {
 // ============== GALLERY ==============
 let galleryUnitId = null, galleryPhotos = [], lbIndex = 0;
 const photoUrlCache = new Map();
-function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = p.thumb ? URL.createObjectURL(p.thumb) : (p.url || ''); return e.thumbUrl; }
-function fullUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.fullUrl) e.fullUrl = p.full ? URL.createObjectURL(p.full) : (p.url || URL.createObjectURL(p.thumb)); return e.fullUrl; }
-function clearPhotoUrlCache() { photoUrlCache.forEach(e => { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && e.fullUrl.startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); }); photoUrlCache.clear(); }
+function coverSrc(p) {
+  if (!p) return '';
+  if (p.thumb) { try { const u = URL.createObjectURL(p.thumb); if (u) return u; } catch (e) {} }
+  const S = window.MAX_PHOTO_SAFETY;
+  return (S && S.previewSrc(p)) || p.url || '';
+}
+function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = coverSrc(p); return e.thumbUrl; }
+function fullUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.fullUrl) e.fullUrl = p.full ? URL.createObjectURL(p.full) : ((window.MAX_PHOTO_SAFETY && MAX_PHOTO_SAFETY.previewSrc(p)) || p.url || (p.thumb ? URL.createObjectURL(p.thumb) : '')); return e.fullUrl; }
+function clearPhotoUrlCache() { photoUrlCache.forEach(e => { if (e.thumbUrl && String(e.thumbUrl).startsWith('blob:')) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && String(e.fullUrl).startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); }); photoUrlCache.clear(); }
 function pickPhotos(src) { document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum').click(); }
 async function importPhotos(files) {
   if (!files || !files.length || !galleryUnitId) return;
@@ -3576,8 +3599,8 @@ function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % gallery
 function closeLightbox() { try { lbResetZoom(); } catch (e) {} const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
 async function deleteCurrentPhoto() {
   const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
-  await req(tx('readwrite').delete(p.id)); try { window.photoGone && photoGone([p.id]); } catch (e) {}
-  const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && e.fullUrl.startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
+  await req(tx('readwrite').delete(p.id)); markPhotosUserDeleted([p.id], p.unitId || galleryUnitId, false);
+  const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl && String(e.thumbUrl).startsWith('blob:')) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && String(e.fullUrl).startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
   await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
   toast('ลบแล้ว');
@@ -3636,7 +3659,8 @@ function confirmPhotoPicker() {
 }
 async function shareSelectedPhotos(photos) {
   const u = units.find(x => x.id === galleryUnitId); if (!u) return;
-  const files = await Promise.all(photos.map(async (p, i) => new File([await fullBlobOf(p)], `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`, { type: 'image/jpeg' })));
+  const files = (await Promise.all(photos.map(async (p, i) => fileFromPhoto(p, `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`)))).filter(Boolean);
+  if (!files.length) return toast('โหลดรูปไม่สำเร็จ');
   if (navigator.canShare && navigator.canShare({ files })) { try { await navigator.share({ files }); } catch (e) { if (e.name !== 'AbortError') toast('แชร์ไม่สำเร็จ'); } }
   else { files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }); toast('ดาวน์โหลดแล้ว'); }
 }
@@ -3740,7 +3764,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.23';
+const APP_VERSION = '9.24';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3837,8 +3861,9 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="features.js?v=43"></script>
+<script src="photo-safety.js?v=44"></script>
+<script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=43"></script>
+<script src="sync.js?v=44"></script>
 </body>
 </html>

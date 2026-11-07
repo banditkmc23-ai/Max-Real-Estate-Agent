@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAX photo fallback test</title>
+<link rel="stylesheet" href="../tailwind.min.css">
+<style>
+  body { background:#f6f3ef; color:#1c1917; font-family: "Noto Sans Thai", Poppins, sans-serif; }
+  .ok { color:#047857; } .bad { color:#be123c; }
+</style>
+</head>
+<body class="p-6 max-w-3xl mx-auto">
+<h1 class="text-lg font-bold mb-1">Photo safety test</h1>
+<p class="text-xs text-slate-500 mb-4">Empty IndexedDB must not delete cloud photos. A public room-photos URL is the thumbnail when the private file is missing. Version under test: app 9.24.</p>
+<div id="report" class="bg-white border border-slate-700 rounded-2xl p-4 text-sm mb-4"></div>
+<div class="grid grid-cols-2 gap-3">
+  <div class="bg-white border border-slate-700 rounded-2xl overflow-hidden shadow-sm">
+    <div class="aspect-square bg-slate-100"><img id="fallback" alt="public room photo" class="w-full h-full object-cover"></div>
+    <div class="p-3">
+      <p class="text-sm font-bold">The Base Park East</p>
+      <p class="text-[11px] text-slate-400">ปกจาก public URL · ไม่มี thumb ในเครื่อง</p>
+      <p id="src" class="text-[10px] text-slate-500 break-all mt-1"></p>
+    </div>
+  </div>
+  <div class="bg-white border border-slate-700 rounded-2xl overflow-hidden shadow-sm">
+    <div class="aspect-square bg-slate-100 flex items-center justify-center text-slate-300 text-xs text-center p-4">ไม่มี blob และไม่มี public URL<br>ช่องนี้ต้องว่าง</div>
+    <div class="p-3">
+      <p class="text-sm font-bold">ไม่มีรูป</p>
+      <p id="empty" class="text-[10px] text-slate-500 mt-1"></p>
+    </div>
+  </div>
+</div>
+<script src="../photo-safety.js"></script>
+<script>
+const S = window.MAX_PHOTO_SAFETY;
+const PUB = 'https://ekpavjlebbclapjdupwf.supabase.co/storage/v1/object/public/room-photos/2mLjsu/src52-1.jpg';
+const lines = [];
+function check(name, cond) { lines.push((cond ? 'PASS  ' : 'FAIL  ') + name); return !!cond; }
+const hashes = {}, dirty = {};
+for (let i = 0; i < 4000; i++) { hashes['photo|p' + i] = 'h'; dirty['photo|p' + i] = { rev: 1, del: true }; }
+const rec = S.reconcilePhotoAbsence({ localIds: [], hashes, dirty, explicitDel: {} });
+check('4000 missing rows create 0 tombstones', Object.keys(rec.dirty).length === 0 && rec.blocked.length === 4000);
+const one = S.planPhotoTombstones({ dirty: { 'photo|p1': { del: true, explicit: true } }, explicitDel: { p1: 5 }, knownPhotoCount: 4000, bulkConfirmed: false, now: 5 });
+check('one explicit delete is allowed', one.allow.length === 1 && !one.refused);
+const burstDirty = {}, burstDel = {};
+for (let i = 0; i < 25; i++) { burstDirty['photo|b' + i] = { del: true, explicit: true }; burstDel['b' + i] = 9; }
+const burst = S.planPhotoTombstones({ dirty: burstDirty, explicitDel: burstDel, knownPhotoCount: 4000, bulkConfirmed: false, now: 9 });
+check('burst of 25 is refused', burst.refused && burst.allow.length === 0);
+const share = S.shareImageWrite({ isUpdate: true, withPhotos: true, localCount: 0, readOk: true, explicitClear: false, publishedCount: 8 });
+check('empty local photos reuse published imgs', share.action === 'reuse');
+const photo = { id: 'p-public', url: PUB };
+const src = S.previewSrc(photo);
+const decided = S.recordAfterPrivateFetch({ meta: photo, thumbOk: false, privateFailed: true });
+check('private miss uses public URL', decided.ok && decided.fallback && decided.url === PUB && src === PUB);
+check('no URL stays blank', S.previewSrc({ id: 'x' }) === '');
+const report = document.getElementById('report');
+report.innerHTML = lines.map(l => `<p class="${l.startsWith('PASS') ? 'ok' : 'bad'} font-mono text-xs">${l}</p>`).join('') + `<p class="text-xs mt-2">${lines.every(l => l.startsWith('PASS')) ? 'ทุกข้อผ่าน' : 'มีข้อที่ไม่ผ่าน'}</p>`;
+document.getElementById('fallback').src = src;
+document.getElementById('src').textContent = src;
+document.getElementById('empty').textContent = 'previewSrc = "' + S.previewSrc({ id: 'x' }) + '"';
+document.title = lines.every(l => l.startsWith('PASS')) ? 'PASS photo fallback' : 'FAIL photo fallback';
+</script>
+</body>
+</html>
