@@ -1,5 +1,6 @@
 /* MAX Agent — private cloud sync (Supabase Auth + user_docs + user-photos bucket).
-   Offline-first: localStorage / IndexedDB stay the source of truth; this only mirrors them.
+   Offline-first for rooms and settings. Photo deletions are explicit only:
+   a photo missing from IndexedDB is never pushed as deleted:true.
    Nothing runs until the user signs in. */
 (function () {
 'use strict';
@@ -62,9 +63,9 @@ const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^
 
 /* ---------- state ---------- */
 const SK = 'max_sync_v1';
-const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, init: false, last: 0 });
+const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, init: false, last: 0 });
 let st = J(SK, null) || fresh(null);
-['h', 'dirty', 'r', 'up', 'retry'].forEach(k => { st[k] = st[k] || {}; });
+['h', 'dirty', 'r', 'up', 'retry', 'explicitDel'].forEach(k => { st[k] = st[k] || {}; });
 const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
 let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null;
 
@@ -79,7 +80,39 @@ async function download(pth) { const { data, error } = await sb.storage.from(BUC
 
 /* ---------- local change detection ---------- */
 const now = () => Date.now();
-function markDirty(k, del) { st.dirty[k] = { rev: st.init ? Math.max(now(), ((st.dirty[k] && st.dirty[k].rev) || 0) + 1) : 1, ...(del ? { del: true } : {}) }; }
+function markDirty(k, del, explicit) {
+  const prev = (st.dirty[k] && st.dirty[k].rev) || 0;
+  const rev = (explicit || st.init) ? Math.max(now(), prev + 1) : 1;
+  st.dirty[k] = { rev, ...(del ? { del: true } : {}), ...(explicit ? { explicit: true } : {}) };
+}
+/* Called only from the photo-delete UI (and delete-room, with bulk:true). */
+function notePhotoDeleted(ids, opts) {
+  const list = [].concat(ids || []).map(id => String(id)).filter(Boolean);
+  if (!list.length) return;
+  st.explicitDel = st.explicitDel || {};
+  if (opts && opts.bulk) st.bulkPhotoDeleteAt = now();
+  for (const id of list) {
+    st.explicitDel[id] = now();
+    const k = 'photo|' + id;
+    delete st.h[k];
+    markDirty(k, true, true);
+  }
+  saveSt();
+}
+function photoSafety() { return window.MAX_PHOTO_SAFETY || null; }
+function stripInferredPhotoDeletes() {
+  const S = photoSafety();
+  if (!S) {
+    let n = 0;
+    for (const k of Object.keys(st.dirty)) if (k.startsWith('photo|') && st.dirty[k] && st.dirty[k].del) { delete st.dirty[k]; n++; }
+    if (n) console.warn('sync: photo safety module missing; dropped photo tombstones', n);
+    return;
+  }
+  const rec = S.reconcilePhotoAbsence({ localIds: [], hashes: st.h, dirty: st.dirty, explicitDel: st.explicitDel || {} });
+  st.dirty = rec.dirty;
+  if (rec.known) st.photoCount = rec.known;
+  if (rec.blocked.length) console.warn('sync: refused to treat missing IndexedDB photos as deletions', rec.blocked.length);
+}
 function scanLS() {
   for (const a of ADP) {
     const m = explode(a), pre = a.kind + '|';
@@ -93,9 +126,20 @@ function scanLS() {
 }
 async function scanPhotos() {
   if (!P()) return;
-  const all = await idb(pstore('readonly').getAll()); const seen = new Set();
-  for (const p of all) { const k = 'photo|' + p.id, h = hash(JSON.stringify(pmeta(p))); seen.add(k); if (st.h[k] !== h) { st.h[k] = h; markDirty(k); } }
-  for (const k of Object.keys(st.h)) if (k.startsWith('photo|') && !seen.has(k)) { delete st.h[k]; markDirty(k, true); }
+  const all = await idb(pstore('readonly').getAll());
+  const localIds = [];
+  for (const p of all) {
+    const k = 'photo|' + p.id, h = hash(JSON.stringify(pmeta(p)));
+    localIds.push(String(p.id));
+    // A live local row is an edit, never a tombstone. Do not clear an in-flight explicit delete.
+    if (st.h[k] !== h && !(st.dirty[k] && st.dirty[k].del && st.dirty[k].explicit)) { st.h[k] = h; markDirty(k); }
+  }
+  const S = photoSafety();
+  if (!S) { stripInferredPhotoDeletes(); return; }
+  const rec = S.reconcilePhotoAbsence({ localIds, hashes: st.h, dirty: st.dirty, explicitDel: st.explicitDel || {} });
+  st.dirty = rec.dirty;
+  st.photoCount = rec.known;
+  if (rec.blocked.length) console.warn('sync: refused to treat missing IndexedDB photos as deletions', rec.blocked.length);
 }
 
 /* ---------- push ---------- */
@@ -111,9 +155,30 @@ async function uploadPhoto(id) {
   }
   return m;
 }
+function photoDeletePlan() {
+  const S = photoSafety();
+  const bulkConfirmed = !!(st.bulkPhotoDeleteAt && S && (now() - st.bulkPhotoDeleteAt) < S.BULK_WINDOW_MS);
+  if (!S) return { allow: [], blocked: [], refused: true, overThreshold: false, explicitCount: 0, known: st.photoCount || 0, limit: 0 };
+  return S.planPhotoTombstones({ dirty: st.dirty, explicitDel: st.explicitDel || {}, knownPhotoCount: st.photoCount || 0, bulkConfirmed, now: now() });
+}
 async function push() {
+  const plan = photoDeletePlan();
+  const allowDel = new Set(plan.allow);
+  for (const b of plan.blocked) {
+    if (b.reason === 'bulk-photo-delete-guard') continue;
+    delete st.dirty[b.key];
+  }
+  if (plan.refused) {
+    const sig = plan.explicitCount + '/' + plan.known;
+    if (st.photoDelGuardSig !== sig) {
+      st.photoDelGuardSig = sig;
+      console.warn('sync: refused photo deletion batch', { count: plan.explicitCount, known: plan.known, limit: plan.limit, reason: 'more than 20 or 10% of photos without a confirmed bulk delete' });
+    }
+  } else if (plan.overThreshold) {
+    console.warn('sync: pushing explicit photo deletions over the soft threshold because the user confirmed them', { count: plan.explicitCount, known: plan.known, limit: plan.limit });
+  } else if (st.photoDelGuardSig) delete st.photoDelGuardSig;
   const keys = Object.keys(st.dirty); if (!keys.length) return;
-  const docs = [], photoKeys = keys.filter(k => k.startsWith('photo|')), cache = {};
+  const docs = [], photoKeys = keys.filter(k => { if (!k.startsWith('photo|')) return false; const d = st.dirty[k]; return !(d && d.del && !allowDel.has(k)); }), cache = {};
   for (const k of keys) {
     if (k.startsWith('photo|')) continue;
     const d = st.dirty[k], [kind] = k.split('|', 1), id = k.slice(kind.length + 1);
@@ -132,7 +197,11 @@ async function push() {
       const k = work.shift(), d = st.dirty[k]; if (!d) continue; const id = k.slice(6);
       try {
         let row;
-        if (d.del) { try { await sb.storage.from(BUCKET).remove([path(id), path(id, 1)]); } catch (e) {} delete st.up[id]; row = { kind: 'photo', id, rev: d.rev, deleted: true }; }
+        if (d.del) {
+          if (!d.explicit || !allowDel.has(k)) { console.warn('sync: dropped photo tombstone without an explicit user delete', id); delete st.dirty[k]; continue; }
+          try { await sb.storage.from(BUCKET).remove([path(id), path(id, 1)]); } catch (e) {}
+          delete st.up[id]; row = { kind: 'photo', id, rev: d.rev, deleted: true };
+        }
         else { const m = await uploadPhoto(id); if (!m) { delete st.dirty[k]; continue; } row = { kind: 'photo', id, rev: d.rev, data: m }; }
         await sendDocs([{ k, row }]);
       } catch (e) { console.warn('photo sync', id, e); }
@@ -147,7 +216,13 @@ async function sendDocs(docs) {
     if (!batch.length) return; const b = batch; batch = []; size = 0;
     const { data, error } = await sb.rpc('sync_push', { p_rows: b.map(x => x.row) }); if (error) throw error;
     const rejected = new Set((data || []).map(r => r.r_kind + '|' + r.r_id));
-    for (const x of b) { const d = st.dirty[x.k]; if (d && d.rev === x.row.rev) delete st.dirty[x.k]; if (!rejected.has(x.k)) st.r[x.k] = x.row.rev; }
+    for (const x of b) {
+      const d = st.dirty[x.k]; if (d && d.rev === x.row.rev) delete st.dirty[x.k];
+      if (!rejected.has(x.k)) {
+        st.r[x.k] = x.row.rev;
+        if (x.row && x.row.deleted && x.row.kind === 'photo' && st.explicitDel) delete st.explicitDel[x.row.id];
+      }
+    }
     saveSt();
     if (rejected.size) { for (const k of rejected) delete st.r[k]; await refetch([...rejected]); }
   };
@@ -197,25 +272,44 @@ async function applyRows(rows, force) {
   if (photos.length && P()) { const pn = await applyPhotos(photos); saveSt(); if (pn) { try { W.reloadFromStorage(); } catch (e) {} } n += pn; }
   return n;
 }
+function publicPhotoUrl(url) {
+  const S = photoSafety();
+  if (S && S.isPublicRoomPhoto(url)) return url;
+  return (typeof url === 'string' && url.includes('/storage/v1/object/public/room-photos/')) ? url : '';
+}
 async function applyPhotos(rows) {
   let n = 0, i = 0; const total = rows.length, work = rows.slice();
   async function one(r) {
     const k = 'photo|' + r.id;
     try {
-      if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; try { window.photoGone && photoGone([r.id]); } catch (e) {} }
+      if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; if (st.explicitDel) delete st.explicitDel[r.id]; try { window.photoGone && photoGone([r.id]); } catch (e) {} }
       else {
         const m = r.data || {}, cur = await idb(pstore('readonly').get(r.id));
+        const pub = publicPhotoUrl(m.url);
         let rec;
-        if (cur && pmeta(cur).fsz === m.fsz && pmeta(cur).tsz === m.tsz) rec = { ...cur, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(m.url ? { url: m.url } : {}) };
+        const sameFile = cur && pmeta(cur).fsz === m.fsz && pmeta(cur).tsz === m.tsz;
+        const keepFallback = cur && cur.privMiss && pub && cur.url === pub && !cur.thumb && !cur.full;
+        if (sameFile || keepFallback) rec = { ...cur, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(pub ? { url: pub } : {}) };
         else {
-          const thumb = m.tsz ? await download(path(r.id, 1)) : null;
-          // full image: downloaded in the background later (thumbnails first, so the app is usable quickly)
-          rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(m.url ? { url: m.url } : {}), ...(thumb ? { thumb } : {}), cloud: true, fsz: m.fsz || 0 };
-          if (!thumb && m.fsz) rec.thumb = await download(path(r.id));
+          let thumb = null, privErr = null;
+          const needPriv = !!(m.tsz || m.fsz);
+          if (needPriv) {
+            if (m.tsz) { try { thumb = await download(path(r.id, 1)); } catch (e) { privErr = e; } }
+            if (!thumb && m.fsz) { try { thumb = await download(path(r.id)); privErr = null; } catch (e) { privErr = e; } }
+          }
+          const S = photoSafety();
+          const decision = S && S.recordAfterPrivateFetch
+            ? S.recordAfterPrivateFetch({ meta: m, thumbOk: !!thumb, privateFailed: !!privErr || (needPriv && !thumb) })
+            : (thumb || pub ? { ok: true, fallback: !thumb && !!pub, url: pub } : { ok: false });
+          if (!decision.ok) throw privErr || new Error('photo file missing');
+          if (decision.fallback) console.warn('photo pull: private file missing, using public room-photos url', r.id);
+          rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(decision.url ? { url: decision.url } : {}), ...(thumb ? { thumb } : {}), cloud: true, fsz: m.fsz || 0 };
+          if (decision.fallback) rec.privMiss = true;
         }
         if (!m.url) delete rec.url;
         await idb(pstore('readwrite').put(rec));
-        st.h[k] = hash(JSON.stringify(pmeta(rec))); st.up[r.id] = m.fsz + '/' + m.tsz;
+        st.h[k] = hash(JSON.stringify(pmeta(rec))); st.up[r.id] = (m.fsz || 0) + '/' + (m.tsz || 0);
+        if (st.explicitDel) delete st.explicitDel[r.id];
       }
       delete st.retry[k]; st.r[k] = r.rev; delete st.dirty[k]; n++;
     } catch (e) { console.warn('photo pull', r.id, e); st.retry[k] = r; }
@@ -250,7 +344,10 @@ async function sync(opts = {}) {
   const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
   let held = false;
   try {
-    if (!st.init) { await pull(); scanLS(); await scanPhotos(); st.init = true; saveSt(); }
+    // Drop inferred tombstones before pull, so a stale local rev cannot block restore
+    // and cannot be pushed. First run of a device pulls the library before any push.
+    stripInferredPhotoDeletes();
+    if (!st.init) { wantFull = false; await pull({ full: true }); st.init = true; saveSt(); }
     scanLS(); await scanPhotos(); saveSt();
     await push();
     if (!uiBusy()) { const f = wantFull; wantFull = false; await pull({ full: f }); } else { held = true; again = true; }
@@ -325,7 +422,7 @@ const thErr = e => { const s = String(e && e.message || e); if (/Invalid login/i
 const creds = () => { const email = ($('syEmail') && $('syEmail').value || '').trim().toLowerCase(), password = $('syPw') ? $('syPw').value : ''; if (email) rawSet.call(LS, 'max_sync_email', email); return { email, password }; };
 function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บัญชี & ซิงก์คลาวด์', 'สำรองอัตโนมัติ · ใช้ได้หลายเครื่อง') + '<div id="syncPanel"></div>'); render(); }
 W.SYNC = {
-  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, status: () => status, state: () => st, client: sb, user: () => user,
+  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, notePhotoDeleted, status: () => status, state: () => st, client: sb, user: () => user,
   async login() { const c = creds(); if (!c.email || !c.password) return msg('กรอกอีเมลและรหัสผ่าน'); msg('กำลังเข้าสู่ระบบ...', true); const { error } = await sb.auth.signInWithPassword(c); if (error) return msg(thErr(error)); T('เข้าสู่ระบบแล้ว · เริ่มซิงก์'); view = ''; render(); },
   async signup() { const c = creds(); if (!c.email || c.password.length < 8) return msg('กรอกอีเมลและรหัสผ่านอย่างน้อย 8 ตัว'); msg('กำลังสมัคร...', true); const { data, error } = await sb.auth.signUp(c); if (error) return msg(thErr(error)); if (!data.session) return msg('สมัครแล้ว · ตรวจอีเมลเพื่อยืนยัน แล้วกลับมาเข้าสู่ระบบ', true); T('สมัครและเข้าสู่ระบบแล้ว'); view = ''; render(); },
   async sendCode() { const c = creds(); if (!c.email) return msg('กรอกอีเมลก่อน'); msg('กำลังส่ง...', true); const { error } = await sb.auth.signInWithOtp({ email: c.email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } }); if (error) return msg(thErr(error)); view = 'code'; render(); },
