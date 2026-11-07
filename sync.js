@@ -64,11 +64,15 @@ const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^
 
 /* ---------- state ---------- */
 const SK = 'max_sync_v1';
-const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, init: false, last: 0 });
+const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, cloudHash: {}, photoTry: {}, photoFail: {}, init: false, last: 0 });
 let st = J(SK, null) || fresh(null);
-['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta'].forEach(k => { st[k] = st[k] || {}; });
+['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail'].forEach(k => { st[k] = st[k] || {}; });
 const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
 let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null, photoRestoreHold = false;
+let sessionPulled = false, loginPull = false, photoWriteAt = 0, draining = false;
+const sessionEdits = {};
+let photoQ = { order: [], done: 0, total: 0, seen: {}, failed: {} };
+const photoRows = {};
 
 /* ---------- photos (IndexedDB 'staylow_photos') ---------- */
 const P = () => (typeof db !== 'undefined' && db) ? db : null;
@@ -101,6 +105,27 @@ function notePhotoDeleted(ids, opts) {
   saveSt();
 }
 function photoSafety() { return window.MAX_PHOTO_SAFETY || null; }
+function localHashOf(kind, id) {
+  const a = adpFor(kind, id); if (!a) return null;
+  const s = explode(a).get(String(id));
+  return s == null ? null : hash(s);
+}
+function touchTracked(key, nextRaw) {
+  const a = ADP.find(x => x.key === key); if (!a) return;
+  const pre = a.kind + '|', t = now();
+  if (a.type === 'kv') { sessionEdits[pre + a.key] = t; return; }
+  let next; try { next = JSON.parse(nextRaw); } catch (e) { return; }
+  const prev = explode(a), nowMap = new Map();
+  if (a.type === 'list') { if (Array.isArray(next)) next.forEach(x => { if (x && x.id != null) nowMap.set(String(x.id), JSON.stringify(x)); }); }
+  else if (next && typeof next === 'object' && !Array.isArray(next)) {
+    Object.entries(next).forEach(([k1, v1]) => {
+      if (a.type === 'map1') nowMap.set(k1, JSON.stringify(v1));
+      else if (v1 && typeof v1 === 'object') Object.entries(v1).forEach(([k2, v2]) => nowMap.set(k1 + '|' + k2, JSON.stringify(v2)));
+    });
+  }
+  for (const [id, s] of nowMap) if (prev.get(id) !== s) sessionEdits[pre + id] = t;
+  for (const id of prev.keys()) if (!nowMap.has(id)) sessionEdits[pre + id] = t;
+}
 function stripInferredPhotoDeletes() {
   const S = photoSafety();
   if (!S) {
@@ -134,8 +159,11 @@ async function scanPhotos() {
     localIds.push(String(p.id));
     // An explicit restore stays a live write. Do not replace it with a plain edit or a tombstone.
     if (st.dirty[k] && st.dirty[k].restore) continue;
-    // A live local row is an edit, never a tombstone. Do not clear an in-flight explicit delete.
-    if (st.h[k] !== h && !(st.dirty[k] && st.dirty[k].del && st.dirty[k].explicit)) { st.h[k] = h; markDirty(k); }
+    // A live local row is an edit only when this session wrote the photo DB.
+    // A stale blob (different hash, no write) must not be pushed back up.
+    if (st.h[k] !== h && !(st.dirty[k] && st.dirty[k].del && st.dirty[k].explicit)) {
+      if (photoWriteAt) { st.h[k] = h; sessionEdits[k] = photoWriteAt; markDirty(k); }
+    }
   }
   const S = photoSafety();
   if (!S) { stripInferredPhotoDeletes(); return; }
@@ -205,6 +233,12 @@ async function push() {
   } else if (plan.overThreshold) {
     console.warn('sync: pushing explicit photo deletions over the soft threshold because the user confirmed them', { count: plan.explicitCount, known: plan.known, limit: plan.limit });
   } else if (st.photoDelGuardSig) delete st.photoDelGuardSig;
+  for (const k of Object.keys(st.dirty)) {
+    if (!k.startsWith('photo|')) continue;
+    const d = st.dirty[k];
+    if (!d || d.del || d.restore || d.explicit) continue;
+    if (!sessionEdits[k]) delete st.dirty[k];
+  }
   const keys = Object.keys(st.dirty); if (!keys.length) return;
   const docs = [], photoKeys = keys.filter(k => {
     if (!k.startsWith('photo|')) return false;
@@ -219,7 +253,20 @@ async function push() {
     const a = adpFor(kind, id); if (!a) { delete st.dirty[k]; continue; }
     const m = cache[a.key + a.kind] || (cache[a.key + a.kind] = explode(a)); const s = m.get(id);
     if (s == null) { delete st.dirty[k]; continue; }
+    if (st.cloudHash[k] && hash(s) === st.cloudHash[k]) { delete st.dirty[k]; st.h[k] = st.cloudHash[k]; continue; }
     docs.push({ k, row: { kind, id, rev: d.rev, data: JSON.parse(s) } });
+  }
+  const S = photoSafety();
+  if (S && S.planUnitPushes) {
+    const unitKeys = docs.filter(x => x.row.kind === 'unit' && !x.row.deleted).map(x => x.k);
+    const known = explode(ADP.find(a => a.kind === 'unit')).size;
+    const up = S.planUnitPushes({ keys: unitKeys, knownCount: known, bulkConfirmed: !!(st.bulkUnitPushAt && (now() - st.bulkUnitPushAt) < (S.BULK_WINDOW_MS || 120000)) });
+    if (up.refused) {
+      console.warn('sync: refused bulk unit push', { count: up.count, known: up.known, limit: up.limit, reason: up.reason });
+      const block = new Set(up.blocked);
+      for (let i = docs.length - 1; i >= 0; i--) if (block.has(docs[i].k)) docs.splice(i, 1);
+      st.unitHold = up.count;
+    } else if (unitKeys.length) st.unitHold = 0;
   }
   await sendDocs(docs);
   // photos: blobs first, then the doc (so a doc always points at uploaded files)
@@ -291,27 +338,62 @@ async function pull(opts = {}) {
     if (data.length < 400) break;
   }
   st.cursor = maxSeen; st.pulled = now(); st.seen = seen; saveSt();
-  // photos whose files failed to download last time
-  const retry = Object.values(st.retry); if (retry.length) got += await applyRows(retry, true);
   return got;
+}
+function queuePhotos(rows) {
+  const S = photoSafety();
+  const list = [];
+  for (const r of rows) {
+    const k = 'photo|' + r.id, d = st.dirty[k];
+    if (d && d.del && d.explicit && d.rev >= r.rev) continue;
+    if (d && d.restore && d.rev >= r.rev) continue;
+    if ((st.photoFail || {})[r.id]) continue;
+    if (!sessionEdits[k] && !(d && (d.explicit || d.restore))) delete st.dirty[k];
+    st.r[k] = Math.max(st.r[k] || 0, r.rev || 0);
+    photoRows[r.id] = r;
+    list.push(r);
+  }
+  if (S && S.enqueuePhotos) photoQ = S.enqueuePhotos(photoQ, list);
 }
 async function applyRows(rows, force) {
   const groups = new Map(), photos = []; let n = 0;
+  const S = photoSafety();
   for (const r of rows) {
     const k = r.kind + '|' + r.id, d = st.dirty[k];
-    if (d && d.rev >= r.rev) continue;            // our pending local edit is newer
-    if (!force && st.r[k] >= r.rev) continue;     // already have this version
+    if (d && d.del && d.explicit && d.rev >= r.rev) continue;
+    if (d && d.restore && d.rev >= r.rev) continue;
     if (r.kind === 'photo') { photos.push(r); continue; }
     const a = adpFor(r.kind, r.id); if (!a) continue;
-    const g = groups.get(a) || []; g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev }); groups.set(a, g);
+    const cloudJson = r.deleted || r.data == null ? null : JSON.stringify(r.data);
+    const decision = S && S.decideIncoming ? S.decideIncoming({
+      deleted: !!r.deleted,
+      localHash: localHashOf(r.kind, r.id),
+      cloudHash: cloudJson == null ? null : hash(cloudJson),
+      cloudRev: r.rev,
+      ackedRev: st.r[k] || 0,
+      sessionEditAt: sessionEdits[k] || 0
+    }) : { action: 'apply' };
+    if (decision.action === 'keep-local') continue;
+    if (decision.action === 'equal') {
+      delete st.dirty[k]; st.r[k] = r.rev;
+      if (cloudJson != null) { st.cloudHash[k] = hash(cloudJson); st.h[k] = st.cloudHash[k]; }
+      continue;
+    }
+    const g = groups.get(a) || [];
+    g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev, hash: cloudJson == null ? null : hash(cloudJson) });
+    groups.set(a, g);
   }
   for (const [a, g] of groups) {
     applyTo(a, g); const m = explode(a);
-    for (const c of g) { delete st.dirty[c.k]; st.r[c.k] = c.rev; const s = m.get(c.id); if (s == null) delete st.h[c.k]; else st.h[c.k] = hash(s); n++; }
+    for (const c of g) {
+      delete st.dirty[c.k]; st.r[c.k] = c.rev;
+      if (c.hash) st.cloudHash[c.k] = c.hash;
+      const s = m.get(c.id); if (s == null) delete st.h[c.k]; else st.h[c.k] = hash(s); n++;
+    }
   }
   saveSt();
-  if (n) { try { W.reloadFromStorage(); FX.refresh && FX.refresh(); FX.injectTools && FX.injectTools(); } catch (e) { console.warn(e); } }   // show rooms/customers right away
-  if (photos.length && P()) { const pn = await applyPhotos(photos); saveSt(); if (pn) { try { W.reloadFromStorage(); } catch (e) {} } n += pn; }
+  if (n) { try { W.reloadFromStorage(); FX.refresh && FX.refresh(); FX.injectTools && FX.injectTools(); } catch (e) { console.warn(e); } }
+  if (photos.length) queuePhotos(photos);
   return n;
 }
 function publicPhotoUrl(url) {
@@ -354,12 +436,58 @@ async function applyPhotos(rows) {
         if (st.explicitDel) delete st.explicitDel[r.id];
       }
       delete st.retry[k]; st.r[k] = r.rev; delete st.dirty[k]; n++;
-    } catch (e) { console.warn('photo pull', r.id, e); st.retry[k] = r; }
-    i++; if (total > 3) setStatus('busy', `ดาวน์โหลดรูป ${i}/${total}`);
+      if (st.photoTry) delete st.photoTry[r.id];
+      if (st.photoFail) delete st.photoFail[r.id];
+    } catch (e) {
+      const S = photoSafety();
+      const missing = !!(S && S.isStorageMissing && S.isStorageMissing(e));
+      const pub = publicPhotoUrl((r.data || {}).url);
+      const prevN = ((st.photoTry || {})[r.id] || {}).n || 0;
+      const plan = S && S.photoAttemptPlan ? S.photoAttemptPlan({ missing, failed: !missing, hasPublicUrl: !!pub, attempts: prevN, now: now() }) : { action: 'failed', attempts: 3, tombstone: false };
+      if (plan.action === 'fallback' && pub) {
+        const m = r.data || {};
+        const rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, url: pub, cloud: true, fsz: m.fsz || 0, privMiss: true };
+        await idb(pstore('readwrite').put(rec));
+        st.h[k] = hash(JSON.stringify(pmeta(rec))); st.r[k] = r.rev; delete st.dirty[k]; delete st.retry[k];
+        if (st.photoTry) delete st.photoTry[r.id];
+        console.warn('photo pull: private 400/404, using public url', r.id);
+      } else if (plan.action === 'retry') {
+        st.photoTry[r.id] = { n: plan.attempts, nextAt: plan.nextAt || 0 };
+        console.warn('photo pull retry', r.id, plan.attempts);
+        return;
+      } else {
+        st.photoFail[r.id] = { at: now(), status: missing ? 400 : 0 };
+        st.photoTry[r.id] = { n: plan.attempts, nextAt: 0 };
+        delete st.retry[k];
+        console.warn('photo pull failed', r.id, e);
+      }
+    }
+    if (photoSafety() && photoSafety().notePhotoFinished) photoQ = photoSafety().notePhotoFinished(photoQ, r.id, !!(st.photoFail && st.photoFail[r.id]));
+    if ((photoQ.total || total) > 3) setStatus('busy', `ดาวน์โหลดรูป ${photoQ.done}/${photoQ.total || total}`);
   }
   await Promise.all([0, 1, 2, 3, 4, 5, 6, 7].map(async () => { while (work.length) await one(work.shift()); }));
   try { await W.refreshCounts(); } catch (e) {}
   return n;
+}
+function resetPhotoQueue() {
+  st.photoFail = {}; st.photoTry = {};
+  photoQ = { order: [], done: 0, total: 0, seen: {}, failed: {} };
+  Object.keys(photoRows).forEach(id => delete photoRows[id]);
+}
+async function drainPhotos() {
+  if (draining || !P() || !photoQ.order.length) return;
+  const due = photoQ.order.filter(id => photoQ.seen[id] !== 'done' && photoRows[id] && !(((st.photoTry || {})[id] || {}).nextAt > now()));
+  if (!due.length) return;
+  draining = true;
+  try { await applyPhotos(due.map(id => photoRows[id])); }
+  finally { draining = false; saveSt(); }
+}
+function chipNow(busy, held) {
+  const S = photoSafety();
+  const waiting = Object.keys(st.photoTry || {}).filter(id => st.photoTry[id] && st.photoTry[id].nextAt > now() && !(st.photoFail || {})[id]).length;
+  const failed = Object.keys(st.photoFail || {}).length;
+  if (!S || !S.syncChipState) return { state: user ? (busy ? 'busy' : 'ok') : 'off', detail: '' };
+  return S.syncChipState({ signedIn: !!user, online: navigator.onLine, busy: !!busy, held: !!held, dirty: Object.keys(st.dirty).length, failedPhotos: failed, waitingPhotos: waiting, unitConfirm: st.unitHold || 0, detail: '' });
 }
 // fetch full-size images of cloud photos in the background (and on demand)
 async function fullBlob(p) {
@@ -382,30 +510,47 @@ async function sync(opts = {}) {
   if (opts.full) wantFull = true;
   if (!user) return setStatus('off');
   if (!navigator.onLine) return setStatus('offline');
-  if (running && now() - runStart < 180000) { again = true; return; }
+  if ((running || draining) && now() - runStart < 180000) { again = true; return; }
   const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
   let held = false;
   try {
-    // Drop inferred tombstones before pull, so a stale local rev cannot block restore
-    // and cannot be pushed. First run of a device pulls the library before any push.
+    // v9.25 pushed first whenever st.init was already true, so a stale device
+    // rewrote every unit it still had and only then started a pull that photo
+    // 400s could block forever. Pull the library before any push when this
+    // page has not caught up.
     stripInferredPhotoDeletes();
-    if (!st.init) { wantFull = false; await pull({ full: true }); st.init = true; saveSt(); }
+    const S = photoSafety();
+    const fullFirst = !!(opts.full || wantFull || (S && S.needsFullPullBeforePush(st, { uid: user.id, login: loginPull, sessionPulled, now: now() })));
+    if (fullFirst) {
+      loginPull = false; wantFull = false;
+      if (!uiBusy() || !st.init) { await pull({ full: true }); sessionPulled = true; st.init = true; saveSt(); }
+      else { held = true; again = true; }
+    }
+    if (held && fullFirst) {
+      const chip = chipNow(false, true);
+      setStatus(chip.state, chip.detail);
+      return;
+    }
     scanLS(); await scanPhotos(); saveSt();
     await push();
-    if (!uiBusy()) { const f = wantFull; wantFull = false; await pull({ full: f }); } else { held = true; again = true; }
+    if (!fullFirst && !uiBusy()) { await pull({ full: false }); sessionPulled = true; }
+    else if (!fullFirst && uiBusy()) { held = true; again = true; }
+    if (my !== gen) return;
+    await drainPhotos();
     if (my !== gen) return;
     st.last = now(); saveSt();
-    setStatus(held ? 'pending' : (Object.keys(st.dirty).length || Object.keys(st.retry).length ? 'pending' : 'ok'), held ? 'รอปิดหน้าแก้ไขก่อนรับข้อมูลใหม่' : undefined);
-    if (!filling) { filling = true; fillFulls().then(() => setStatus(status, '')).catch(() => {}).finally(() => { filling = false; }); }
+    const chip = chipNow(false, held);
+    setStatus(chip.state, chip.detail);
+    if (!filling) { filling = true; fillFulls().then(() => { const c = chipNow(false, false); setStatus(c.state, c.detail); }).catch(() => {}).finally(() => { filling = false; }); }
   } catch (e) { console.warn('sync failed', e); setStatus(navigator.onLine ? 'error' : 'offline', String(e && e.message || e)); }
   finally { if (my === gen) { running = false; if (again) { again = false; schedule(3000); } } }
 }
 function schedule(ms) { if (!user) return; clearTimeout(timer); timer = setTimeout(sync, ms); }
 
 /* ---------- hooks ---------- */
-Storage.prototype.setItem = function (k, v) { const r = rawSet.call(this, k, v); if (this === LS && TRACKED.has(k)) schedule(1500); return r; };
+Storage.prototype.setItem = function (k, v) { if (this === LS && TRACKED.has(k)) { try { touchTracked(k, v); } catch (e) {} } const r = rawSet.call(this, k, v); if (this === LS && TRACKED.has(k)) schedule(1500); return r; };
 Storage.prototype.removeItem = function (k) { const r = rawRemove.call(this, k); if (this === LS && TRACKED.has(k)) schedule(1500); return r; };
-if (typeof W.tx === 'function') { const _tx = W.tx; W.tx = function (mode) { if (mode === 'readwrite') schedule(2500); return _tx.apply(this, arguments); }; }
+if (typeof W.tx === 'function') { const _tx = W.tx; W.tx = function (mode) { if (mode === 'readwrite') { photoWriteAt = now(); schedule(2500); } return _tx.apply(this, arguments); }; }
 addEventListener('online', () => schedule(500));
 addEventListener('offline', () => setStatus(user ? 'offline' : 'off'));
 const wake = () => { if (document.visibilityState !== 'hidden') schedule(400); };
@@ -419,7 +564,7 @@ sb.auth.onAuthStateChange((ev, session) => {
   const u = session && session.user;
   if (u && (!user || user.id !== u.id)) {
     if (st.uid !== u.id) { st = fresh(u.id); saveSt(); }
-    user = u; schedule(300);
+    user = u; loginPull = true; sessionPulled = false; setStatus('pending', 'กำลังดึงข้อมูลก่อนส่ง'); schedule(300);
   } else if (!u && user) { user = null; setStatus('off'); }
   else if (!u) setStatus('off');
   if (ev === 'PASSWORD_RECOVERY') setTimeout(() => open('setpw'), 300);
@@ -429,7 +574,7 @@ sb.auth.onAuthStateChange((ev, session) => {
 
 /* ---------- UI ---------- */
 const LABEL = { off: ['cloud-off', 'ยังไม่ซิงก์'], offline: ['wifi-off', 'ออฟไลน์'], busy: ['refresh-cw', 'กำลังซิงก์'], ok: ['cloud', 'ซิงก์แล้ว'], pending: ['cloud-upload', 'รอซิงก์'], error: ['alert-triangle', 'ซิงก์ไม่สำเร็จ'] };
-function setStatus(s, d) { status = s; if (d !== undefined) detail = d; else if (s !== 'busy') detail = ''; const c = document.getElementById('syncChip'); if (c) { const [ic, tx] = LABEL[s] || LABEL.off; c.innerHTML = `<i data-lucide="${ic}" class="w-3.5 h-3.5 ${s === 'busy' ? 'animate-spin' : ''}"></i><span>${s === 'busy' && /\d+\/\d+/.test(detail) ? 'ซิงก์ ' + detail.match(/\d+\/\d+/)[0] : tx}</span>`; c.dataset.state = s; try { lucide.createIcons(); } catch (e) {} } render(); }
+function setStatus(s, d) { status = s; if (d !== undefined) detail = d; else if (s !== 'busy') detail = ''; const c = document.getElementById('syncChip'); if (c) { const [ic, tx] = LABEL[s] || LABEL.off; const prog = s === 'busy' && /\d+\/\d+/.test(detail) ? 'ซิงก์ ' + detail.match(/\d+\/\d+/)[0] : ''; const short = prog || ((s === 'pending' || s === 'ok') && detail ? detail : tx); c.innerHTML = `<i data-lucide="${ic}" class="w-3.5 h-3.5 ${s === 'busy' ? 'animate-spin' : ''}"></i><span>${E(short)}</span>`; c.dataset.state = s; try { lucide.createIcons(); } catch (e) {} } render(); }
 let view = 'login';
 function render() { const el = document.getElementById('syncPanel'); if (el) el.innerHTML = body(); try { lucide.createIcons(); } catch (e) {} }
 const inp = 'w-full rounded-xl border border-slate-700 bg-white px-3 py-2.5 text-sm mt-1';
@@ -444,7 +589,7 @@ function body() {
       <div class="flex items-center gap-2 mt-2 text-xs"><i data-lucide="${ic}" class="w-4 h-4 text-brick-600"></i><b>${tx}</b><span class="text-slate-400">${E(detail)}</span></div>
       <p class="text-[10px] text-slate-400 mt-1">ซิงก์ล่าสุด ${st.last ? new Date(st.last).toLocaleString('th-TH') : '-'} · ดึงข้อมูลล่าสุด ${st.pulled ? new Date(st.pulled).toLocaleTimeString('th-TH') : '-'}${pend ? ` · รอส่ง ${pend} รายการ` : ''}</p></div>
       <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">ซิงก์: ห้อง/ประกาศ (รวมสัญญา) · ลูกค้า · นัดหมาย · ค่าคอม · การตั้งค่า · รูปห้อง · รูปโปรไฟล์ — เก็บแบบส่วนตัว เห็นได้เฉพาะบัญชีนี้</p>
-      <button onclick="SYNC.full()" class="${btn}">ซิงก์ตอนนี้ (ดึงข้อมูลทั้งหมด)</button>
+      ${st.unitHold ? `<button onclick="SYNC.confirmUnits()" class="${btn}">ยืนยันส่ง ${st.unitHold} ห้องที่ต่างจากคลาวด์</button>` : `<button onclick="SYNC.full()" class="${btn}">ซิงก์ตอนนี้ (ดึงข้อมูลทั้งหมด)</button>`}
       <button onclick="SYNC.view('setpw')" class="${btn2}">เปลี่ยนรหัสผ่าน</button>
       <button onclick="SYNC.logout()" class="${btn2}">ออกจากระบบ (ข้อมูลในเครื่องยังอยู่)</button>`;
   }
@@ -465,7 +610,9 @@ const thErr = e => { const s = String(e && e.message || e); if (/Invalid login/i
 const creds = () => { const email = ($('syEmail') && $('syEmail').value || '').trim().toLowerCase(), password = $('syPw') ? $('syPw').value : ''; if (email) rawSet.call(LS, 'max_sync_email', email); return { email, password }; };
 function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บัญชี & ซิงก์คลาวด์', 'สำรองอัตโนมัติ · ใช้ได้หลายเครื่อง') + '<div id="syncPanel"></div>'); render(); }
 W.SYNC = {
-  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, notePhotoDeleted, uploadBlob, restorePhoto,
+  open, view: v => { view = v; render(); }, now: () => sync(), full: () => { resetPhotoQueue(); sync({ full: true }); }, chip: () => { open(); if (user) { resetPhotoQueue(); sync({ full: true }); } },
+  confirmUnits() { st.bulkUnitPushAt = now(); st.unitHold = 0; saveSt(); sync(); },
+  fullBlob, notePhotoDeleted, uploadBlob, restorePhoto,
   holdRestores: v => { photoRestoreHold = !!v; },
   rememberUpload(id, sig) { st.up[id] = sig; saveSt(); },
   forgetUpload(id) { delete st.up[id]; saveSt(); },
