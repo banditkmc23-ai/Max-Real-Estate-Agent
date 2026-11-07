@@ -447,7 +447,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.26</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.27</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1174,7 +1174,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.26</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.27</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1249,6 +1249,7 @@
 </div>
 
 <div id="toast" class="toast"></div>
+<script src="unit-shape.js?v=47"></script>
 <script>
 // ============= DATA LAYER =============
 const KEY = 'staylow_units_v1';
@@ -1262,18 +1263,9 @@ const HERO_KEY = 'staylow_hero_img';
 const AVATAR_KEY = 'staylow_avatar';
 const OCC_KEY = 'staylow_monthly_occupancy_v1';
 
-let units = load(KEY, []).map((u, i) => ({
-  bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
-  lastPosted: null, postCount: 0, expiredNotified: false,
-  createdAt: Date.now() - (9999 - i) * 1000, ...u
-}));
-units.forEach((u, i) => { if (!u.createdAt) u.createdAt = Date.now() - (units.length - i) * 1000; });
+let units = UNIT_SHAPE.normalizeUnits(load(KEY, []));
 
-let customers = load(CUST_KEY, []).map(c => ({
-  name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'',
-  budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'',
-  linkedUnits:[], timeline:[], createdAt: Date.now(), ...c
-}));
+let customers = UNIT_SHAPE.normalizeCustomers(load(CUST_KEY, []));
 
 let activeFilters = new Set(['FAV']);
 let activeCustFilters = new Set(['all']);
@@ -1364,8 +1356,8 @@ function load(key, fallback) { try { const s = localStorage.getItem(key); if (s)
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 // Re-read everything from storage after cloud sync wrote remote changes.
 function reloadFromStorage() {
-  units = load(KEY, []).map((u, i) => ({ bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false, createdAt: Date.now() - (9999 - i) * 1000, ...u }));
-  customers = load(CUST_KEY, []).map(c => ({ name:'', phone:'', line:'', email:'', interestProject:'', interestBuilding:'', interestType:'', budgetMin:'', budgetMax:'', status:'NEW', source:'', nextFollow:'', note:'', linkedUnits:[], timeline:[], createdAt: Date.now(), ...c }));
+  units = UNIT_SHAPE.normalizeUnits(load(KEY, []));
+  customers = UNIT_SHAPE.normalizeCustomers(load(CUST_KEY, []));
   monthlyOcc = load(OCC_KEY, {});
   try { (window.FX && FX.reloaders || []).forEach(f => f()); } catch (e) {}
   try { loadAvatar(); loadHeroImage(); } catch (e) {}
@@ -3780,7 +3772,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.26';
+const APP_VERSION = '9.27';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -3878,10 +3870,10 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="photo-safety.js?v=46"></script>
+<script src="photo-safety.js?v=47"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=46"></script>
+<script src="sync.js?v=47"></script>
 <script src="photo-restore.js?v=46"></script>
 </body>
 </html>

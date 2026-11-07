@@ -105,10 +105,19 @@ function notePhotoDeleted(ids, opts) {
   saveSt();
 }
 function photoSafety() { return window.MAX_PHOTO_SAFETY || null; }
+function contentHash(kind, jsonString) {
+  if (jsonString == null) return '';
+  const shape = window.UNIT_SHAPE;
+  if (shape && shape.canonicalJson && (kind === 'unit' || kind === 'cust')) {
+    try { return hash(shape.canonicalJson(kind, JSON.parse(jsonString))); }
+    catch (e) { return hash(String(jsonString)); }
+  }
+  return hash(String(jsonString));
+}
 function localHashOf(kind, id) {
   const a = adpFor(kind, id); if (!a) return null;
   const s = explode(a).get(String(id));
-  return s == null ? null : hash(s);
+  return s == null ? null : contentHash(kind, s);
 }
 function touchTracked(key, nextRaw) {
   const a = ADP.find(x => x.key === key); if (!a) return;
@@ -123,7 +132,10 @@ function touchTracked(key, nextRaw) {
       else if (v1 && typeof v1 === 'object') Object.entries(v1).forEach(([k2, v2]) => nowMap.set(k1 + '|' + k2, JSON.stringify(v2)));
     });
   }
-  for (const [id, s] of nowMap) if (prev.get(id) !== s) sessionEdits[pre + id] = t;
+  for (const [id, s] of nowMap) {
+    const prevS = prev.get(id);
+    if (prevS == null || contentHash(a.kind, prevS) !== contentHash(a.kind, s)) sessionEdits[pre + id] = t;
+  }
   for (const id of prev.keys()) if (!nowMap.has(id)) sessionEdits[pre + id] = t;
 }
 function stripInferredPhotoDeletes() {
@@ -142,7 +154,7 @@ function stripInferredPhotoDeletes() {
 function scanLS() {
   for (const a of ADP) {
     const m = explode(a), pre = a.kind + '|';
-    for (const [id, s] of m) { const k = pre + id, h = hash(s); if (st.h[k] !== h) { st.h[k] = h; markDirty(k); } }
+    for (const [id, s] of m) { const k = pre + id, h = contentHash(a.kind, s); if (st.h[k] !== h) { st.h[k] = h; markDirty(k); } }
     for (const k of Object.keys(st.h)) {
       if (!k.startsWith(pre)) continue; const id = k.slice(pre.length);
       if (a.kind === 'kv' && id !== a.key) continue;
@@ -253,7 +265,7 @@ async function push() {
     const a = adpFor(kind, id); if (!a) { delete st.dirty[k]; continue; }
     const m = cache[a.key + a.kind] || (cache[a.key + a.kind] = explode(a)); const s = m.get(id);
     if (s == null) { delete st.dirty[k]; continue; }
-    if (st.cloudHash[k] && hash(s) === st.cloudHash[k]) { delete st.dirty[k]; st.h[k] = st.cloudHash[k]; continue; }
+    if (st.cloudHash[k] && contentHash(kind, s) === st.cloudHash[k]) { delete st.dirty[k]; st.h[k] = st.cloudHash[k]; continue; }
     docs.push({ k, row: { kind, id, rev: d.rev, data: JSON.parse(s) } });
   }
   const S = photoSafety();
@@ -365,10 +377,11 @@ async function applyRows(rows, force) {
     if (r.kind === 'photo') { photos.push(r); continue; }
     const a = adpFor(r.kind, r.id); if (!a) continue;
     const cloudJson = r.deleted || r.data == null ? null : JSON.stringify(r.data);
+    const cloudHash = cloudJson == null ? null : contentHash(r.kind, cloudJson);
     const decision = S && S.decideIncoming ? S.decideIncoming({
       deleted: !!r.deleted,
       localHash: localHashOf(r.kind, r.id),
-      cloudHash: cloudJson == null ? null : hash(cloudJson),
+      cloudHash: cloudHash,
       cloudRev: r.rev,
       ackedRev: st.r[k] || 0,
       sessionEditAt: sessionEdits[k] || 0
@@ -376,19 +389,21 @@ async function applyRows(rows, force) {
     if (decision.action === 'keep-local') continue;
     if (decision.action === 'equal') {
       delete st.dirty[k]; st.r[k] = r.rev;
-      if (cloudJson != null) { st.cloudHash[k] = hash(cloudJson); st.h[k] = st.cloudHash[k]; }
+      if (cloudHash != null) { st.cloudHash[k] = cloudHash; st.h[k] = cloudHash; }
       continue;
     }
     const g = groups.get(a) || [];
-    g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev, hash: cloudJson == null ? null : hash(cloudJson) });
+    g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev, hash: cloudHash });
     groups.set(a, g);
   }
   for (const [a, g] of groups) {
     applyTo(a, g); const m = explode(a);
     for (const c of g) {
       delete st.dirty[c.k]; st.r[c.k] = c.rev;
-      if (c.hash) st.cloudHash[c.k] = c.hash;
-      const s = m.get(c.id); if (s == null) delete st.h[c.k]; else st.h[c.k] = hash(s); n++;
+      const s = m.get(c.id);
+      if (s == null) { delete st.h[c.k]; delete st.cloudHash[c.k]; }
+      else { const h = contentHash(a.kind, s); st.h[c.k] = h; st.cloudHash[c.k] = h; }
+      n++;
     }
   }
   saveSt();
