@@ -447,7 +447,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.28</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.29</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1174,7 +1174,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.28</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.29</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2504,27 +2504,130 @@ function quickCopy(id) {
   if (!text) return toast('ห้องนี้ยังไม่มีรายละเอียด');
   copy(text); toast('คัดลอกรายละเอียดแล้ว');
 }
+let photoCopyCursor = { roomId: null, index: 0 };
+function photoShareName(u, i) { return String(u.project || '').replace(/\s+/g, '_') + '_' + (u.room || '') + '_' + (i + 1) + '.jpg'; }
+function blobToPng(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth || img.width || 1;
+      c.height = img.naturalHeight || img.height || 1;
+      c.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('png')), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
+}
+async function loadShareFiles(photos, u) {
+  const allLocal = photos.length && photos.every(p => p && p.full && p.full.size);
+  const out = [];
+  if (allLocal) {
+    for (let i = 0; i < photos.length; i++) out.push({ photo: photos[i], file: new File([photos[i].full], photoShareName(u, i), { type: 'image/jpeg' }) });
+    return out;
+  }
+  for (let i = 0; i < photos.length; i++) {
+    const f = await fileFromPhoto(photos[i], photoShareName(u, i));
+    if (f) out.push({ photo: photos[i], file: f });
+  }
+  return out;
+}
+async function writeMultiPng(files) {
+  const items = [];
+  for (let i = 0; i < files.length; i++) items.push(new ClipboardItem({ 'image/png': blobToPng(files[i]) }));
+  await navigator.clipboard.write(items);
+}
+async function writeHtmlPhotos(pairs, description) {
+  const parts = [];
+  for (let i = 0; i < pairs.length; i++) {
+    const raw = pairs[i].photo && pairs[i].photo.url;
+    const src = (typeof raw === 'string' && /^https?:\/\//.test(raw)) ? raw : await blobToDataUrl(await blobToPng(pairs[i].file));
+    parts.push('<img src="' + String(src).replace(/"/g, '%22') + '" alt="">');
+  }
+  await navigator.clipboard.write([new ClipboardItem({
+    'text/html': new Blob([parts.join('')], { type: 'text/html' }),
+    'text/plain': new Blob([description || ''], { type: 'text/plain' })
+  })]);
+}
+async function copyOnePng(file) {
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobToPng(file) })]);
+}
+function canSharePayload(payload) { try { return !!(navigator.canShare && navigator.canShare(payload)); } catch (e) { return false; } }
+function clipboardApi() {
+  const write = !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function');
+  const supports = typeof ClipboardItem === 'function' && typeof ClipboardItem.supports === 'function' ? ClipboardItem.supports : null;
+  return {
+    canTryMulti: write,
+    canTryHtml: write && (!supports || supports('text/html')),
+    canWriteSinglePng: write && (!supports || supports('image/png'))
+  };
+}
 async function copyAndSharePhotos(id) {
   const u = units.find(x => x.id === id); if (!u) return;
-  const photos = await getUnitPhotos(id);
+  const PC = window.MAX_PHOTO_COPY;
+  const raw = await getUnitPhotos(id);
+  const photos = PC ? PC.orderPhotos(raw) : raw;
   if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
-
-  const files = (await Promise.all(photos.map(async (p, i) => fileFromPhoto(p, `${u.project.replace(/\s+/g, '_')}_${u.room}_${i + 1}.jpg`)))).filter(Boolean);
-  if (!files.length) return toast('โหลดรูปไม่สำเร็จ');
-
-  if (navigator.canShare && navigator.canShare({ files })) {
-    try {
-      await navigator.share({ files });
-      toast('แชร์รูปแล้ว');
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
-        toast('ดาวน์โหลดรูปแล้ว');
+  const pairs = await loadShareFiles(photos, u);
+  if (!pairs.length) return toast('โหลดรูปไม่สำเร็จ');
+  const files = pairs.map(p => p.file);
+  const description = PC ? PC.descriptionText(u) : ((u.notes || '').trim());
+  const api = clipboardApi();
+  const ctx = {
+    count: files.length,
+    roomId: id,
+    description: description,
+    canShareFiles: canSharePayload({ files: files }),
+    canShareWithText: !!(description && canSharePayload({ files: files, text: description })),
+    canTryMulti: api.canTryMulti,
+    canTryHtml: api.canTryHtml,
+    canWriteSinglePng: api.canWriteSinglePng,
+    cursor: photoCopyCursor,
+    sharePhase: 'untried',
+    multiTried: false,
+    multiOk: false,
+    htmlTried: false,
+    htmlOk: false
+  };
+  const planOf = () => PC ? PC.selectPhotoCopy(ctx) : { action: ctx.canShareFiles ? 'share' : 'unsupported', includeText: false, text: '', toast: 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้' };
+  for (let step = 0; step < 6; step++) {
+    const plan = planOf();
+    if (plan.action === 'share') {
+      try {
+        await navigator.share(plan.includeText ? { files: files, text: plan.text } : { files: files });
+        ctx.sharePhase = 'ok';
+        toast('แชร์รูปแล้ว');
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') { ctx.sharePhase = 'abort'; return; }
+        ctx.sharePhase = plan.includeText ? 'text-failed' : 'failed';
+        continue;
       }
     }
-  } else {
-    files.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); });
-    toast('ดาวน์โหลดรูปแล้ว');
+    if (plan.action === 'silent' || plan.action === 'done') return;
+    if (plan.action === 'write-multi') {
+      ctx.multiTried = true;
+      try { await writeMultiPng(files); ctx.multiOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
+      catch (e) { continue; }
+    }
+    if (plan.action === 'write-html') {
+      ctx.htmlTried = true;
+      try { await writeHtmlPhotos(pairs, description); ctx.htmlOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
+      catch (e) { continue; }
+    }
+    if (plan.action === 'copy-one') {
+      try { await copyOnePng(files[plan.index]); photoCopyCursor = plan.nextCursor; toast(plan.toast); }
+      catch (e) { toast('คัดลอกรูปไม่สำเร็จ'); }
+      return;
+    }
+    toast(plan.toast || 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้');
+    return;
   }
 }
 
@@ -3772,7 +3875,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.28';
+const APP_VERSION = '9.29';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -3870,6 +3973,7 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
+<script src="photo-copy.js?v=1"></script>
 <script src="photo-safety.js?v=47"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
