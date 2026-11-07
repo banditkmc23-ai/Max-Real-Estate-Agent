@@ -144,12 +144,12 @@ test('client source no longer infers photo deletes and pulls before the first pu
   assert.match(features, /shareDecision\(/);
   assert.match(features, /imgsKept/);
   const html = read('index.html');
-  assert.match(html, /const APP_VERSION = '9\.24'/);
-  assert.match(html, /photo-safety\.js\?v=44/);
+  assert.match(html, /const APP_VERSION = '9\.25'/);
+  assert.match(html, /photo-safety\.js\?v=45/);
   assert.match(html, /function coverSrc/);
   assert.match(html, /function markPhotosUserDeleted/);
   assert.match(html, /SYNC\.notePhotoDeleted/);
-  assert.match(read('sw.js'), /const VERSION = 'v59'/);
+  assert.match(read('sw.js'), /const VERSION = 'v60'/);
   assert.match(read('sw.js'), /photo-safety\.js/);
   // The Edge Function is still the writer. This change does not edit it; the client stops sending [].
   const edge = read('supabase/functions/share-room/index.ts');
