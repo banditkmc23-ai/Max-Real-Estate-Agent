@@ -1,6 +1,7 @@
 /* MAX Agent — private cloud sync (Supabase Auth + user_docs + user-photos bucket).
    Offline-first for rooms and settings. Photo deletions are explicit only:
    a photo missing from IndexedDB is never pushed as deleted:true.
+   A photo restore is an explicit live write (deleted:false) of the same id.
    Nothing runs until the user signs in. */
 (function () {
 'use strict';
@@ -63,11 +64,11 @@ const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^
 
 /* ---------- state ---------- */
 const SK = 'max_sync_v1';
-const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, init: false, last: 0 });
+const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, init: false, last: 0 });
 let st = J(SK, null) || fresh(null);
-['h', 'dirty', 'r', 'up', 'retry', 'explicitDel'].forEach(k => { st[k] = st[k] || {}; });
+['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta'].forEach(k => { st[k] = st[k] || {}; });
 const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
-let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null;
+let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null, photoRestoreHold = false;
 
 /* ---------- photos (IndexedDB 'staylow_photos') ---------- */
 const P = () => (typeof db !== 'undefined' && db) ? db : null;
@@ -131,6 +132,8 @@ async function scanPhotos() {
   for (const p of all) {
     const k = 'photo|' + p.id, h = hash(JSON.stringify(pmeta(p)));
     localIds.push(String(p.id));
+    // An explicit restore stays a live write. Do not replace it with a plain edit or a tombstone.
+    if (st.dirty[k] && st.dirty[k].restore) continue;
     // A live local row is an edit, never a tombstone. Do not clear an in-flight explicit delete.
     if (st.h[k] !== h && !(st.dirty[k] && st.dirty[k].del && st.dirty[k].explicit)) { st.h[k] = h; markDirty(k); }
   }
@@ -155,6 +158,31 @@ async function uploadPhoto(id) {
   }
   return m;
 }
+/* Same bucket, path, content type, and upsert as uploadPhoto. Used by กู้รูป. */
+async function uploadBlob(id, blob, thumb) {
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  const opt = b => ({ upsert: true, contentType: ctype(b), cacheControl: '3600' });
+  if (blob) { const { error } = await sb.storage.from(BUCKET).upload(path(id), blob, opt(blob)); if (error) throw error; }
+  if (thumb) { const { error } = await sb.storage.from(BUCKET).upload(path(id, 1), thumb, opt(thumb)); if (error) throw error; }
+  return true;
+}
+/* Explicit restore: remember a live row and push it through sync_push. Never a tombstone. */
+async function restorePhoto(id, meta, rev) {
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ');
+  const k = 'photo|' + id;
+  st.explicitDel = st.explicitDel || {};
+  delete st.explicitDel[id];
+  st.restoreMeta = st.restoreMeta || {};
+  st.restoreMeta[id] = meta;
+  st.dirty[k] = { rev, restore: true, explicit: true };
+  st.h[k] = hash(JSON.stringify(meta));
+  saveSt();
+  const row = { kind: 'photo', id, rev, deleted: false, data: meta };
+  await sendDocs([{ k, row }]);
+  if (st.r[k] !== rev) throw new Error('บันทึกแถวรูปไม่สำเร็จ');
+  delete st.restoreMeta[id];
+  saveSt();
+}
 function photoDeletePlan() {
   const S = photoSafety();
   const bulkConfirmed = !!(st.bulkPhotoDeleteAt && S && (now() - st.bulkPhotoDeleteAt) < S.BULK_WINDOW_MS);
@@ -178,7 +206,12 @@ async function push() {
     console.warn('sync: pushing explicit photo deletions over the soft threshold because the user confirmed them', { count: plan.explicitCount, known: plan.known, limit: plan.limit });
   } else if (st.photoDelGuardSig) delete st.photoDelGuardSig;
   const keys = Object.keys(st.dirty); if (!keys.length) return;
-  const docs = [], photoKeys = keys.filter(k => { if (!k.startsWith('photo|')) return false; const d = st.dirty[k]; return !(d && d.del && !allowDel.has(k)); }), cache = {};
+  const docs = [], photoKeys = keys.filter(k => {
+    if (!k.startsWith('photo|')) return false;
+    const d = st.dirty[k];
+    if (d && d.restore && photoRestoreHold) return false;
+    return !(d && d.del && !allowDel.has(k));
+  }), cache = {};
   for (const k of keys) {
     if (k.startsWith('photo|')) continue;
     const d = st.dirty[k], [kind] = k.split('|', 1), id = k.slice(kind.length + 1);
@@ -197,6 +230,15 @@ async function push() {
       const k = work.shift(), d = st.dirty[k]; if (!d) continue; const id = k.slice(6);
       try {
         let row;
+        if (d.restore) {
+          const meta = (st.restoreMeta || {})[id];
+          if (!meta) { delete st.dirty[k]; continue; }
+          row = { kind: 'photo', id, rev: d.rev, deleted: false, data: meta };
+          await sendDocs([{ k, row }]);
+          if (!st.dirty[k]) delete st.restoreMeta[id];
+          done++; if (total > 3) setStatus('busy', `อัปโหลดรูป ${done}/${total}`);
+          continue;
+        }
         if (d.del) {
           if (!d.explicit || !allowDel.has(k)) { console.warn('sync: dropped photo tombstone without an explicit user delete', id); delete st.dirty[k]; continue; }
           try { await sb.storage.from(BUCKET).remove([path(id), path(id, 1)]); } catch (e) {}
@@ -381,6 +423,7 @@ sb.auth.onAuthStateChange((ev, session) => {
   } else if (!u && user) { user = null; setStatus('off'); }
   else if (!u) setStatus('off');
   if (ev === 'PASSWORD_RECOVERY') setTimeout(() => open('setpw'), 300);
+  try { window.PHOTO_RESTORE && PHOTO_RESTORE.syncOwner(u || null); } catch (e) {}
   render();
 });
 
@@ -422,7 +465,12 @@ const thErr = e => { const s = String(e && e.message || e); if (/Invalid login/i
 const creds = () => { const email = ($('syEmail') && $('syEmail').value || '').trim().toLowerCase(), password = $('syPw') ? $('syPw').value : ''; if (email) rawSet.call(LS, 'max_sync_email', email); return { email, password }; };
 function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บัญชี & ซิงก์คลาวด์', 'สำรองอัตโนมัติ · ใช้ได้หลายเครื่อง') + '<div id="syncPanel"></div>'); render(); }
 W.SYNC = {
-  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, notePhotoDeleted, status: () => status, state: () => st, client: sb, user: () => user,
+  open, view: v => { view = v; render(); }, now: () => sync(), full: () => sync({ full: true }), chip: () => { open(); if (user) sync({ full: true }); }, fullBlob, notePhotoDeleted, uploadBlob, restorePhoto,
+  holdRestores: v => { photoRestoreHold = !!v; },
+  rememberUpload(id, sig) { st.up[id] = sig; saveSt(); },
+  forgetUpload(id) { delete st.up[id]; saveSt(); },
+  photoPath: id => user ? path(id) : '',
+  status: () => status, state: () => st, client: sb, user: () => user,
   async login() { const c = creds(); if (!c.email || !c.password) return msg('กรอกอีเมลและรหัสผ่าน'); msg('กำลังเข้าสู่ระบบ...', true); const { error } = await sb.auth.signInWithPassword(c); if (error) return msg(thErr(error)); T('เข้าสู่ระบบแล้ว · เริ่มซิงก์'); view = ''; render(); },
   async signup() { const c = creds(); if (!c.email || c.password.length < 8) return msg('กรอกอีเมลและรหัสผ่านอย่างน้อย 8 ตัว'); msg('กำลังสมัคร...', true); const { data, error } = await sb.auth.signUp(c); if (error) return msg(thErr(error)); if (!data.session) return msg('สมัครแล้ว · ตรวจอีเมลเพื่อยืนยัน แล้วกลับมาเข้าสู่ระบบ', true); T('สมัครและเข้าสู่ระบบแล้ว'); view = ''; render(); },
   async sendCode() { const c = creds(); if (!c.email) return msg('กรอกอีเมลก่อน'); msg('กำลังส่ง...', true); const { error } = await sb.auth.signInWithOtp({ email: c.email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } }); if (error) return msg(thErr(error)); view = 'code'; render(); },

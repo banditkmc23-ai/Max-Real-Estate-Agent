@@ -1108,6 +1108,21 @@
     <button onclick="closeSettings()" class="text-slate-400 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
   </div>
 
+  <div id="photoRestoreCard" class="hidden mb-4 rounded-2xl border p-3" style="border-color:#f0d5c8;background:#fdf4ee">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style="background:#c2552d"><i data-lucide="images" class="w-5 h-5"></i></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold" style="color:#2b2420">กู้รูป</p>
+        <p id="photoRestoreCount" class="text-[11px]" style="color:#6b625a">กำลังตรวจรูปที่หาย...</p>
+      </div>
+    </div>
+    <div class="mt-3 h-2 rounded-full bg-white overflow-hidden" aria-hidden="true">
+      <div id="photoRestoreBar" class="h-full" style="width:0;background:#c2552d"></div>
+    </div>
+    <p id="photoRestoreMsg" class="text-[11px] mt-2 leading-relaxed" style="color:#6b625a"></p>
+    <button id="photoRestoreBtn" type="button" onclick="PHOTO_RESTORE.start()" class="w-full mt-3 py-2.5 rounded-full text-white text-sm font-semibold active:scale-[0.98]" style="background:#c2552d">กู้รูปที่หาย</button>
+  </div>
+
   <div class="space-y-1 mb-4">
     <button onclick="openRoomsTab(); closeSettings();" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition-all text-left">
       <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0"><i data-lucide="list" class="w-5 h-5 text-sky-600"></i></div>
@@ -1159,7 +1174,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.3 (CRM)</p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow v9.25</p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2068,6 +2083,7 @@ function openSettings() {
   const lineEl = document.getElementById('cfgProfileLine');
   if (lineEl) lineEl.textContent = 'LINE: ' + c.lineId;
   loadAvatar();
+  try { window.PHOTO_RESTORE && PHOTO_RESTORE.refresh(); } catch (e) {}
   document.getElementById('cfgOverlay').classList.remove('hidden');
   const sheetEl = document.getElementById('cfgSheet');
   sheetEl.classList.add('open');
@@ -3764,7 +3780,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.24';
+const APP_VERSION = '9.25';
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
 }
@@ -3861,9 +3877,10 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="photo-safety.js?v=44"></script>
+<script src="photo-safety.js?v=45"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=44"></script>
+<script src="sync.js?v=45"></script>
+<script src="photo-restore.js?v=45"></script>
 </body>
 </html>

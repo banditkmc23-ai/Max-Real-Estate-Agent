@@ -1,8 +1,8 @@
 // MAX Agent service worker: network-first (bypassing HTTP cache) for same-origin files, cache-first for pinned CDN assets.
-const VERSION = 'v59';
+const VERSION = 'v60';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
-const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-safety.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js','catalog-hero.webp', 'vendor/qrcode.js', 'vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'];
+const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-safety.js', 'photo-restore.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js','catalog-hero.webp', 'vendor/qrcode.js', 'vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js'];
 const CDN_URLS = [
   'https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
@@ -32,7 +32,7 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const res = await fetch(req, { cache: 'no-cache' });
-        if (res.ok) (await caches.open(SHELL)).put(req, res.clone());
+        if (res.ok && !url.pathname.includes('/restore/')) (await caches.open(SHELL)).put(req, res.clone());
         return res;
       } catch {
         return (await caches.match(req, { ignoreSearch: true })) || (req.mode === 'navigate' ? await caches.match('index.html') : null) || Response.error();
