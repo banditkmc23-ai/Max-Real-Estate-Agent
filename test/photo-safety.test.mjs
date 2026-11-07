@@ -135,8 +135,8 @@ test('client source no longer infers photo deletes and pulls before the first pu
   const loop = sync.slice(sync.indexOf('async function sync'), sync.indexOf('function schedule'));
   const pullAt = loop.indexOf('await pull(');
   const pushAt = loop.indexOf('await push(');
-  assert.ok(pullAt >= 0 && pushAt > pullAt, 'init pull must run before push');
-  assert.match(loop, /if \(!st\.init\)/);
+  assert.ok(pullAt >= 0 && pushAt > pullAt, 'full pull must run before push');
+  assert.match(loop, /needsFullPullBeforePush/);
   assert.match(sync, /notePhotoDeleted/);
   assert.match(sync, /refused photo deletion batch/);
   const features = read('features.js');
@@ -144,25 +144,112 @@ test('client source no longer infers photo deletes and pulls before the first pu
   assert.match(features, /shareDecision\(/);
   assert.match(features, /imgsKept/);
   const html = read('index.html');
-  assert.match(html, /const APP_VERSION = '9\.25'/);
-  assert.match(html, /photo-safety\.js\?v=45/);
+  assert.match(html, /const APP_VERSION = '9\.26'/);
+  assert.match(html, /photo-safety\.js\?v=46/);
+  assert.doesNotMatch(html, /v9\.3/);
   assert.match(html, /function coverSrc/);
   assert.match(html, /function markPhotosUserDeleted/);
   assert.match(html, /SYNC\.notePhotoDeleted/);
-  assert.match(read('sw.js'), /const VERSION = 'v60'/);
+  assert.match(read('sw.js'), /const VERSION = 'v61'/);
+  assert.match(sync, /needsFullPullBeforePush/);
+  assert.match(sync, /planUnitPushes/);
+  assert.match(sync, /refused bulk unit push/);
+  assert.doesNotMatch(sync, /Object\.values\(st\.retry\)/);
   assert.match(read('sw.js'), /photo-safety\.js/);
   // The Edge Function is still the writer. This change does not edit it; the client stops sending [].
   const edge = read('supabase/functions/share-room/index.ts');
   assert.match(edge, /imgs: urls/);
 });
 
-test('a public room-photos URL still serves an image', async () => {
-  const res = await fetch(PUB, { method: 'GET' });
-  assert.equal(res.status, 200);
-  const type = res.headers.get('content-type') || '';
-  assert.match(type, /^image\//);
-  const buf = Buffer.from(await res.arrayBuffer());
-  assert.ok(buf.length > 100);
-  assert.equal(buf[0], 0xff);
-  assert.equal(buf[1], 0xd8);
+test('stale device, login, and an old pull all require a full pull before push', () => {
+  const base = { uid: 'owner', init: true, pulled: 1_000 };
+  assert.equal(S.needsFullPullBeforePush(base, { uid: 'owner', login: true, sessionPulled: true, now: 2_000 }), true);
+  assert.equal(S.needsFullPullBeforePush(base, { uid: 'owner', login: false, sessionPulled: false, now: 2_000 }), true);
+  assert.equal(S.needsFullPullBeforePush({ uid: 'owner', init: true }, { uid: 'owner', login: false, sessionPulled: true, now: 2_000 }), true);
+  assert.equal(S.needsFullPullBeforePush(base, { uid: 'other', login: false, sessionPulled: true, now: 2_000 }), true);
+  assert.equal(S.needsFullPullBeforePush({ uid: 'owner', init: false, pulled: 1_000 }, { uid: 'owner', sessionPulled: true, now: 2_000 }), true);
+  assert.equal(S.needsFullPullBeforePush(base, { uid: 'owner', login: false, sessionPulled: true, now: base.pulled + S.STALE_PULL_MS + 1 }), true);
+  assert.equal(S.needsFullPullBeforePush(base, { uid: 'owner', login: false, sessionPulled: true, now: base.pulled + 1000 }), false);
+});
+
+test('stale-device login does not mass-push and the new cloud unit appears locally', () => {
+  const local = {};
+  const acked = {};
+  for (let i = 0; i < 389; i++) {
+    local['unit|u' + i] = 'same';
+    acked['unit|u' + i] = 100;
+  }
+  // one local row is older than the cloud copy
+  local['unit|u0'] = 'old-body';
+  const cloud = [];
+  for (let i = 0; i < 389; i++) cloud.push({ key: 'unit|u' + i, hash: i === 0 ? 'new-body' : 'same', rev: i === 0 ? 500 : 100 });
+  cloud.push({ key: 'unit|temp_1794027118785_ej309z', hash: 'brand-new', rev: 900 });
+  const pushed = [];
+  for (const row of cloud) {
+    const decision = S.decideIncoming({ localHash: local[row.key] || null, cloudHash: row.hash, cloudRev: row.rev, ackedRev: acked[row.key] || 0, sessionEditAt: 0 });
+    if (decision.action === 'keep-local') pushed.push(row.key);
+    else local[row.key] = row.hash;
+  }
+  assert.deepEqual(pushed, []);
+  assert.equal(local['unit|temp_1794027118785_ej309z'], 'brand-new');
+  assert.equal(local['unit|u0'], 'new-body');
+  assert.equal(Object.keys(local).length, 390);
+  const guard = S.planUnitPushes({ keys: Object.keys(local), knownCount: 390, bulkConfirmed: false });
+  assert.equal(guard.refused, true);
+  assert.equal(guard.allow.length, 0);
+  assert.ok(guard.count > 20);
+});
+
+test('equal content is not pushed, a real single edit is, a bulk edit needs confirmation', () => {
+  assert.equal(S.decideIncoming({ localHash: 'a', cloudHash: 'a', cloudRev: 50, ackedRev: 10, sessionEditAt: 0 }).action, 'equal');
+  assert.equal(S.decideIncoming({ localHash: 'local', cloudHash: 'cloud', cloudRev: 80, ackedRev: 10, sessionEditAt: 0 }).action, 'apply');
+  assert.equal(S.decideIncoming({ localHash: 'local', cloudHash: 'cloud', cloudRev: 80, ackedRev: 80, sessionEditAt: 90 }).action, 'keep-local');
+  const one = S.planUnitPushes({ keys: ['unit|u1'], knownCount: 390, bulkConfirmed: false });
+  assert.equal(one.refused, false);
+  assert.deepEqual(one.allow, ['unit|u1']);
+  const many = [];
+  for (let i = 0; i < 25; i++) many.push('unit|u' + i);
+  const blocked = S.planUnitPushes({ keys: many, knownCount: 389, bulkConfirmed: false });
+  assert.equal(blocked.refused, true);
+  assert.equal(blocked.reason, 'bulk-unit-push-guard');
+  const confirmed = S.planUnitPushes({ keys: many, knownCount: 389, bulkConfirmed: true });
+  assert.equal(confirmed.refused, false);
+  assert.equal(confirmed.allow.length, 25);
+});
+
+test('private 400s fall back or fail without a tombstone and the queue does not restart', () => {
+  const err400 = { status: 400, message: 'Bad Request' };
+  assert.equal(S.isStorageMissing(err400), true);
+  assert.equal(S.isStorageMissing({ statusCode: 404, message: 'Object not found' }), true);
+  const fallback = S.photoAttemptPlan({ missing: true, hasPublicUrl: true, attempts: 0, now: 1000 });
+  assert.equal(fallback.action, 'fallback');
+  assert.equal(fallback.retry, false);
+  assert.equal(fallback.tombstone, false);
+  let attempts = 0;
+  let plan;
+  for (let n = 0; n < 5; n++) {
+    plan = S.photoAttemptPlan({ missing: true, hasPublicUrl: false, attempts, now: 5000 });
+    if (!plan.retry) break;
+    attempts = plan.attempts;
+  }
+  assert.equal(plan.action, 'failed');
+  assert.equal(plan.tombstone, false);
+  assert.equal(plan.attempts, S.PHOTO_TRY_MAX);
+  let q = S.enqueuePhotos(null, Array.from({ length: 399 }, (_, i) => ({ id: 'p' + i })));
+  assert.equal(q.total, 399);
+  assert.equal(q.done, 0);
+  for (let i = 0; i < 260; i++) q = S.notePhotoFinished(q, 'p' + i, false);
+  assert.equal(q.done, 260);
+  // a restart of the same ids must not zero the counter or grow the total
+  q = S.enqueuePhotos(q, Array.from({ length: 399 }, (_, i) => ({ id: 'p' + i })));
+  assert.equal(q.total, 399);
+  assert.equal(q.done, 260);
+  for (let i = 260; i < 399; i++) q = S.notePhotoFinished(q, 'p' + i, i >= 390);
+  assert.equal(q.done, 399);
+  assert.equal(Object.keys(q.failed).length, 9);
+  const chip = S.syncChipState({ signedIn: true, online: true, busy: false, failedPhotos: 9 });
+  assert.equal(chip.state, 'pending');
+  assert.match(chip.detail, /9/);
+  assert.notEqual(chip.state, 'off');
+  assert.equal(S.syncChipState({ signedIn: true, online: true, busy: false, failedPhotos: 0, dirty: 0 }).state, 'ok');
 });

@@ -9,6 +9,9 @@
   var PUB_MARK = '/storage/v1/object/public/room-photos/';
   var BULK_WINDOW_MS = 120000;
   var BURST_MS = 1500;
+  var STALE_PULL_MS = 10 * 60 * 1000;
+  var PHOTO_TRY_MAX = 3;
+  var PHOTO_BACKOFF = [15000, 60000, 180000];
 
   function isPublicRoomPhoto(url) {
     return typeof url === 'string' && url.indexOf(PUB_MARK) !== -1;
@@ -127,6 +130,116 @@
   }
 
   /* After a private-bucket download attempt: keep the row when a public URL can stand in. */
+  /* A full pull has to finish before any push when this browser is not caught up.
+     st.init from an older session is not enough: a missing or old st.pulled,
+     a login, a uid change, or the first sync of this page all count. */
+  function needsFullPullBeforePush(st, ctx) {
+    st = st || {};
+    ctx = ctx || {};
+    if (ctx.uid && st.uid && String(ctx.uid) !== String(st.uid)) return true;
+    if (!st.init) return true;
+    if (!st.pulled) return true;
+    if (ctx.login) return true;
+    if (ctx.sessionPulled === false) return true;
+    if ((ctx.now || 0) - (st.pulled || 0) > STALE_PULL_MS) return true;
+    return false;
+  }
+
+  /* What to do with one cloud row before anything is pushed.
+     equal: same body, adopt the cloud rev, do not write it back.
+     apply: cloud is newer or this device never acknowledged the row.
+     keep-local: this session edited it, or the cloud rev is not newer than the rev we already synced. */
+  function decideIncoming(opts) {
+    opts = opts || {};
+    if (opts.deleted) {
+      if (opts.sessionEditAt && opts.sessionEditAt >= (opts.cloudRev || 0)) return { action: 'keep-local' };
+      return { action: 'apply' };
+    }
+    if (opts.localHash && opts.cloudHash && opts.localHash === opts.cloudHash) return { action: 'equal' };
+    if (!opts.localHash) return { action: 'apply' };
+    if (opts.sessionEditAt && opts.sessionEditAt >= (opts.cloudRev || 0)) return { action: 'keep-local' };
+    if (opts.ackedRev && opts.cloudRev && opts.cloudRev > opts.ackedRev) return { action: 'apply' };
+    if (!opts.ackedRev && !opts.sessionEditAt) return { action: 'apply' };
+    if (opts.ackedRev && opts.cloudRev && opts.cloudRev <= opts.ackedRev) return { action: 'keep-local' };
+    return { action: 'apply' };
+  }
+
+  /* Unit updates in one push: more than 20 or more than 10% needs an explicit confirm. */
+  function planUnitPushes(opts) {
+    opts = opts || {};
+    var keys = (opts.keys || []).filter(function (k) { return String(k).indexOf('unit|') === 0; });
+    var known = Math.max(Number(opts.knownCount) || 0, keys.length);
+    var limit = deletionLimit(known);
+    var count = keys.length;
+    var over = count > limit;
+    if (over && !opts.bulkConfirmed) {
+      return { allow: [], blocked: keys.slice(), refused: true, overThreshold: true, count: count, known: known, limit: limit, reason: 'bulk-unit-push-guard' };
+    }
+    return { allow: keys.slice(), blocked: [], refused: false, overThreshold: over, count: count, known: known, limit: limit, reason: '' };
+  }
+
+  function isStorageMissing(err) {
+    if (err == null) return false;
+    var status = Number(err.status != null ? err.status : err.statusCode);
+    if (status === 400 || status === 404) return true;
+    var msg = String(err.message || err.error || err);
+    return /\b(400|404)\b/.test(msg) || /object not found|not found|bad request/i.test(msg);
+  }
+
+  /* 400/404 with a public URL is a fallback, not a retry. Otherwise at most 3 tries, then failed. Never a tombstone. */
+  function photoAttemptPlan(opts) {
+    opts = opts || {};
+    var attempts = Number(opts.attempts) || 0;
+    if (opts.thumbOk) return { action: 'save', retry: false, attempts: attempts, tombstone: false };
+    if (opts.hasPublicUrl && (opts.missing || opts.failed)) return { action: 'fallback', retry: false, attempts: attempts, tombstone: false };
+    if (opts.missing || opts.failed) {
+      var next = attempts + 1;
+      if (next >= PHOTO_TRY_MAX) return { action: 'failed', retry: false, attempts: next, tombstone: false };
+      var wait = PHOTO_BACKOFF[Math.min(next - 1, PHOTO_BACKOFF.length - 1)];
+      return { action: 'retry', retry: true, attempts: next, nextAt: (opts.now || 0) + wait, tombstone: false };
+    }
+    if (opts.hasPublicUrl) return { action: 'fallback', retry: false, attempts: attempts, tombstone: false };
+    return { action: 'save', retry: false, attempts: attempts, tombstone: false };
+  }
+
+  /* Append photo ids. Does not reset done/total, and does not requeue an id already seen. */
+  function enqueuePhotos(queue, rows) {
+    queue = queue || { order: [], done: 0, total: 0, seen: {}, failed: {} };
+    var copy = { order: (queue.order || []).slice(), done: queue.done || 0, total: queue.total || 0, seen: Object.assign({}, queue.seen || {}), failed: Object.assign({}, queue.failed || {}) };
+    (rows || []).forEach(function (r) {
+      var id = String(r && r.id != null ? r.id : r);
+      if (!id || copy.seen[id]) return;
+      copy.seen[id] = true;
+      copy.order.push(id);
+      copy.total++;
+    });
+    return copy;
+  }
+
+  function notePhotoFinished(queue, id, failed) {
+    queue = queue || { order: [], done: 0, total: 0, seen: {}, failed: {} };
+    var copy = { order: (queue.order || []).slice(), done: queue.done || 0, total: queue.total || 0, seen: Object.assign({}, queue.seen || {}), failed: Object.assign({}, queue.failed || {}) };
+    id = String(id);
+    if (copy.seen[id] === 'done') return copy;
+    if (!copy.seen[id]) return copy;
+    copy.seen[id] = 'done';
+    copy.done++;
+    if (failed) copy.failed[id] = true;
+    return copy;
+  }
+
+  function syncChipState(opts) {
+    opts = opts || {};
+    if (!opts.signedIn) return { state: 'off', detail: '' };
+    if (opts.online === false) return { state: 'offline', detail: '' };
+    if (opts.busy) return { state: 'busy', detail: opts.detail || '' };
+    if (opts.unitConfirm) return { state: 'pending', detail: 'รอยืนยันก่อนส่ง ' + opts.unitConfirm + ' ห้อง' };
+    if (opts.failedPhotos) return { state: 'pending', detail: 'รูปดึงไม่สำเร็จ ' + opts.failedPhotos };
+    if (opts.waitingPhotos) return { state: 'pending', detail: 'รูปจะลองใหม่ ' + opts.waitingPhotos };
+    if (opts.dirty || opts.held) return { state: 'pending', detail: opts.held ? 'รอปิดหน้าแก้ไขก่อนรับข้อมูลใหม่' : '' };
+    return { state: 'ok', detail: '' };
+  }
+
   function recordAfterPrivateFetch(opts) {
     opts = opts || {};
     var meta = opts.meta || {};
@@ -144,13 +257,23 @@
     PUB_MARK: PUB_MARK,
     BULK_WINDOW_MS: BULK_WINDOW_MS,
     BURST_MS: BURST_MS,
+    STALE_PULL_MS: STALE_PULL_MS,
+    PHOTO_TRY_MAX: PHOTO_TRY_MAX,
     isPublicRoomPhoto: isPublicRoomPhoto,
     deletionLimit: deletionLimit,
     reconcilePhotoAbsence: reconcilePhotoAbsence,
     planPhotoTombstones: planPhotoTombstones,
     shareImageWrite: shareImageWrite,
     previewSrc: previewSrc,
-    recordAfterPrivateFetch: recordAfterPrivateFetch
+    recordAfterPrivateFetch: recordAfterPrivateFetch,
+    needsFullPullBeforePush: needsFullPullBeforePush,
+    decideIncoming: decideIncoming,
+    planUnitPushes: planUnitPushes,
+    isStorageMissing: isStorageMissing,
+    photoAttemptPlan: photoAttemptPlan,
+    enqueuePhotos: enqueuePhotos,
+    notePhotoFinished: notePhotoFinished,
+    syncChipState: syncChipState
   };
   root.MAX_PHOTO_SAFETY = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
