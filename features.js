@@ -341,8 +341,27 @@ async function renderShare() {
 }
 const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
 FX.buildRoomLink = buildLink;
-// Background auto-update: rooms that already have a link get it refreshed (new photos only) a few seconds after an edit.
+// Background auto-update: a room that already has a link is refreshed a few seconds after an in-session edit.
+// v9.28: cloudLink's sig does not match on a freshly pulled browser, so this used to re-init the page,
+// upload a new og-*.jpg and rewrite u.share (which markDirty then pushed) on the timer, on 'online', and on every persist.
+// The first sighting of a room in this page session only records a fingerprint. A later edit or photo change republishes that room.
 let shareBusy = 0, bgTimer = null, bgRun = false;
+const bgSeen = new Map();
+const bgOpts = new Map();
+function shareBody(u) {
+  const rest = Object.assign({}, u); delete rest.share;
+  return (window.UNIT_SHAPE && UNIT_SHAPE.canonicalJson) ? UNIT_SHAPE.canonicalJson('unit', rest) : JSON.stringify(rest);
+}
+async function shareFp(u) {
+  try {
+    const ps = await getUnitPhotos(u.id).catch(() => null);
+    if (ps == null) return null;
+    // Photos not in IndexedDB yet (the link already has a cover). Don't lock an empty list as the
+    // baseline, or the later photo pull looks like an edit and republishes every room.
+    if (!ps.length && !bgSeen.has(u.id) && (u.share.cover || u.share.og)) return null;
+    return shareBody(u) + '|' + ps.map(p => p.id + (p.cover ? '*' : '')).join(',');
+  } catch (e) { return null; }
+}
 async function inferOpts(u) {
   try {
     const r = await fetch(`${SB_URL}/functions/v1/share-room?id=${encodeURIComponent(u.share.id)}`, { headers: SB_H }); if (!r.ok) return null;
@@ -351,6 +370,13 @@ async function inferOpts(u) {
     return { hideRoom: !!d.hr || !d.r, showPhone: !!(d.a && d.a.ph), photo: true };
   } catch (e) { return null; }
 }
+async function rememberedOpts(u) {
+  if (u.share && u.share.opts) return u.share.opts;
+  if (bgOpts.has(u.id)) return bgOpts.get(u.id);
+  const op = await inferOpts(u); if (!op) return null;
+  bgOpts.set(u.id, op);   // v9.28: not written onto u.share, so the next persist() is not a fake edit
+  return op;
+}
 async function bgShareUpdate() {
   if (bgRun || shareBusy || !navigator.onLine) return; bgRun = true;
   try {
@@ -358,9 +384,20 @@ async function bgShareUpdate() {
     for (const u of units_().filter(x => x.share && x.share.id && x.share.secret)) {
       if (shareBusy || !navigator.onLine) break;
       // older links were created without remembered options -> read them from the published room once (keeps hidden room number / phone as the link already is)
-      if (!u.share.opts) { const op = await inferOpts(u); if (!op) continue; u.share.opts = op; try { window.persist(); } catch (e) {} }
+      const op = await rememberedOpts(u); if (!op) continue;
+      const fp = await shareFp(u); if (fp == null) continue;
+      if (!bgSeen.has(u.id)) { bgSeen.set(u.id, fp); continue; }
+      if (bgSeen.get(u.id) === fp) continue;
+      const prevFp = bgSeen.get(u.id);
+      bgSeen.set(u.id, fp);
+      const hadOpts = !!u.share.opts;
+      const shareBefore = u.share;
+      if (!hadOpts) u.share.opts = op;
       const before = u.share.sig; const nw = FX.noWait; FX.noWait = true;
-      try { await buildLink(u, { ...u.share.opts }); } catch (e) { console.warn('bg share update failed', u.id, e); } finally { FX.noWait = nw; }
+      let failed = false;
+      try { await buildLink(u, { ...op }); } catch (e) { failed = true; console.warn('bg share update failed', u.id, e); } finally { FX.noWait = nw; }
+      if (!hadOpts && u.share === shareBefore) delete u.share.opts;
+      if (failed) { bgSeen.set(u.id, prevFp); continue; }
       if (u.share && u.share.sig !== before) { console.log('link auto-updated', u.share.id, FX.lastShareStats); if (++changed >= 6) { FX.scheduleShareUpdate(20000); break; } }
     }
   } finally { bgRun = false; }
