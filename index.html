@@ -216,7 +216,11 @@
   .expiry-modal-overlay.show { display: flex; }
   .expiry-modal { background: #fff; border-radius: 28px; padding: 26px; max-width: 400px; width: 100%; box-shadow: 0 24px 60px -12px rgba(28,25,23,.3); transform: translateY(20px) scale(.95); opacity: 0; transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s; }
   .expiry-modal.show { transform: translateY(0) scale(1); opacity: 1; }
-  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } }
+  .sync-pill { width: 40px; height: 40px; min-width: 40px; max-width: 40px; padding: 0; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; }
+  .sync-pill svg { width: 16px; height: 16px; display: block; }
+  .sync-pill.sync-busy svg { animation: syncPulse 1.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes syncPulse { 0%, 100% { opacity: 1; transform: rotate(0deg) scale(1); } 50% { opacity: .55; transform: rotate(16deg) scale(.92); } }
+  @media (prefers-reduced-motion: reduce) { .sheet, .toast, .unit-card, .unit-row, .offline-banner, .bar-fill, .status-btn, .owner-action, .detail-view, .detail-view-content, .inline-edit, .loading-bar, .kpi, .h-card, .banner-card, .fab-btn { transition:none; } .sync-pill.sync-busy svg { animation: none; } }
 
   #overlay, #cfgOverlay, #galOverlay, #pickOverlay, #bkOverlay, #advFilterOverlay, #custOverlay, #custDetailOverlay, #custLinkOverlay, #custNoteOverlay, #notifOverlay, #profileOverlay { touch-action: manipulation; cursor: pointer; }
 
@@ -447,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.32</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.33</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -469,7 +473,7 @@
           <p class="text-xs text-white/90 mt-0.5" style="text-shadow: 0 1px 4px rgba(0,0,0,.35);" id="headerDate"></p>
         </div>
         <div class="flex items-center gap-2">
-          <button id="syncChip" onclick="window.SYNC && SYNC.chip()" class="h-8 px-2.5 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center gap-1 text-white text-[10px] font-semibold whitespace-nowrap" aria-label="ซิงก์"><i data-lucide="cloud-off" class="w-3.5 h-3.5"></i><span>ยังไม่ซิงก์</span></button>
+          <button id="syncChip" type="button" onclick="window.SYNC && SYNC.chip()" data-state="off" data-icon="off" class="sync-pill bg-white/20 backdrop-blur-md border border-white/40 text-white" aria-label="ยังไม่ซิงก์"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2"/><path d="M21.5 16.5A4.5 4.5 0 0 0 18 10h-1.3A8 8 0 0 0 9.5 4"/></svg></button>
           <button onclick="openNotifications()" class="w-10 h-10 !rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-all relative shadow-sm" style="border-radius:9999px !important;" aria-label="การแจ้งเตือน">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="bellDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 border border-white"></span>
@@ -1174,7 +1178,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.32</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.33</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1355,13 +1359,16 @@ function setCustView(mode) { custViewMode = mode; try { localStorage.setItem(CUS
 function load(key, fallback) { try { const s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (e) {} return JSON.parse(JSON.stringify(fallback)); }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(units)); } catch (e) {} }
 // Re-read everything from storage after cloud sync wrote remote changes.
-function reloadFromStorage() {
+function reloadFromStorage(opts) {
+  opts = opts || {};
   units = UNIT_SHAPE.normalizeUnits(load(KEY, []));
   customers = UNIT_SHAPE.normalizeCustomers(load(CUST_KEY, []));
   monthlyOcc = load(OCC_KEY, {});
   try { (window.FX && FX.reloaders || []).forEach(f => f()); } catch (e) {}
-  try { loadAvatar(); loadHeroImage(); } catch (e) {}
-  try { miniPhotoCache.clear(); photoUrlCache.clear(); } catch (e) {}
+  if (!opts.keepMedia) {
+    try { loadAvatar(); loadHeroImage(); } catch (e) {}
+    try { miniPhotoCache.clear(); photoUrlCache.clear(); } catch (e) {}
+  }
   try { refreshCounts().then(() => { render(); renderCustomers(); }); } catch (e) {}
 }
 function persistCust() { try { localStorage.setItem(CUST_KEY, JSON.stringify(customers)); } catch (e) {} }
@@ -1371,7 +1378,9 @@ function loadHeroImage() {
   try {
     const dataUrl = localStorage.getItem(HERO_KEY);
     const el = document.getElementById('heroCover');
-    if (el && dataUrl) el.style.backgroundImage = `url(${dataUrl})`;
+    if (!el || !dataUrl || el.dataset.hero === dataUrl) return;
+    el.dataset.hero = dataUrl;
+    el.style.backgroundImage = `url(${dataUrl})`;
   } catch (e) {}
 }
 
@@ -3943,7 +3952,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.32';
+const APP_VERSION = '9.33';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4042,10 +4051,10 @@ function sfPreview() {
 })();
 </script>
 <script src="photo-copy.js?v=3"></script>
-<script src="photo-safety.js?v=47"></script>
+<script src="photo-safety.js?v=48"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=47"></script>
+<script src="sync.js?v=48"></script>
 <script src="photo-restore.js?v=46"></script>
 </body>
 </html>

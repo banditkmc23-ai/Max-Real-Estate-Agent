@@ -337,6 +337,29 @@ async function refetch(keys) {
 /* ---------- pull ---------- */
 const EDIT_SHEETS = ['sheet', 'custSheet', 'cfgSheet', 'custNoteSheet'];
 const uiBusy = () => EDIT_SHEETS.some(id => { const el = document.getElementById(id); return el && el.classList.contains('open'); });
+function yieldThread() {
+  return new Promise(resolve => {
+    const go = () => resolve();
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 48 });
+    else setTimeout(go, 0);
+  });
+}
+let appRefreshTimer = 0, appRefreshAt = 0;
+function runAppRefresh() {
+  try { if (typeof W.reloadFromStorage === 'function') W.reloadFromStorage({ keepMedia: true }); } catch (e) { console.warn(e); }
+  try { FX.refresh && FX.refresh(); } catch (e) {}
+}
+function queueAppRefresh(force) {
+  if (force) {
+    if (appRefreshTimer) { clearTimeout(appRefreshTimer); appRefreshTimer = 0; }
+    appRefreshAt = Date.now();
+    runAppRefresh();
+    return;
+  }
+  if (appRefreshTimer) return;
+  const wait = appRefreshAt ? Math.max(0, 3000 - (Date.now() - appRefreshAt)) : 0;
+  appRefreshTimer = setTimeout(() => { appRefreshTimer = 0; appRefreshAt = Date.now(); runAppRefresh(); }, wait);
+}
 async function pull(opts = {}) {
   const full = !!opts.full;
   const c0 = full ? '1970-01-01T00:00:00Z' : st.cursor;
@@ -348,6 +371,7 @@ async function pull(opts = {}) {
     got += await applyRows(data, !!opts.full); seen += data.length;
     since = data[data.length - 1].server_at; if (since > maxSeen) maxSeen = since;
     if (data.length < 400) break;
+    await yieldThread();
   }
   st.cursor = maxSeen; st.pulled = now(); st.seen = seen; saveSt();
   return got;
@@ -407,7 +431,7 @@ async function applyRows(rows, force) {
     }
   }
   saveSt();
-  if (n) { try { W.reloadFromStorage(); FX.refresh && FX.refresh(); FX.injectTools && FX.injectTools(); } catch (e) { console.warn(e); } }
+  if (n) queueAppRefresh(false);
   if (photos.length) queuePhotos(photos);
   return n;
 }
@@ -480,7 +504,11 @@ async function applyPhotos(rows) {
     if (photoSafety() && photoSafety().notePhotoFinished) photoQ = photoSafety().notePhotoFinished(photoQ, r.id, !!(st.photoFail && st.photoFail[r.id]));
     if ((photoQ.total || total) > 3) setStatus('busy', `ดาวน์โหลดรูป ${photoQ.done}/${photoQ.total || total}`);
   }
-  await Promise.all([0, 1, 2, 3, 4, 5, 6, 7].map(async () => { while (work.length) await one(work.shift()); }));
+  while (work.length) {
+    const batch = work.splice(0, 8);
+    await Promise.all(batch.map(one));
+    await yieldThread();
+  }
   try { await W.refreshCounts(); } catch (e) {}
   return n;
 }
@@ -527,18 +555,17 @@ async function sync(opts = {}) {
   if (!navigator.onLine) return setStatus('offline');
   if ((running || draining) && now() - runStart < 180000) { again = true; return; }
   const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
-  let held = false;
+  let held = false, gotChanges = 0;
   try {
-    // v9.25 pushed first whenever st.init was already true, so a stale device
-    // rewrote every unit it still had and only then started a pull that photo
-    // 400s could block forever. Pull the library before any push when this
-    // page has not caught up.
+    // A full pull runs only when the saved server_at cursor cannot be trusted
+  // (new login, other account, never synced, or the last pull is stale).
+  // Opening an updated app keeps the cursor and asks for rows newer than it.
     stripInferredPhotoDeletes();
     const S = photoSafety();
     const fullFirst = !!(opts.full || wantFull || (S && S.needsFullPullBeforePush(st, { uid: user.id, login: loginPull, sessionPulled, now: now() })));
     if (fullFirst) {
       loginPull = false; wantFull = false;
-      if (!uiBusy() || !st.init) { await pull({ full: true }); sessionPulled = true; st.init = true; saveSt(); }
+      if (!uiBusy() || !st.init) { gotChanges += await pull({ full: true }); sessionPulled = true; st.init = true; saveSt(); }
       else { held = true; again = true; }
     }
     if (held && fullFirst) {
@@ -548,12 +575,14 @@ async function sync(opts = {}) {
     }
     scanLS(); await scanPhotos(); saveSt();
     await push();
-    if (!fullFirst && !uiBusy()) { await pull({ full: false }); sessionPulled = true; }
+    if (!fullFirst && !uiBusy()) { gotChanges += await pull({ full: false }); sessionPulled = true; }
     else if (!fullFirst && uiBusy()) { held = true; again = true; }
     if (my !== gen) return;
     await drainPhotos();
     if (my !== gen) return;
     st.last = now(); saveSt();
+    if (appRefreshTimer || gotChanges) queueAppRefresh(true);
+    try { FX.injectTools && FX.injectTools(); } catch (e) {}
     const chip = chipNow(false, held);
     setStatus(chip.state, chip.detail);
     if (!filling) { filling = true; fillFulls().then(() => { const c = chipNow(false, false); setStatus(c.state, c.detail); }).catch(() => {}).finally(() => { filling = false; }); }
@@ -588,20 +617,92 @@ sb.auth.onAuthStateChange((ev, session) => {
 });
 
 /* ---------- UI ---------- */
-const LABEL = { off: ['cloud-off', 'ยังไม่ซิงก์'], offline: ['wifi-off', 'ออฟไลน์'], busy: ['refresh-cw', 'กำลังซิงก์'], ok: ['cloud', 'ซิงก์แล้ว'], pending: ['cloud-upload', 'รอซิงก์'], error: ['alert-triangle', 'ซิงก์ไม่สำเร็จ'] };
-function setStatus(s, d) { status = s; if (d !== undefined) detail = d; else if (s !== 'busy') detail = ''; const c = document.getElementById('syncChip'); if (c) { const [ic, tx] = LABEL[s] || LABEL.off; const prog = s === 'busy' && /\d+\/\d+/.test(detail) ? 'ซิงก์ ' + detail.match(/\d+\/\d+/)[0] : ''; const short = prog || ((s === 'pending' || s === 'ok') && detail ? detail : tx); c.innerHTML = `<i data-lucide="${ic}" class="w-3.5 h-3.5 ${s === 'busy' ? 'animate-spin' : ''}"></i><span>${E(short)}</span>`; c.dataset.state = s; try { lucide.createIcons(); } catch (e) {} } render(); }
+const LABEL = { off: ['off', 'ยังไม่ซิงก์'], offline: ['offline', 'ออฟไลน์'], busy: ['cloud', 'กำลังซิงก์'], ok: ['check', 'ซิงก์แล้ว'], pending: ['upload', 'รอซิงก์'], error: ['error', 'ซิงก์ไม่สำเร็จ'] };
+const CHIP_SVG = {
+  off: '<path d="m2 2 20 20"/><path d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2"/><path d="M21.5 16.5A4.5 4.5 0 0 0 18 10h-1.3A8 8 0 0 0 9.5 4"/>',
+  offline: '<path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="m2 2 20 20"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  upload: '<path d="M12 13V3"/><path d="m8 7 4-4 4 4"/><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  error: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'
+};
+let progress = null, sheetPaintAt = 0;
+function readFraction(text) {
+  const m = String(text || '').match(/(\d+)\s*\/\s*(\d+)/);
+  if (!m) return null;
+  const label = String(text).replace(m[0], '').trim();
+  return { done: Number(m[1]), total: Number(m[2]), label: label || 'กำลังซิงก์' };
+}
+function chipMarkup(kind) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (CHIP_SVG[kind] || CHIP_SVG.cloud) + '</svg>';
+}
+function paintChip() {
+  const c = document.getElementById('syncChip');
+  if (!c) return;
+  const pair = LABEL[status] || LABEL.off;
+  const icon = pair[0], label = pair[1];
+  c.classList.toggle('sync-busy', status === 'busy');
+  c.setAttribute('aria-label', label);
+  if (c.dataset.state === status && c.dataset.icon === icon) return;
+  c.dataset.state = status;
+  c.dataset.icon = icon;
+  c.innerHTML = chipMarkup(icon);
+}
+function paintProgress() {
+  const box = document.getElementById('syncProgress');
+  if (!box) return;
+  const on = status === 'busy' && progress && progress.total > 0;
+  box.classList.toggle('hidden', !on);
+  if (!on) return;
+  const pct = Math.max(0, Math.min(100, Math.round(progress.done / progress.total * 100)));
+  const fill = document.getElementById('syncProgressFill');
+  const lab = document.getElementById('syncProgressLabel');
+  const num = document.getElementById('syncProgressPct');
+  if (fill) fill.style.width = pct + '%';
+  if (lab) lab.textContent = progress.label || 'กำลังซิงก์';
+  if (num) num.textContent = pct + '%';
+}
+function setStatus(s, d) {
+  const prev = status;
+  status = s;
+  if (d !== undefined) detail = d;
+  else if (s !== 'busy') detail = '';
+  if (s === 'busy') progress = readFraction(detail);
+  else progress = null;
+  paintChip();
+  const sheet = document.getElementById('syncPanel');
+  if (!sheet) return;
+  const t = Date.now();
+  if (s !== prev || !document.getElementById('syncProgress')) { render(); sheetPaintAt = s === 'busy' ? 0 : t; return; }
+  if (t - sheetPaintAt < 2000) return;
+  sheetPaintAt = t;
+  paintProgress();
+}
 let view = 'login';
-function render() { const el = document.getElementById('syncPanel'); if (el) el.innerHTML = body(); try { lucide.createIcons(); } catch (e) {} }
+function render() {
+  const el = document.getElementById('syncPanel');
+  if (el) el.innerHTML = body();
+  paintProgress();
+  try {
+    const panel = document.getElementById('syncPanel');
+    if (window.lucide && panel && lucide.createIcons) lucide.createIcons({ root: panel });
+  } catch (e) {
+    try { lucide.createIcons(); } catch (e2) {}
+  }
+}
 const inp = 'w-full rounded-xl border border-slate-700 bg-white px-3 py-2.5 text-sm mt-1';
 const btn = 'w-full py-3 rounded-full bg-brick-500 text-white text-sm font-semibold mt-3 active:scale-[0.98]';
 const btn2 = 'w-full py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mt-2';
 function body() {
   if (user) {
-    const [ic, tx] = LABEL[status] || LABEL.off;
+    const pair = LABEL[status] || LABEL.off;
+    const tx = pair[1];
     const pend = Object.keys(st.dirty).length;
+    const quiet = (status === 'busy' && progress) ? '' : detail;
     if (view === 'setpw') return `<label class="block text-xs text-slate-500">ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)<input id="syPw2" type="password" autocomplete="new-password" class="${inp}"></label><button onclick="SYNC.setPw()" class="${btn}">บันทึกรหัสผ่าน</button><button onclick="SYNC.view('')" class="${btn2}">ยกเลิก</button>`;
     return `<div class="bg-white border border-slate-700 rounded-2xl p-3"><p class="text-[11px] text-slate-500">บัญชี</p><p class="text-sm font-semibold break-all">${E(user.email)}</p>
-      <div class="flex items-center gap-2 mt-2 text-xs"><i data-lucide="${ic}" class="w-4 h-4 text-brick-600"></i><b>${tx}</b><span class="text-slate-400">${E(detail)}</span></div>
+      <div class="flex items-center gap-2 mt-2 text-xs"><i data-lucide="cloud" class="w-4 h-4 text-brick-600"></i><b>${tx}</b><span class="text-slate-400">${E(quiet)}</span></div>
+      <div id="syncProgress" class="mt-3${status === 'busy' && progress && progress.total ? '' : ' hidden'}"><div class="flex justify-between text-[10px] text-slate-400 mb-1"><span id="syncProgressLabel">${E(progress && progress.label || 'กำลังซิงก์')}</span><span id="syncProgressPct">0%</span></div><div class="bar-track"><div id="syncProgressFill" class="bar-fill" style="width:0%"></div></div></div>
       <p class="text-[10px] text-slate-400 mt-1">ซิงก์ล่าสุด ${st.last ? new Date(st.last).toLocaleString('th-TH') : '-'} · ดึงข้อมูลล่าสุด ${st.pulled ? new Date(st.pulled).toLocaleTimeString('th-TH') : '-'}${pend ? ` · รอส่ง ${pend} รายการ` : ''}</p></div>
       <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">ซิงก์: ห้อง/ประกาศ (รวมสัญญา) · ลูกค้า · นัดหมาย · ค่าคอม · การตั้งค่า · รูปห้อง · รูปโปรไฟล์ — เก็บแบบส่วนตัว เห็นได้เฉพาะบัญชีนี้</p>
       ${st.unitHold ? `<button onclick="SYNC.confirmUnits()" class="${btn}">ยืนยันส่ง ${st.unitHold} ห้องที่ต่างจากคลาวด์</button>` : `<button onclick="SYNC.full()" class="${btn}">ซิงก์ตอนนี้ (ดึงข้อมูลทั้งหมด)</button>`}
@@ -625,7 +726,7 @@ const thErr = e => { const s = String(e && e.message || e); if (/Invalid login/i
 const creds = () => { const email = ($('syEmail') && $('syEmail').value || '').trim().toLowerCase(), password = $('syPw') ? $('syPw').value : ''; if (email) rawSet.call(LS, 'max_sync_email', email); return { email, password }; };
 function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บัญชี & ซิงก์คลาวด์', 'สำรองอัตโนมัติ · ใช้ได้หลายเครื่อง') + '<div id="syncPanel"></div>'); render(); }
 W.SYNC = {
-  open, view: v => { view = v; render(); }, now: () => sync(), full: () => { resetPhotoQueue(); sync({ full: true }); }, chip: () => { open(); if (user) { resetPhotoQueue(); sync({ full: true }); } },
+  open, view: v => { view = v; render(); }, now: () => sync(), full: () => { resetPhotoQueue(); sync({ full: true }); }, chip: () => { open(); if (user) schedule(400); },
   confirmUnits() { st.bulkUnitPushAt = now(); st.unitHold = 0; saveSt(); sync(); },
   fullBlob, notePhotoDeleted, uploadBlob, restorePhoto,
   holdRestores: v => { photoRestoreHold = !!v; },

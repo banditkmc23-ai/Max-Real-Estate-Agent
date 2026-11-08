@@ -130,9 +130,18 @@
   }
 
   /* After a private-bucket download attempt: keep the row when a public URL can stand in. */
+  /* A saved server_at cursor means this device already has the library.
+     A version reload starts a new page, but it must not download every row again. */
+  function cursorCaughtUp(st) {
+    var c = st && st.cursor;
+    if (typeof c !== 'string' || !c || c.indexOf('1970-01-01') === 0) return false;
+    return !isNaN(Date.parse(String(c).replace(' ', 'T')));
+  }
+
   /* A full pull has to finish before any push when this browser is not caught up.
-     st.init from an older session is not enough: a missing or old st.pulled,
-     a login, a uid change, or the first sync of this page all count. */
+     A login, a uid change, a missing cursor, or a pull older than STALE_PULL_MS counts.
+     An app update does not: sessionPulled is false on every fresh page, and a
+     live cursor still pulls incrementally with gt(server_at). */
   function needsFullPullBeforePush(st, ctx) {
     st = st || {};
     ctx = ctx || {};
@@ -140,8 +149,8 @@
     if (!st.init) return true;
     if (!st.pulled) return true;
     if (ctx.login) return true;
-    if (ctx.sessionPulled === false) return true;
     if ((ctx.now || 0) - (st.pulled || 0) > STALE_PULL_MS) return true;
+    if (ctx.sessionPulled === false && !cursorCaughtUp(st)) return true;
     return false;
   }
 
@@ -266,6 +275,7 @@
     shareImageWrite: shareImageWrite,
     previewSrc: previewSrc,
     recordAfterPrivateFetch: recordAfterPrivateFetch,
+    cursorCaughtUp: cursorCaughtUp,
     needsFullPullBeforePush: needsFullPullBeforePush,
     decideIncoming: decideIncoming,
     planUnitPushes: planUnitPushes,
