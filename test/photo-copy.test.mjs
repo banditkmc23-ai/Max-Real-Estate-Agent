@@ -29,20 +29,22 @@ test('description text is the trimmed room notes', () => {
   assert.equal(C.descriptionText(null), '');
 });
 
-test('share of every file is the primary action, with text only when canShare accepts it', () => {
+test('share of every file is photos only, even when notes exist and canShare would accept text', () => {
+  const described = { count: 8, canShareFiles: true, canShareWithText: true, description: 'รายละเอียดห้อง ใกล้ BTS', sharePhase: 'untried', roomId: 'u1' };
+  const withNotes = C.selectPhotoCopy(described);
+  assert.deepEqual(withNotes, { action: 'share', includeText: false, text: '' });
+  assert.equal(JSON.stringify(withNotes).includes('รายละเอียด'), false);
+  assert.equal(JSON.stringify(withNotes).includes('BTS'), false);
   const filesOnly = C.selectPhotoCopy({ count: 8, canShareFiles: true, canShareWithText: false, description: 'รายละเอียด', sharePhase: 'untried', roomId: 'u1' });
   assert.deepEqual(filesOnly, { action: 'share', includeText: false, text: '' });
-  const withText = C.selectPhotoCopy({ count: 8, canShareFiles: true, canShareWithText: true, description: 'รายละเอียด', sharePhase: 'untried', roomId: 'u1' });
-  assert.equal(withText.action, 'share');
-  assert.equal(withText.includeText, true);
-  assert.equal(withText.text, 'รายละเอียด');
   const noNotes = C.selectPhotoCopy({ count: 3, canShareFiles: true, canShareWithText: true, description: '', sharePhase: 'untried', roomId: 'u1' });
-  assert.equal(noNotes.includeText, false);
+  assert.deepEqual(noNotes, { action: 'share', includeText: false, text: '' });
 });
 
 test('a text share failure retries files only, and AbortError stays silent', () => {
   const retry = C.selectPhotoCopy({ count: 4, canShareFiles: true, canShareWithText: true, description: 'โน้ต', sharePhase: 'text-failed', canTryMulti: true, roomId: 'u1' });
   assert.deepEqual(retry, { action: 'share', includeText: false, text: '' });
+  assert.equal(JSON.stringify(retry).includes('โน้ต'), false);
   const abort = C.selectPhotoCopy({ count: 4, canShareFiles: true, sharePhase: 'abort', canTryMulti: true, canWriteSinglePng: true, roomId: 'u1' });
   assert.deepEqual(abort, { action: 'silent' });
   assert.equal(abort.action === 'copy-one', false);
@@ -113,13 +115,26 @@ test('the room button keeps the v9.0 share path and does not download', () => {
   assert.match(fn, /writeHtmlPhotos/);
   assert.match(fn, /copyOnePng/);
   assert.match(fn, /แชร์รูปแล้ว/);
+  assert.match(fn, /navigator\.share\(\{ files: files \}\)/);
+  assert.equal(fn.includes('plan.text'), false);
+  assert.equal(fn.includes('text: plan'), false);
+  assert.match(fn, /writeHtmlPhotos\(pairs\)/);
   assert.equal(fn.includes('.download'), false);
   assert.equal(fn.includes('ดาวน์โหลด'), false);
+  const htmlWrite = html.slice(html.indexOf('async function writeHtmlPhotos'), html.indexOf('async function copyOnePng'));
+  assert.equal(htmlWrite.includes('text/plain'), false);
+  assert.equal(htmlWrite.includes('description'), false);
+  assert.match(htmlWrite, /text\/html/);
   const quick = html.slice(html.indexOf('function quickCopy'), html.indexOf('let photoCopyCursor'));
   assert.match(quick, /คัดลอกรายละเอียดแล้ว/);
   assert.match(quick, /copy\(text\)/);
-  assert.match(html, /photo-copy\.js\?v=1/);
+  assert.match(html, />คัดข้อความ</);
+  assert.match(html, />รูปภาพ</);
+  assert.match(html, /const allLocal = photos\.length && photos\.every/);
+  assert.match(html, /photo-copy\.js\?v=2/);
+  assert.match(html, /const APP_VERSION = '9\.30'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
+  assert.match(read('sw.js'), /const VERSION = 'v65'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);
