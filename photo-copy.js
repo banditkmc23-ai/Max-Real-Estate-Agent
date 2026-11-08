@@ -1,6 +1,7 @@
 /* MAX Agent — room photo copy selection.
    Primary path is v9.0 (7727bba, 2026-09-28): navigator.share({ files }) for every
-   photo, description text only when canShare accepts files+text. The JPG download
+   photo and nothing else. Room notes stay on the separate text button; this path
+   never attaches text on the share sheet or a clipboard fallback. The JPG download
    that used to run when share was missing or threw is not an action.
    Clipboard writes run only after share is unavailable or has failed. */
 (function (root) {
@@ -42,12 +43,11 @@
     if (phase === 'abort') return { action: 'silent' };
     if (phase === 'ok') return { action: 'done', via: 'share' };
 
-    var description = ctx.description ? String(ctx.description) : '';
-    if (ctx.canShareFiles && phase === 'untried') {
-      if (description && ctx.canShareWithText) return { action: 'share', includeText: true, text: description };
+    /* Photos only, including when a description is present and canShare would
+       accept files+text. text-failed still retries files with no text. */
+    if (ctx.canShareFiles && (phase === 'untried' || phase === 'text-failed')) {
       return { action: 'share', includeText: false, text: '' };
     }
-    if (ctx.canShareFiles && phase === 'text-failed') return { action: 'share', includeText: false, text: '' };
 
     if (!ctx.multiTried && ctx.canTryMulti) return { action: 'write-multi' };
     if (ctx.multiOk) return { action: 'done', via: 'multi', toast: allToast(count) };

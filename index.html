@@ -447,7 +447,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.29</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.30</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1174,7 +1174,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.29</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.30</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2543,7 +2543,7 @@ async function writeMultiPng(files) {
   for (let i = 0; i < files.length; i++) items.push(new ClipboardItem({ 'image/png': blobToPng(files[i]) }));
   await navigator.clipboard.write(items);
 }
-async function writeHtmlPhotos(pairs, description) {
+async function writeHtmlPhotos(pairs) {
   const parts = [];
   for (let i = 0; i < pairs.length; i++) {
     const raw = pairs[i].photo && pairs[i].photo.url;
@@ -2551,8 +2551,7 @@ async function writeHtmlPhotos(pairs, description) {
     parts.push('<img src="' + String(src).replace(/"/g, '%22') + '" alt="">');
   }
   await navigator.clipboard.write([new ClipboardItem({
-    'text/html': new Blob([parts.join('')], { type: 'text/html' }),
-    'text/plain': new Blob([description || ''], { type: 'text/plain' })
+    'text/html': new Blob([parts.join('')], { type: 'text/html' })
   })]);
 }
 async function copyOnePng(file) {
@@ -2577,14 +2576,11 @@ async function copyAndSharePhotos(id) {
   const pairs = await loadShareFiles(photos, u);
   if (!pairs.length) return toast('โหลดรูปไม่สำเร็จ');
   const files = pairs.map(p => p.file);
-  const description = PC ? PC.descriptionText(u) : ((u.notes || '').trim());
   const api = clipboardApi();
   const ctx = {
     count: files.length,
     roomId: id,
-    description: description,
     canShareFiles: canSharePayload({ files: files }),
-    canShareWithText: !!(description && canSharePayload({ files: files, text: description })),
     canTryMulti: api.canTryMulti,
     canTryHtml: api.canTryHtml,
     canWriteSinglePng: api.canWriteSinglePng,
@@ -2600,13 +2596,13 @@ async function copyAndSharePhotos(id) {
     const plan = planOf();
     if (plan.action === 'share') {
       try {
-        await navigator.share(plan.includeText ? { files: files, text: plan.text } : { files: files });
+        await navigator.share({ files: files });
         ctx.sharePhase = 'ok';
         toast('แชร์รูปแล้ว');
         return;
       } catch (e) {
         if (e && e.name === 'AbortError') { ctx.sharePhase = 'abort'; return; }
-        ctx.sharePhase = plan.includeText ? 'text-failed' : 'failed';
+        ctx.sharePhase = 'failed';
         continue;
       }
     }
@@ -2618,7 +2614,7 @@ async function copyAndSharePhotos(id) {
     }
     if (plan.action === 'write-html') {
       ctx.htmlTried = true;
-      try { await writeHtmlPhotos(pairs, description); ctx.htmlOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
+      try { await writeHtmlPhotos(pairs); ctx.htmlOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
       catch (e) { continue; }
     }
     if (plan.action === 'copy-one') {
@@ -3875,7 +3871,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.29';
+const APP_VERSION = '9.30';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -3973,7 +3969,7 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="photo-copy.js?v=1"></script>
+<script src="photo-copy.js?v=2"></script>
 <script src="photo-safety.js?v=47"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>

@@ -264,7 +264,7 @@ test('the hosted manifest has 1,103 verified photos', () => {
   assert.equal(units.size, 110);
 });
 
-test('settings shows กู้รูป only in the sheet, version 9.29, and the sync path stays a live write', () => {
+test('settings shows กู้รูป only in the sheet, version 9.30, and the sync path stays a live write', () => {
   const html = read('index.html');
   const nav = html.slice(html.indexOf('bottom-nav'), html.indexOf('id="cfgSheet"'));
   assert.equal(nav.includes('กู้รูป'), false);
@@ -273,11 +273,11 @@ test('settings shows กู้รูป only in the sheet, version 9.29, and the
   assert.match(html, /กู้รูปที่หาย/);
   assert.match(html, /#c2552d/);
   assert.match(html, /lg:max-w-\[460px\]/);
-  assert.match(html, /const APP_VERSION = '9\.29'/);
+  assert.match(html, /const APP_VERSION = '9\.30'/);
   assert.match(html, /photo-restore\.js\?v=46/);
   assert.match(html, /PHOTO_RESTORE\.refresh\(\)/);
   const sw = read('sw.js');
-  assert.match(sw, /const VERSION = 'v64'/);
+  assert.match(sw, /const VERSION = 'v65'/);
   assert.match(sw, /photo-restore\.js/);
   assert.match(sw, /\/restore\//);
   const sync = read('sync.js');
