@@ -447,7 +447,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.30</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.31</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1174,7 +1174,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.30</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.31</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2113,6 +2113,7 @@ function openDetailView(unitId) {
   requestAnimationFrame(() => { requestAnimationFrame(() => { dv.classList.add('show'); dvc.classList.add('show'); }); });
   document.body.style.overflow = 'hidden';
   renderDetailView();
+  prepareRoomShareFiles(unitId);
   dvc.scrollTop = 0;
   showLoadingBar('detailLoadingBar', 500);
   setTimeout(() => loadDetailCover(unitId), 50);
@@ -2192,7 +2193,7 @@ function renderDetailView() {
       <div class="flex items-baseline gap-1.5 mt-2 mb-3"><span class="text-2xl font-bold text-brick-600 inline-edit" onclick="startInlineEdit(this, 'rent', 'number')">${baht(u.rent)}</span><span class="text-xs text-slate-400">/เดือน</span></div>
       <div class="grid grid-cols-2 gap-1.5 mb-1.5">
         <button onclick="quickCopy('${u.id}')" class="dv-btn bg-brick-500 text-white"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกรายละเอียด</button>
-        ${hasPhotos ? `<button onclick="copyAndSharePhotos('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูปภาพ (${pic})</button>` : `<button disabled class="dv-btn bg-slate-100 text-slate-400"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
+        ${hasPhotos ? `<button onpointerdown="prepareRoomShareFiles('${u.id}')" onclick="copyAndSharePhotos('${u.id}')" class="dv-btn bg-brick-50 text-brick-700"><i data-lucide="images" class="w-3.5 h-3.5"></i>คัดลอกรูปภาพ (${pic})</button>` : `<button disabled class="dv-btn bg-slate-100 text-slate-400"><i data-lucide="images" class="w-3.5 h-3.5"></i>ไม่มีรูป</button>`}
       </div>
       <div class="grid grid-cols-3 gap-1.5">
         <button ${hasPhone ? `onclick="contactOwner('${u.id}')"` : 'disabled'} class="dv-btn owner-action phone ${hasPhone ? '' : '" style="opacity:.4'}"><i data-lucide="phone" class="w-3.5 h-3.5"></i>โทรติดต่อ</button>
@@ -2343,6 +2344,7 @@ async function importFormPhotos(files) {
     prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
     try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:currentFormUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
   }
+  noteRoomPhotosChanged(currentFormUnitId);
   prog.classList.add('hidden');
   document.getElementById('formFileAlbum').value = ''; document.getElementById('formFileCamera').value = '';
   await refreshCounts(); await renderFormPhotos(); miniPhotoCache.delete(currentFormUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
@@ -2362,7 +2364,8 @@ async function renderFormPhotos() {
 }
 async function deleteFormPhoto(photoId) {
   if (!confirm('ลบรูปนี้?')) return;
-  try { await req(tx('readwrite').delete(photoId)); markPhotosUserDeleted([photoId], currentFormUnitId || (document.getElementById('f_id') && document.getElementById('f_id').value), false); await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
+  const unitId = currentFormUnitId || (document.getElementById('f_id') && document.getElementById('f_id').value);
+  try { await req(tx('readwrite').delete(photoId)); markPhotosUserDeleted([photoId], unitId, false); noteRoomPhotosChanged(unitId); await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
 const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
@@ -2504,8 +2507,8 @@ function quickCopy(id) {
   if (!text) return toast('ห้องนี้ยังไม่มีรายละเอียด');
   copy(text); toast('คัดลอกรายละเอียดแล้ว');
 }
-let photoCopyCursor = { roomId: null, index: 0 };
-function photoShareName(u, i) { return String(u.project || '').replace(/\s+/g, '_') + '_' + (u.room || '') + '_' + (i + 1) + '.jpg'; }
+const roomShareReady = new Map();
+function photoShareStem(u, i) { return String((u && u.project) || 'room').replace(/\s+/g, '_') + '_' + ((u && u.room) || '') + '_' + (i + 1); }
 function blobToPng(blob) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -2522,37 +2525,88 @@ function blobToPng(blob) {
     img.src = url;
   });
 }
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
+function blobToJpeg(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth || img.width || 1;
+      c.height = img.naturalHeight || img.height || 1;
+      const g = c.getContext('2d');
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? resolve(b) : reject(new Error('jpeg')), 'image/jpeg', 0.92);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
 }
-async function loadShareFiles(photos, u) {
+async function shareFileFromBlob(blob, stem) {
+  const PC = window.MAX_PHOTO_COPY;
+  const mime = PC && PC.shareMime ? PC.shareMime(blob && blob.type) : '';
+  if (mime) return new File([blob], PC.shareFileName(stem, mime), { type: mime });
+  const jpeg = await blobToJpeg(blob);
+  const name = PC && PC.shareFileName ? PC.shareFileName(stem, 'image/jpeg') : (stem + '.jpg');
+  return new File([jpeg], name, { type: 'image/jpeg' });
+}
+async function buildSharePairs(photos, u) {
   const allLocal = photos.length && photos.every(p => p && p.full && p.full.size);
+  const blobs = allLocal ? photos.map(p => p.full) : await Promise.all(photos.map(p => fullBlobOf(p)));
   const out = [];
-  if (allLocal) {
-    for (let i = 0; i < photos.length; i++) out.push({ photo: photos[i], file: new File([photos[i].full], photoShareName(u, i), { type: 'image/jpeg' }) });
-    return out;
-  }
   for (let i = 0; i < photos.length; i++) {
-    const f = await fileFromPhoto(photos[i], photoShareName(u, i));
-    if (f) out.push({ photo: photos[i], file: f });
+    const blob = blobs[i];
+    if (!blob || !blob.size) continue;
+    try {
+      const file = await shareFileFromBlob(blob, photoShareStem(u, i));
+      if (file && file.size) out.push({ photo: photos[i], file: file });
+    } catch (e) {}
   }
   return out;
 }
-async function writeMultiPng(files) {
-  const items = [];
-  for (let i = 0; i < files.length; i++) items.push(new ClipboardItem({ 'image/png': blobToPng(files[i]) }));
-  await navigator.clipboard.write(items);
+function dropRoomShare(id) {
+  if (id) roomShareReady.delete(id); else roomShareReady.clear();
+  const tokens = prepareRoomShareFiles.tokens;
+  const inflight = prepareRoomShareFiles.inflight;
+  if (id) { if (tokens) tokens.delete(id); if (inflight) inflight.delete(id); }
+  else { if (tokens) tokens.clear(); if (inflight) inflight.clear(); }
 }
-async function writeHtmlPhotos(pairs) {
-  const parts = [];
-  for (let i = 0; i < pairs.length; i++) {
-    const raw = pairs[i].photo && pairs[i].photo.url;
-    const src = (typeof raw === 'string' && /^https?:\/\//.test(raw)) ? raw : await blobToDataUrl(await blobToPng(pairs[i].file));
-    parts.push('<img src="' + String(src).replace(/"/g, '%22') + '" alt="">');
-  }
-  await navigator.clipboard.write([new ClipboardItem({
-    'text/html': new Blob([parts.join('')], { type: 'text/html' })
-  })]);
+function noteRoomPhotosChanged(id) { dropRoomShare(id); if (id) prepareRoomShareFiles(id); }
+function prepareRoomShareFiles(id) {
+  if (!id) return;
+  if (!db) { setTimeout(() => { if (db) prepareRoomShareFiles(id); }, 400); return; }
+  const tokens = prepareRoomShareFiles.tokens || (prepareRoomShareFiles.tokens = new Map());
+  const inflight = prepareRoomShareFiles.inflight || (prepareRoomShareFiles.inflight = new Map());
+  if (inflight.has(id)) return inflight.get(id);
+  const token = {};
+  tokens.set(id, token);
+  const job = (async () => {
+    try {
+      const u = units.find(x => x.id === id); if (!u) return;
+      const PC = window.MAX_PHOTO_COPY;
+      const raw = await getUnitPhotos(id);
+      if (tokens.get(id) !== token) return;
+      const photos = PC ? PC.orderPhotos(raw) : raw.slice();
+      if (!photos.length) { roomShareReady.delete(id); return; }
+      const stamp = PC ? PC.shareStamp(photos) : String(photos.length);
+      const hit = roomShareReady.get(id);
+      if (hit && hit.stamp === stamp && hit.pairs && hit.pairs.length) return;
+      const pairs = await buildSharePairs(photos, u);
+      if (tokens.get(id) !== token) return;
+      if (!pairs.length) return;
+      roomShareReady.set(id, { stamp: stamp, pairs: pairs, zipBlob: null });
+      let zipBlob = null;
+      try { zipBlob = await zipBlobFromFiles(pairs.map(p => p.file)); } catch (e) {}
+      if (tokens.get(id) !== token) return;
+      const hit = roomShareReady.get(id);
+      if (hit && hit.stamp === stamp) hit.zipBlob = zipBlob;
+    } catch (e) {}
+  })();
+  inflight.set(id, job);
+  job.finally(() => { if (inflight.get(id) === job) inflight.delete(id); });
+  return job;
 }
 async function copyOnePng(file) {
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobToPng(file) })]);
@@ -2560,39 +2614,40 @@ async function copyOnePng(file) {
 function canSharePayload(payload) { try { return !!(navigator.canShare && navigator.canShare(payload)); } catch (e) { return false; } }
 function clipboardApi() {
   const write = !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function');
-  const supports = typeof ClipboardItem === 'function' && typeof ClipboardItem.supports === 'function' ? ClipboardItem.supports : null;
-  return {
-    canTryMulti: write,
-    canTryHtml: write && (!supports || supports('text/html')),
-    canWriteSinglePng: write && (!supports || supports('image/png'))
-  };
+  return { canWriteSinglePng: write && (typeof ClipboardItem !== 'function' || typeof ClipboardItem.supports !== 'function' || ClipboardItem.supports('image/png')) };
 }
-async function copyAndSharePhotos(id) {
-  const u = units.find(x => x.id === id); if (!u) return;
+function zipDownloadName(u) { return photoShareStem(u, 0).replace(/_1$/, '').replace(/[\\/]/g, '_') + '_photos.zip'; }
+function saveZipBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+}
+async function zipBlobFromFiles(files) {
   const PC = window.MAX_PHOTO_COPY;
-  const raw = await getUnitPhotos(id);
-  const photos = PC ? PC.orderPhotos(raw) : raw;
-  if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
-  const pairs = await loadShareFiles(photos, u);
-  if (!pairs.length) return toast('โหลดรูปไม่สำเร็จ');
+  const entries = [];
+  for (let i = 0; i < files.length; i++) {
+    const data = new Uint8Array(await files[i].arrayBuffer());
+    entries.push({ name: PC ? PC.zipEntryName(files[i].name, i) : files[i].name, data: data });
+  }
+  return new Blob([PC.buildStoredZip(entries)], { type: 'application/zip' });
+}
+async function downloadPhotoZip(u, files) { saveZipBlob(await zipBlobFromFiles(files), zipDownloadName(u)); }
+async function sharePreparedPhotos(id, u, pairs, zipBlob) {
+  const PC = window.MAX_PHOTO_COPY;
   const files = pairs.map(p => p.file);
-  const api = clipboardApi();
   const ctx = {
     count: files.length,
     roomId: id,
     canShareFiles: canSharePayload({ files: files }),
-    canTryMulti: api.canTryMulti,
-    canTryHtml: api.canTryHtml,
-    canWriteSinglePng: api.canWriteSinglePng,
-    cursor: photoCopyCursor,
-    sharePhase: 'untried',
-    multiTried: false,
-    multiOk: false,
-    htmlTried: false,
-    htmlOk: false
+    canWriteSinglePng: clipboardApi().canWriteSinglePng,
+    sharePhase: 'untried'
   };
-  const planOf = () => PC ? PC.selectPhotoCopy(ctx) : { action: ctx.canShareFiles ? 'share' : 'unsupported', includeText: false, text: '', toast: 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้' };
-  for (let step = 0; step < 6; step++) {
+  const planOf = () => PC ? PC.selectPhotoCopy(ctx) : { action: ctx.canShareFiles ? 'share' : 'zip', includeText: false, text: '', toast: 'แชร์รูปทั้งหมดทีเดียวไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว' };
+  for (let step = 0; step < 4; step++) {
     const plan = planOf();
     if (plan.action === 'share') {
       try {
@@ -2607,24 +2662,39 @@ async function copyAndSharePhotos(id) {
       }
     }
     if (plan.action === 'silent' || plan.action === 'done') return;
-    if (plan.action === 'write-multi') {
-      ctx.multiTried = true;
-      try { await writeMultiPng(files); ctx.multiOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
-      catch (e) { continue; }
-    }
-    if (plan.action === 'write-html') {
-      ctx.htmlTried = true;
-      try { await writeHtmlPhotos(pairs); ctx.htmlOk = true; toast(plan.toast || PC.allToast(files.length)); return; }
-      catch (e) { continue; }
+    if (plan.action === 'zip') {
+      try {
+        if (zipBlob) saveZipBlob(zipBlob, zipDownloadName(u));
+        else await downloadPhotoZip(u, files);
+        toast(plan.toast || (PC && PC.ZIP_TOAST));
+      } catch (e) { toast('รวมรูปเป็น ZIP ไม่สำเร็จ'); }
+      return;
     }
     if (plan.action === 'copy-one') {
-      try { await copyOnePng(files[plan.index]); photoCopyCursor = plan.nextCursor; toast(plan.toast); }
+      try { await copyOnePng(files[0]); toast(plan.toast || (PC && PC.allToast(1))); }
       catch (e) { toast('คัดลอกรูปไม่สำเร็จ'); }
       return;
     }
     toast(plan.toast || 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้');
     return;
   }
+}
+async function copyAndSharePhotos(id) {
+  const u = units.find(x => x.id === id); if (!u) return;
+  const ready = roomShareReady.get(id);
+  if (ready && ready.pairs && ready.pairs.length) return sharePreparedPhotos(id, u, ready.pairs, ready.zipBlob);
+  const pending = prepareRoomShareFiles.inflight && prepareRoomShareFiles.inflight.get(id);
+  if (pending) await pending;
+  const again = roomShareReady.get(id);
+  if (again && again.pairs && again.pairs.length) return sharePreparedPhotos(id, u, again.pairs, again.zipBlob);
+  const PC = window.MAX_PHOTO_COPY;
+  const raw = await getUnitPhotos(id);
+  const photos = PC ? PC.orderPhotos(raw) : raw;
+  if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
+  const pairs = await buildSharePairs(photos, u);
+  if (!pairs.length) return toast('โหลดรูปไม่สำเร็จ');
+  roomShareReady.set(id, { stamp: PC ? PC.shareStamp(photos) : String(photos.length), pairs: pairs });
+  return sharePreparedPhotos(id, u, pairs);
 }
 
 function copy(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text)); else fallbackCopy(text); }
@@ -2902,7 +2972,7 @@ function cardRowHTML(x) {
       ${x.station ? `<p class="g-sub">${esc(stationLabel(x))}</p>` : ''}
       <div class="g-btns" onclick="event.stopPropagation()">
         <button onclick="quickCopy('${x.id}')" class="g-b1"><i data-lucide="copy" class="w-3 h-3"></i>คัดข้อความ</button>
-        <button onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="g-b2 ${pic ? '' : 'off'}"><i data-lucide="images" class="w-3 h-3"></i>รูปภาพ</button>
+        <button ${pic ? `onpointerdown="prepareRoomShareFiles('${x.id}')"` : ''} onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="g-b2 ${pic ? '' : 'off'}"><i data-lucide="images" class="w-3 h-3"></i>รูปภาพ</button>
       </div>
     </div>
   </div>`;
@@ -3405,6 +3475,7 @@ async function importData(file) {
       }
       await refreshCounts();
     }
+    dropRoomShare();
     miniPhotoCache.clear();
     render(); renderCustomers(); closeBackup();
     toast(`กู้คืน: ห้อง +${added}/${updated} · ลูกค้า +${cAdd}/${cUpd} · รูป ${pAdded}`);
@@ -3489,7 +3560,7 @@ function markPhotosUserDeleted(ids, unitId, bulk) {
   if (bulk) { rememberEmpty(); return; }
   getUnitPhotos(unitId).then(left => { if (!left || !left.length) rememberEmpty(); }).catch(() => {});
 }
-async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); markPhotosUserDeleted(ps.map(p => p.id), unitId, true); await refreshCounts(); } catch (e) {} }
+async function deleteUnitPhotos(unitId) { if (!db) return; try { const ps = await getUnitPhotos(unitId); const s = tx('readwrite'); ps.forEach(p => s.delete(p.id)); markPhotosUserDeleted(ps.map(p => p.id), unitId, true); noteRoomPhotosChanged(unitId); await refreshCounts(); } catch (e) {} }
 
 // ============== WATERMARK ==============
 const WM_KEY = 'staylow_wm';
@@ -3582,6 +3653,7 @@ async function importPhotos(files) {
     prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
     try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:galleryUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
   }
+  noteRoomPhotosChanged(galleryUnitId);
   prog.classList.add('hidden');
   document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
   await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
@@ -3673,7 +3745,7 @@ async function renderGallery() {
     const byId = new Map(galleryPhotos.map(p => [p.id, p])), base = Date.now(), store = tx('readwrite');
     ids.forEach((id, i) => { const p = byId.get(id); if (!p) return; p.order = base + i; p.cover = i === 0; store.put(p); });
     await new Promise(r => { store.transaction ? (store.transaction.oncomplete = r, store.transaction.onerror = r) : setTimeout(r, 50); });
-    await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
+    await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); noteRoomPhotosChanged(galleryUnitId); try { FX.scheduleShareUpdate(5000); } catch (e) {}
     toast(ids[0] === galleryPhotos[0]?.id ? 'จัดลำดับรูปแล้ว' : 'จัดลำดับรูปแล้ว');
   };
   const init = () => {
@@ -3706,7 +3778,7 @@ function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % gallery
 function closeLightbox() { try { lbResetZoom(); } catch (e) {} const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
 async function deleteCurrentPhoto() {
   const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
-  await req(tx('readwrite').delete(p.id)); markPhotosUserDeleted([p.id], p.unitId || galleryUnitId, false);
+  await req(tx('readwrite').delete(p.id)); markPhotosUserDeleted([p.id], p.unitId || galleryUnitId, false); noteRoomPhotosChanged(p.unitId || galleryUnitId);
   const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl && String(e.thumbUrl).startsWith('blob:')) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && String(e.fullUrl).startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
   await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
@@ -3717,7 +3789,7 @@ async function setCover() {
   const s = tx('readwrite');
   const minOrder = Math.min(...galleryPhotos.map(x => x.order ?? x.ts ?? 0));
   p.order = minOrder - 1; s.put(p);
-  await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
+  await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); noteRoomPhotosChanged(p.unitId || galleryUnitId); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
 
@@ -3871,7 +3943,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.30';
+const APP_VERSION = '9.31';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -3969,7 +4041,7 @@ function sfPreview() {
   const _rp = window.renderFormPhotos; window.renderFormPhotos = async function () { const r = await _rp.apply(this, arguments); sfPreview(); return r; };
 })();
 </script>
-<script src="photo-copy.js?v=2"></script>
+<script src="photo-copy.js?v=3"></script>
 <script src="photo-safety.js?v=47"></script>
 <script src="features.js?v=44"></script>
 <script src="vendor/supabase.js"></script>
