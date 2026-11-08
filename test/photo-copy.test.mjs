@@ -182,12 +182,23 @@ test('the room button shares prepared files in the click and zips the rest', () 
   assert.match(html, /class="dv-btn bg-brick-50 text-brick-700"/);
   assert.match(html, /#c2552d/);
   assert.match(html, /photo-copy\.js\?v=3/);
-  assert.match(html, /const APP_VERSION = '9\.31'/);
+  assert.match(html, /const APP_VERSION = '9\.32'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v66'/);
+  assert.match(read('sw.js'), /const VERSION = 'v67'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);
+});
+
+test('the main script parses, so photo prefetch cannot blank the home screen', () => {
+  const html = read('index.html');
+  const blocks = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
+  const main = blocks.find(src => src.includes('function render('));
+  assert.ok(main, 'main app script');
+  new Function(main);
+  const prep = main.slice(main.indexOf('function prepareRoomShareFiles'), main.indexOf('async function copyOnePng'));
+  assert.equal((prep.match(/const hit =/g) || []).length, 1);
+  assert.match(prep, /const stored = roomShareReady\.get\(id\)/);
 });
 
 function readStoredZip(bytes) {
