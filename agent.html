@@ -3,6 +3,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://ekpavjlebbclapjdupwf.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://ekpavjlebbclapjdupwf.supabase.co; frame-src https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#c2552d">
+<link rel="preconnect" href="https://ekpavjlebbclapjdupwf.supabase.co">
+<link rel="preconnect" href="https://ekpavjlebbclapjdupwf.supabase.co" crossorigin>
 <title>ห้องว่างพร้อมเข้าอยู่ — MAX Agent</title>
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,11 +33,11 @@
 .mtop{position:fixed;top:0;left:0;right:0;z-index:1100;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:none;pointer-events:none}.mtop>div{pointer-events:auto;background:#fff;border-radius:21px;padding:10px 16px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.15);display:inline-block}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1150;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18);padding:8px 0 calc(78px + env(safe-area-inset-bottom));max-height:62vh;overflow:auto;display:none;max-width:640px;margin:0 auto}
 .sheet .gr0{width:38px;height:5px;border-radius:3px;background:#ddd;margin:0 auto 8px}.sh{position:relative;padding:0 56px 6px 16px}.sh b{display:block;font-size:16px;line-height:1.3}.sh span{display:block;font-size:12px;color:#78716c}.sh button{position:absolute;right:16px;top:0;border:0;background:#f1ece7;border-radius:50%;width:30px;height:30px;font-size:16px}
-.rw{display:flex;gap:10px;padding:8px 16px;align-items:center;text-decoration:none;color:inherit}.rw .ph{width:72px;height:58px;border-radius:10px;background:#ddd center/cover;flex:none}.rw .m{flex:1;min-width:0;font-size:13px;color:#57534e}.rw .p{color:#c2552d;font-weight:700;font-size:15px}.rw .p small{font-size:11px;color:#78716c;font-weight:400}.rw em{font-style:normal;color:#c2552d;font-size:13px;font-weight:600}
+.rw{display:flex;gap:10px;padding:8px 16px;align-items:center;text-decoration:none;color:inherit}.rw .ph{width:72px;height:58px;border-radius:10px;background:#ddd center/cover;flex:none;position:relative;overflow:hidden}.phi{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}.phi.on{opacity:1}.rw .m{flex:1;min-width:0;font-size:13px;color:#57534e}.rw .p{color:#c2552d;font-weight:700;font-size:15px}.rw .p small{font-size:11px;color:#78716c;font-weight:400}.rw em{font-style:normal;color:#c2552d;font-size:13px;font-weight:600}
 .em{text-align:center;color:#78716c;padding:40px 10px;font-size:14px}.ft{text-align:center;font-size:11px;color:#a8a29e;margin-top:24px}
 </style></head><body><div class="w" id="app"><p class="em">กำลังโหลด...</p></div>
 <div id="map"></div><div class="mtop" id="mtop"><div id="mtx"></div></div><div class="sheet" id="sheet"></div><button class="fab" id="fab" style="display:none"></button>
-<script>window.MAXGEO_KEY='sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';</script><script src="geo.js"></script>
+<script>window.MAXGEO_KEY='sb_publishable_XJ1PWYWqWWN571OTaGpjRg_0owD5pyW';</script><script src="catalog-covers.js"></script><script src="geo.js"></script>
 <script>
 (function(){
   const SB_URL = 'https://ekpavjlebbclapjdupwf.supabase.co', SB_KEY = window.MAXGEO_KEY, G=window.MAXGEO;
@@ -68,19 +70,25 @@
     body.innerHTML=h+'<p class="ft">'+t('อัปเดตล่าสุด ','Last updated ')+new Date(D._u).toLocaleString(t('th-TH','en-GB'))+' · MAX Agent</p>';
     body.querySelectorAll('[data-z2]').forEach(b=>b.onclick=()=>{zone=b.dataset.z2;render();scrollTo(0,0)});
     body.querySelectorAll('.mq').forEach(el=>G.loop(el));
+    G.bindCovers(body);
     paintCounts();
+    if(countsArmed)watchCounts();
     fab.style.display='';fab.textContent=fabTxt();
   }
   function bindHead(){
     const qi=document.getElementById('q');qi.oninput=()=>{q=qi.value.trim();render();if(view==='map')showMap()};
     app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;app.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));zone='';render();if(view==='map')showMap()});
   }
-  /* photo counts: lazily read each room's share data once (cached per session) */
+  /* Photo counts come from the catalog payload (room.n). Fallback: only rooms still missing n, and only when that card is near the screen. */
   let CNT={};try{CNT=JSON.parse(sessionStorage.getItem('max_cnt_'+id)||'{}')}catch(e){}
-  function paintCounts(){document.querySelectorAll('a.xc').forEach(a=>{const rid=(a.getAttribute('href').match(/([A-Za-z0-9]{6})\/?$/)||[])[1];const n=CNT[rid];if(n&&!a.querySelector('.xn'))a.querySelector('.xp').insertAdjacentHTML('beforeend','<span class="xn">'+n+t(' รูป',n==1?' photo':' photos')+'</span>')})}
-  async function loadCounts(){const ids=(D.rooms||[]).map(r=>r.id).filter(x=>CNT[x]===undefined);let i=0;
-    const worker=async()=>{while(i<ids.length){const x=ids[i++];try{const r=await fetch(SB_URL+'/functions/v1/share-room?id='+x,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});const j=await r.json();CNT[x]=(j.data&&j.data.imgs||[]).length}catch(e){CNT[x]=0}}};
-    await Promise.all([1,2,3,4,5,6].map(worker));try{sessionStorage.setItem('max_cnt_'+id,JSON.stringify(CNT))}catch(e){}paintCounts()}
+  const ridOf=a=>{const h=a&&a.getAttribute('href')||'';return (h.match(/([A-Za-z0-9]{6})\/?$/)||[])[1]||''};
+  function countOf(rid){const room=(D&&D.rooms||[]).find(r=>r.id===rid);const C=window.MAX_COVERS;const n=C&&C.photoCount?C.photoCount(room):(room&&typeof room.n==='number'?room.n:null);if(n!=null)return n;return typeof CNT[rid]==='number'?CNT[rid]:null}
+  function paintCounts(){document.querySelectorAll('a.xc').forEach(a=>{const n=countOf(ridOf(a));const xp=a.querySelector('.xp');if(n&&xp&&!a.querySelector('.xn'))xp.insertAdjacentHTML('beforeend','<span class="xn">'+n+t(' รูป',n==1?' photo':' photos')+'</span>')})}
+  const COUNT_AT_ONCE=2;const countQ=[];const countPend=new Set();let countBusy=0,countsArmed=false,countIO=null;
+  function pumpCounts(){while(countBusy<COUNT_AT_ONCE&&countQ.length){const x=countQ.shift();countBusy++;fetch(SB_URL+'/functions/v1/share-room?id='+encodeURIComponent(x),{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.json()).then(j=>{CNT[x]=(j.data&&j.data.imgs||[]).length}).catch(()=>{CNT[x]=0}).then(()=>{countBusy--;try{sessionStorage.setItem('max_cnt_'+id,JSON.stringify(CNT))}catch(e){}paintCounts();pumpCounts()})}}
+  function enqueueCount(rid){if(!rid||typeof CNT[rid]==='number'||countPend.has(rid))return;const room=(D.rooms||[]).find(r=>r.id===rid);if(window.MAX_COVERS&&!MAX_COVERS.needsCountFetch(room))return;countPend.add(rid);countQ.push(rid);pumpCounts()}
+  function watchCounts(){if(!countsArmed||!D)return;document.querySelectorAll('a.xc').forEach(a=>{if(a.dataset.countWatch)return;const rid=ridOf(a);const room=(D.rooms||[]).find(r=>r.id===rid);if(!rid||(window.MAX_COVERS&&!MAX_COVERS.needsCountFetch(room)))return;a.dataset.countWatch='1';if(typeof IntersectionObserver!=='function'){enqueueCount(rid);return}if(!countIO)countIO=new IntersectionObserver(es=>{es.forEach(en=>{if(!en.isIntersecting)return;countIO.unobserve(en.target);enqueueCount(ridOf(en.target))})},{root:null,rootMargin:'200px'});countIO.observe(a)})}
+  function armCountFallback(){if(countsArmed)return;const missing=(D.rooms||[]).some(r=>!window.MAX_COVERS||MAX_COVERS.needsCountFetch(r));if(!missing)return;countsArmed=true;watchCounts()}
   /* map */
   function lib(){return window.L&&L.markerClusterGroup?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=()=>{const t=document.createElement('script');t.src='https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';t.onload=ok;t.onerror=no;document.head.appendChild(t)};s.onerror=no;document.head.appendChild(s)})}
   const kk=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':Math.round(n/1000)+'k';
@@ -96,16 +104,17 @@
     document.getElementById('mtx').innerHTML='📍 <b>'+n+'</b> '+t('ห้อง',n==1?'room':'rooms')+' · '+gs.length+t(' โครงการ',gs.length==1?' project':' projects')+(zone?' · '+esc(zone===OTHER?zd(OTHER):G.stn(zone).full):'')+t(' — แตะหมุดเพื่อดูห้อง',' — tap a pin to see rooms');
     setTimeout(()=>{M.invalidateSize();if(gs.length)M.fitBounds(L.latLngBounds(gs.map(x=>[x.lat,x.lng])),{padding:[40,40],maxZoom:16})},30)}
   function openSheet(x){const rs=x.rooms.slice().sort((a,b)=>price(a)-price(b));
+    const mini=cover=>{const spec=window.MAX_COVERS&&MAX_COVERS.parseCover(cover);if(!spec)return '<div class="ph"></div>';const fb=spec.thumb!==spec.full?' data-full="'+esc(spec.full)+'"':'';return '<div class="ph"><img class="phi" alt="" width="144" height="116" decoding="async" data-src="'+esc(spec.thumb)+'"'+fb+'></div>'};
     sheet.innerHTML='<div class="gr0"></div><div class="sh"><b>'+esc(x.n)+'</b><span>'+t('ว่าง '+rs.length+' ห้อง',rs.length+(rs.length==1?' available room':' available rooms'))+(rs[0].sl?' · '+rs[0].sl+' '+esc(G.stn(rs[0].sn).n)+' '+G.dtxt(rs[0].sm):'')+'</span><button aria-label="'+t('ปิด','Close')+'" id="shx">×</button></div>'
-     +rs.map(r=>'<a class="rw" href="'+href(r)+'"><div class="ph" style="'+(r.cover?"background-image:url('"+esc(r.cover)+"')":'')+'"></div><div class="m">'+esc([G.typeOf(r.t),r.sz?r.sz+t(' ตร.ม.',' sqm'):'',r.f?t('ชั้น ','Floor ')+r.f:''].filter(Boolean).join(' · '))+'<div class="p">฿'+fmt(price(r))+(mode==='sale'?'':' <small>'+t('/เดือน','/ month')+'</small>')+'</div></div><em>'+t('ดูห้อง ›','View ›')+'</em></a>').join('');
-    sheet.style.display='block';document.getElementById('shx').onclick=()=>{sheet.style.display='none'}}
+     +rs.map(r=>'<a class="rw" href="'+href(r)+'">'+mini(r.cover)+'<div class="m">'+esc([G.typeOf(r.t),r.sz?r.sz+t(' ตร.ม.',' sqm'):'',r.f?t('ชั้น ','Floor ')+r.f:''].filter(Boolean).join(' · '))+'<div class="p">฿'+fmt(price(r))+(mode==='sale'?'':' <small>'+t('/เดือน','/ month')+'</small>')+'</div></div><em>'+t('ดูห้อง ›','View ›')+'</em></a>').join('');
+    sheet.style.display='block';G.bindCovers(sheet);document.getElementById('shx').onclick=()=>{sheet.style.display='none'}}
   function hideMap(){view='list';mapEl.style.display='none';mtop.style.display='none';sheet.style.display='none';document.body.style.overflow='';fab.textContent=fabTxt()}
   const setTitle=()=>{document.title=t('ห้องว่าง '+(D.rooms||[]).length+' ห้อง · ',(D.rooms||[]).length+' vacant rooms · ')+((D.agent||{}).n||'MAX Agent')};
   G.onLang(()=>{if(!D)return;setTitle();app.innerHTML='';render();if(view==='map')showMap()});
   app.innerHTML='<p class="em">'+t('กำลังโหลด...','Loading...')+'</p>';
   fab.onclick=()=>view==='map'?hideMap():showMap();
   Promise.all([fetch(SB_URL+'/functions/v1/share-room?cat='+id,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}}).then(r=>r.ok?r.json():Promise.reject(r.status)),G.coords()])
-   .then(([j])=>{D=j.data;D._u=j.updated_at;G.attach(D.rooms||[]);if(!(D.rooms||[]).some(r=>r.rent>0))mode='sale';setTitle();render();if(location.hash==='#map')showMap();loadCounts()})
+   .then(([j])=>{D=j.data;D._u=j.updated_at;G.attach(D.rooms||[]);if(!(D.rooms||[]).some(r=>r.rent>0))mode='sale';setTitle();render();if(location.hash==='#map')showMap();armCountFallback()})
    .catch(()=>{app.innerHTML='<p class="em">'+t('ไม่พบหน้านี้ หรือลิงก์ไม่ถูกต้อง','Page not found, or the link is invalid')+'</p>'});
 })();
 </script></body></html>

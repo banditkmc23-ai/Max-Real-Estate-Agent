@@ -32,7 +32,7 @@ function pub(d: any) {
   return d;
 }
 function cors(req: Request) { const o = req.headers.get("origin") || ""; return { "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin" }; }
-const J = (req: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json" } });
+const J = (req: Request, body: unknown, status = 200, extra?: Record<string, string>) => new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json", ...(extra || {}) } });
 function sniff(b: Uint8Array): [string, string] | null {
   if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return ["image/jpeg", "jpg"];
   if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return ["image/png", "png"];
@@ -73,6 +73,53 @@ ${img ? `<meta property="og:image" content="${H(img)}"><meta property="og:image:
 </head><body><a href="${to}">เปิดดูห้อง</a></body></html>`;
 }
 let lastGh = "";
+function asImgs(v: unknown) {
+  if (typeof v === "string") { try { v = JSON.parse(v); } catch { return []; } }
+  return Array.isArray(v) ? v : [];
+}
+// Photo counts for cards. Reads image arrays only; the public body stays the stored catalog plus n.
+async function withCounts(data: any) {
+  const rooms = Array.isArray(data && data.rooms) ? data.rooms : [];
+  const ids = rooms.map((r: any) => String(r && r.id || "")).filter((id: string) => /^[A-Za-z0-9]{6}$/.test(id));
+  let counts: Map<string, number> | null = null;
+  if (ids.length) {
+    const q1 = await sb.from("shared_rooms").select("id, imgs:data->imgs").in("id", ids);
+    let rows = q1.error ? null : q1.data;
+    if (!rows) {
+      const q2 = await sb.from("shared_rooms").select("id, data").in("id", ids);
+      rows = q2.error ? null : (q2.data || []).map((row: any) => ({ id: row.id, imgs: row.data && row.data.imgs }));
+    }
+    if (rows) {
+      counts = new Map();
+      for (const row of rows as any[]) counts.set(String(row.id), asImgs(row.imgs).length);
+    }
+  }
+  if (!counts || (ids.length > 0 && counts.size === 0)) return data;
+  return { ...data, rooms: rooms.map((r: any) => ({ ...r, n: counts!.has(String(r.id)) ? counts!.get(String(r.id)) : 0 })) };
+}
+// Signed upload for a NEW <file>-t.jpg only. Never returns a token for the original object.
+async function coverThumbUploads(covers: any[]) {
+  const items = (Array.isArray(covers) ? covers : []).slice(0, 30).map((c: any) => ({ id: String(c && c.id || ""), file: String(c && c.file || "") })).filter((c) => /^[A-Za-z0-9]{6}$/.test(c.id) && /^[A-Za-z0-9_-]{1,80}\.(jpg|jpeg|png|webp)$/i.test(c.file) && !/-t\.jpe?g$/i.test(c.file));
+  const by = new Map<string, string[]>();
+  for (const it of items) { const arr = by.get(it.id) || []; if (!arr.includes(it.file)) arr.push(it.file); by.set(it.id, arr); }
+  const uploads: any[] = [];
+  for (const [id, files] of by) {
+    const { data: objs } = await sb.storage.from("room-photos").list(id, { limit: 1000 });
+    const have = new Set((objs || []).map((o) => o.name));
+    for (const file of files) {
+      const stem = file.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+      const tName = stem + "-t.jpg";
+      if (!stem || tName.toLowerCase() === file.toLowerCase() || !have.has(file)) { uploads.push({ id, file, skipped: true }); continue; }
+      const path = `${id}/${tName}`;
+      if (path.endsWith("/" + file) || !/^[A-Za-z0-9]{6}\/[A-Za-z0-9_-]{1,80}-t\.jpg$/.test(path)) { uploads.push({ id, file, skipped: true }); continue; }
+      if (have.has(tName)) { uploads.push({ id, file, path, url: PUB + path, exists: true }); continue; }
+      const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path);
+      if (error || !data) { uploads.push({ id, file, skipped: true }); continue; }
+      uploads.push({ id, file, path, token: data.token, url: PUB + path });
+    }
+  }
+  return uploads;
+}
 async function writeOgPage(id: string, d: any, img: string, rev = "") { return writeGh(`r/${id}/index.html`, ogHtml(id, d, img, rev), `share: room page r/${id}`); }
 function catHtml(id: string, d: any, rev: string) {
   const n = (d.agent && d.agent.n) || "เอเจนต์"; const c = (d.rooms || []).length;
@@ -115,7 +162,9 @@ Deno.serve(async req => {
     if (!/^[A-Za-z0-9]{6}$/.test(id)) return J(req, { error: "bad id" }, 400);
     const { data } = await sb.from("catalogs").select("data, updated_at").eq("id", id).maybeSingle();
     if (!data) { limited(ipOf(req), 60, "miss"); return J(req, { error: "not found" }, 404); }
-    return J(req, { data: data.data, updated_at: data.updated_at });
+    let payload = data.data;
+    try { payload = await withCounts(data.data); } catch (e) { console.error("counts", e); }
+    return J(req, { data: payload, updated_at: data.updated_at }, 200, { "Cache-Control": "public, max-age=120" });
   }
   if (req.method === "GET") {
     if ((buckets.get("miss")?.get(ipOf(req)) || []).filter(t => Date.now() - t < 3600_000).length > 60) return J(req, { error: "rate limited" }, 429);
@@ -162,6 +211,10 @@ Deno.serve(async req => {
     const page = await writeGh(`a/${id}/index.html`, catHtml(id, data, rev), `catalog: agent page a/${id}`);
     return J(req, { id, count: rooms.length, page, rev });
   }
+  if (body && body.action === "cover-thumbs") {
+    const uploads = await coverThumbUploads(body.covers);
+    return J(req, { uploads });
+  }
   if (body && body.action === "init") {
     const n = Math.max(0, Math.min(MAX_N, Number(body.count) || 0));
     let id = rid();
@@ -174,9 +227,19 @@ Deno.serve(async req => {
       const have = new Set((objs || []).map(o => o.name));
       const ups2 = await Promise.all(keys.map(async (key: string) => {
         const path = `${id}/p-${key}.jpg`;
-        if (have.has(`p-${key}.jpg`)) return { key, path, url: PUB + path, exists: true };
+        const tName = `p-${key}-t.jpg`;
+        const tPath = `${id}/${tName}`;
+        let thumb: { path: string; url: string; token?: string; exists?: boolean } | null = null;
+        if (tName !== `p-${key}.jpg` && have.has(tName)) thumb = { path: tPath, url: PUB + tPath, exists: true };
+        else if (tName !== `p-${key}.jpg`) {
+          try {
+            const signed = await sb.storage.from("room-photos").createSignedUploadUrl(tPath);
+            if (signed.data && signed.data.token) thumb = { path: tPath, token: signed.data.token, url: PUB + tPath };
+          } catch { thumb = null; }
+        }
+        if (have.has(`p-${key}.jpg`)) return { key, path, url: PUB + path, exists: true, thumb };
         const { data, error } = await sb.storage.from("room-photos").createSignedUploadUrl(path, { upsert: true });
-        if (error || !data) throw error; return { key, path, token: data.token, url: PUB + path };
+        if (error || !data) throw error; return { key, path, token: data.token, url: PUB + path, thumb };
       })).catch(() => null);
       if (!ups2) return J(req, { error: "sign failed" }, 500);
       let og2 = null;

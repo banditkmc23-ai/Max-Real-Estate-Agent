@@ -151,6 +151,115 @@ async function toJpeg(blob, max, q) {
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   return await new Promise(res => c.toBlob(res, 'image/jpeg', q || 0.8));
 }
+const THUMB_CACHE = 'public, max-age=31536000, immutable';
+// ~480px JPEG for catalog cards. Never replaces the original file.
+async function jpegCover(blob) {
+  const bmp = await createImageBitmap(blob);
+  try {
+    const r = Math.min(1, 480 / Math.max(1, bmp.width));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bmp.width * r));
+    c.height = Math.max(1, Math.round(bmp.height * r));
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    let q = 0.62, out = null;
+    for (let i = 0; i < 4; i++) {
+      out = await new Promise(res => c.toBlob(b => res(b), 'image/jpeg', q));
+      if (!out || out.size <= 36000) break;
+      q = Math.max(0.36, q * 0.72);
+    }
+    return out;
+  } finally { if (bmp && bmp.close) bmp.close(); }
+}
+async function putThumb(path, token, blob) {
+  const C = window.MAX_COVERS;
+  if (!C || !C.safeThumbPath(path) || !token || !blob || blob.size > 120000) return false;
+  const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${path}?token=${encodeURIComponent(token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'cache-control': THUMB_CACHE }, body: blob }).catch(() => null);
+  return !!(r && r.ok);
+}
+async function uploadSignedThumb(thumb, blob) {
+  try {
+    if (!thumb || !thumb.token || !blob) return false;
+    const tb = await jpegCover(blob);
+    if (!tb || tb.size < 80) return false;
+    return await putThumb(thumb.path, thumb.token, tb);
+  } catch (e) { console.warn('thumb skipped', e); return false; }
+}
+async function thumbExists(url) {
+  try { const r = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' }, cache: 'no-store' }); return !!(r && (r.ok || r.status === 206)); } catch (e) { return false; }
+}
+async function signCoverThumbs(items) {
+  const r = await fetch(`${SB_URL}/functions/v1/share-room`, { method: 'POST', headers: { ...(await authH()), 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cover-thumbs', covers: items.slice(0, 30) }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status === 401 ? 'กรุณาเข้าสู่ระบบก่อน' : ('cover-thumbs ' + r.status));
+  return j.uploads || [];
+}
+async function ensureCoverThumb(url, blob) {
+  try {
+    const C = window.MAX_COVERS;
+    const spec = C && C.parseCover(url);
+    if (!spec || spec.already) return;
+    if (await thumbExists(spec.thumb)) return;
+    const ups = await signCoverThumbs([{ id: spec.id, file: spec.file }]);
+    const u = (ups || []).find(x => x && x.token && x.id === spec.id && C.safeThumbPath(x.path));
+    if (!u) return;
+    const src = blob || await (await fetch(spec.full)).blob();
+    await uploadSignedThumb(u, src);
+  } catch (e) { console.warn('cover thumb skipped', e); }
+}
+// Owner-only backfill. Adds <file>-t.jpg beside each available-room cover. Originals are not opened for write.
+async function backfillCoverThumbs(say) {
+  const note = t => { if (say) say(t); };
+  const C = window.MAX_COVERS;
+  if (!C) throw new Error('ไม่พบตัวช่วยรูปย่อ');
+  const specs = [];
+  const seen = new Set();
+  for (const u of units_()) {
+    if (!u || u.status !== 'AVAILABLE' || !(u.share && u.share.cover)) continue;
+    const spec = C.parseCover(u.share.cover);
+    if (!spec || spec.already || seen.has(spec.thumb)) continue;
+    seen.add(spec.thumb);
+    specs.push(spec);
+  }
+  if (!specs.length) { note('ไม่มีหน้าปกให้ทำรูปย่อ'); return { made: 0, existed: 0, skipped: 0 }; }
+  const missing = [];
+  let existed = 0, skipped = 0, made = 0, checked = 0, i = 0;
+  note(`กำลังตรวจรูปย่อ 0/${specs.length}...`);
+  async function checkWorker() {
+    while (i < specs.length) {
+      const spec = specs[i++];
+      if (await thumbExists(spec.thumb)) existed++; else missing.push(spec);
+      checked++;
+      if (checked % 10 === 0 || checked === specs.length) note(`กำลังตรวจรูปย่อ ${checked}/${specs.length}...`);
+    }
+  }
+  await Promise.all([1, 2, 3, 4].map(checkWorker));
+  note(`ต้องสร้าง ${missing.length} รูป · มีอยู่แล้ว ${existed}`);
+  for (let b = 0; b < missing.length; b += 8) {
+    const batch = missing.slice(b, b + 8);
+    let ups = [];
+    try { ups = await signCoverThumbs(batch.map(s => ({ id: s.id, file: s.file }))); }
+    catch (e) { note(e.message || 'สร้างรูปย่อไม่สำเร็จ'); throw e; }
+    let k = 0;
+    async function upWorker() {
+      while (k < batch.length) {
+        const spec = batch[k++];
+        const u = (ups || []).find(x => x && x.id === spec.id && x.file === spec.file && x.token && C.safeThumbPath(x.path));
+        if (!u) { if ((ups || []).some(x => x && x.id === spec.id && x.exists)) existed++; else skipped++; continue; }
+        try {
+          const res = await fetch(spec.full, { cache: 'no-store' });
+          if (!res.ok) { skipped++; continue; }
+          const ok = await uploadSignedThumb(u, await res.blob());
+          if (ok) made++; else skipped++;
+        } catch (e) { skipped++; }
+        note(`สร้างรูปย่อ ${made}/${missing.length}...`);
+      }
+    }
+    await Promise.all([1, 2].map(upWorker));
+  }
+  note(`รูปย่อใหม่ ${made} · มีอยู่แล้ว ${existed} · ข้าม ${skipped} · รูปต้นฉบับไม่ถูกแก้ไข`);
+  return { made, existed, skipped };
+}
+FX.backfillCoverThumbs = backfillCoverThumbs;
 // After a confirmed upload, swap the local full-size blob for the cloud URL (thumb kept for fast/offline previews).
 // Each photo is only changed if: the server returned its URL, that URL answers 200 with an image, and the record is unchanged locally.
 async function offloadUploaded(sorted, sent, urls) {
@@ -239,12 +348,16 @@ async function cloudLink(u, o, withPhotos) {
     if (p.url && p.url.startsWith(PUBP)) { images.push({ url: p.url }); sent.push(null); continue; }
     const up = byKey.get(photoKey(p)); if (!up) { failed.add(p.id); images.push(null); sent.push(null); continue; }
     images.push({ url: up.url }); sent.push(p.full ? 'new' : null);
-    if (up.exists) continue;
+    if (up.exists) {
+      if (up.thumb && up.thumb.token) jobs.push(async () => { try { const src = p.full || (W.fullBlobOf ? await W.fullBlobOf(p) : p.thumb); if (src) await uploadSignedThumb(up.thumb, src); } catch (e) { console.warn('thumb skipped', p.id, e); } });
+      continue;
+    }
     jobs.push(async () => {
       let jpg = null;
       try { const src = p.full || (W.fullBlobOf ? await W.fullBlobOf(p) : p.thumb); for (const [m, q] of [[1080, 0.72], [1080, 0.6], [900, 0.6]]) { jpg = await toJpeg(src, m, q); if (jpg.size <= 600000) break; } } catch (e) { jpg = null; }
       let ok = false;
       for (let t = 0; jpg && t < 3 && !ok; t++) { const r = await fetch(`${SB_URL}/storage/v1/object/upload/sign/room-photos/${up.path}?token=${encodeURIComponent(up.token)}`, { method: 'PUT', headers: { ...SB_H, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, body: jpg }).catch(() => null); ok = !!(r && r.ok); }
+      if (ok && up.thumb && up.thumb.token) { try { await uploadSignedThumb(up.thumb, jpg); } catch (e) { console.warn('thumb skipped', p.id, e); } }
       if (!ok) failed.add(p.id);
       say(`กำลังอัปโหลดรูปใหม่ ${++done}/${todo}...`);
     });
@@ -259,6 +372,7 @@ async function cloudLink(u, o, withPhotos) {
     } catch (e) { init.og = null; console.warn('og image skipped', e); }
   });
   let qi = 0; await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (qi < jobs.length) await jobs[qi++](); }));
+  try { const coverUrl = (images.find(x => x && x.url) || {}).url || ''; const coverPhoto = sorted[0]; if (coverUrl) await ensureCoverThumb(coverUrl, coverPhoto && (coverPhoto.full || coverPhoto.thumb)); } catch (e) { console.warn('cover thumb skipped', e); }
   const keep = sorted.map((p, i) => images[i] && !failed.has(p.id) ? i : -1).filter(i => i >= 0);
   if (sorted.length && !keep.length) throw new Error('อัปโหลดรูปไม่สำเร็จ');
   const secret = sh ? sh.secret : Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('');
@@ -1010,14 +1124,20 @@ function sheet(msg) {
     <div class="bg-white border border-slate-700 rounded-2xl p-3 mb-3"><p class="text-[11px] text-slate-500">ลิงก์ถาวร</p><p class="text-xs font-semibold break-all ${c ? 'text-brick-600' : 'text-slate-400'}">${c ? E(linkOf(c)) : 'ยังไม่ได้สร้าง'}</p>
     <p id="fxCatMsg" class="text-[10px] text-slate-400 mt-1">${E(msg || (c ? `แสดงอยู่ ${c.count ?? '-'} ห้อง · อัปเดตล่าสุด ${new Date(c.at).toLocaleString('th-TH')}` : `ห้องว่างตอนนี้ ${n} ห้อง`))}</p></div>
     <button onclick="FX.catPublish()" class="w-full py-3 rounded-full bg-brick-500 text-white text-sm font-semibold flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i>อัปเดตหน้าห้องว่าง</button>
+    <button onclick="FX.catThumbs()" class="w-full mt-2 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold">สร้างรูปย่อหน้าปก</button>
     ${c ? `<div class="grid grid-cols-3 gap-2 mt-2"><button onclick="FX.lineShare('ห้องว่างพร้อมเข้าอยู่ ดูรูปและราคาได้ที่นี่ 👉 ' + '${linkOf(c)}')" class="py-2.5 rounded-full text-white text-xs font-semibold" style="background:#06C755">LINE</button><button onclick="FX.copy('${linkOf(c)}')" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">คัดลอก</button><button onclick="window.open('${linkOf(c)}','_blank')" class="py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">เปิดดู</button></div>` : ''}
-    <p class="text-[10px] text-slate-400 mt-3">อัปเดตอัตโนมัติเมื่อสถานะห้องเปลี่ยน (เมื่อออนไลน์) · ห้องที่ไม่ว่างจะหายจากหน้าเอง</p></div>`);
+    <p class="text-[10px] text-slate-400 mt-3">อัปเดตอัตโนมัติเมื่อสถานะห้องเปลี่ยน (เมื่อออนไลน์) · ห้องที่ไม่ว่างจะหายจากหน้าเอง · รูปย่อเป็นไฟล์ใหม่ข้างรูปเดิม ไม่ทับและไม่ลบรูปต้นฉบับ</p></div>`);
 }
 FX.openCatalog = () => sheet();
 FX.catPublish = async function () {
   const m = () => $('fxCatMsg');
   try { const c = await publish(t => { if (m()) m().textContent = t; }); if (c) { sheet(`อัปเดตแล้ว · แสดง ${c.count} ห้อง${c.first ? ' · พรีวิว LINE พร้อมในประมาณ 1 นาที' : ''}`); T('อัปเดตหน้าห้องว่างแล้ว'); } }
   catch (e) { if (m()) m().innerHTML = `<span class="text-rose-600 font-semibold">${E(e.message)}</span>`; }
+};
+FX.catThumbs = async function () {
+  const m = () => $('fxCatMsg');
+  try { await FX.backfillCoverThumbs(t => { if (m()) m().textContent = t; }); T('ตรวจรูปย่อแล้ว'); }
+  catch (e) { if (m()) m().innerHTML = `<span class="text-rose-600 font-semibold">${E(e.message || 'สร้างรูปย่อไม่สำเร็จ')}</span>`; }
 };
 // auto-update when the set of available rooms changes
 let timer = null;

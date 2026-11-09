@@ -182,9 +182,9 @@ test('the room button shares prepared files in the click and zips the rest', () 
   assert.match(html, /class="dv-btn bg-brick-50 text-brick-700"/);
   assert.match(html, /#c2552d/);
   assert.match(html, /photo-copy\.js\?v=3/);
-  assert.match(html, /const APP_VERSION = '9\.33'/);
+  assert.match(html, /const APP_VERSION = '9\.34'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v68'/);
+  assert.match(read('sw.js'), /const VERSION = 'v69'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);
