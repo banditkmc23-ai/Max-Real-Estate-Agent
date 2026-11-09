@@ -144,14 +144,14 @@ test('client source no longer infers photo deletes and pulls before the first pu
   assert.match(features, /shareDecision\(/);
   assert.match(features, /imgsKept/);
   const html = read('index.html');
-  assert.match(html, /const APP_VERSION = '9\.34'/);
+  assert.match(html, /const APP_VERSION = '9\.35'/);
   assert.match(html, /photo-safety\.js\?v=48/);
   assert.match(html, /UNIT_SHAPE\.normalizeUnits/);
   assert.doesNotMatch(html, /v9\.3(?!\d)/);
   assert.match(html, /function coverSrc/);
   assert.match(html, /function markPhotosUserDeleted/);
   assert.match(html, /SYNC\.notePhotoDeleted/);
-  assert.match(read('sw.js'), /const VERSION = 'v69'/);
+  assert.match(read('sw.js'), /const VERSION = 'v70'/);
   assert.match(read('sw.js'), /unit-shape\.js/);
   assert.match(sync, /canonicalJson/);
   assert.match(sync, /needsFullPullBeforePush/);

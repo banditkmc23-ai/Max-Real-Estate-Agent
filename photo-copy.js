@@ -1,14 +1,16 @@
 /* MAX Agent — room photo copy selection.
    Primary path is v9.0 (7727bba): navigator.share({ files }) for every photo and
    nothing else. v9.30 never attaches room notes. v9.31 keeps that, and when the
-   whole set cannot be shared (Chrome's clipboard holds one image) the fallback
-   is one ZIP of every photo plus a Thai explanation — not a silent one-photo copy.
-   Room notes stay on the separate text button. */
+   whole set cannot be shared the iPhone path is one ZIP plus a Thai explanation.
+   Desktop Chrome does not download: it writes image/png to the clipboard so a
+   post can be pasted. Chrome keeps a single image, so a set is one photo at a
+   time with a Thai explanation. Room notes stay on the separate text button. */
 (function (root) {
   'use strict';
 
   var UNSUPPORTED_TOAST = 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้';
   var ZIP_TOAST = 'แชร์รูปทั้งหมดทีเดียวไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว';
+  var CLIPBOARD_FAIL_TOAST = 'คัดลอกรูปไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว';
   var SHARE_JPEG = 'image/jpeg';
   var SHARE_PNG = 'image/png';
 
@@ -30,6 +32,13 @@
 
   function oneToast(number, total) {
     return 'คัดลอกรูปที่ ' + number + '/' + total + ' แล้ว วางได้เลย กดอีกครั้งเพื่อรูปถัดไป';
+  }
+
+  /* Chrome's clipboard holds one image/png. Facebook pastes that image.
+     A second press copies the next photo. No room text is included. */
+  function chromeOneToast(number, total) {
+    if ((total | 0) <= 1) return 'คัดลอกรูปแล้ว วางใน Facebook ได้เลย';
+    return 'Chrome วางได้ทีละรูป คัดลอกรูปที่ ' + number + '/' + total + ' แล้ว วางใน Facebook ได้เลย กดอีกครั้งเพื่อรูปถัดไป';
   }
 
   function allToast(total) {
@@ -205,6 +214,37 @@
     if (phase === 'abort') return { action: 'silent' };
     if (phase === 'ok') return { action: 'done', via: 'share' };
 
+    /* Desktop Chrome: paste into a post, not the share sheet and not a download.
+       Try every PNG at once; Chrome rejects that, then one image/png is the paste. */
+    if (ctx.desktopClipboard) {
+      if (ctx.clipboardFailed) return { action: 'zip', includeText: false, text: '', toast: CLIPBOARD_FAIL_TOAST };
+      if (ctx.canWriteSinglePng && count > 1 && !ctx.multiTried && ctx.canTryMulti) {
+        return { action: 'write-multi', includeText: false, text: '' };
+      }
+      if (ctx.multiOk) return { action: 'done', via: 'multi', toast: allToast(count), includeText: false, text: '' };
+      if (ctx.canWriteSinglePng) {
+        var index = 0;
+        var cursor = ctx.cursor;
+        if (count > 1 && cursor && cursor.roomId === ctx.roomId) {
+          index = cursor.index | 0;
+          if (index < 0 || index >= count) index = 0;
+        }
+        var number = index + 1;
+        return {
+          action: 'copy-one',
+          index: index,
+          number: number,
+          total: count,
+          nextCursor: { roomId: ctx.roomId, index: count > 1 ? (index + 1) % count : 0 },
+          toast: chromeOneToast(number, count),
+          includeText: false,
+          text: ''
+        };
+      }
+      if (ctx.canZip === false) return { action: 'unsupported', toast: UNSUPPORTED_TOAST };
+      return { action: 'zip', includeText: false, text: '', toast: CLIPBOARD_FAIL_TOAST };
+    }
+
     if (ctx.canShareFiles && (phase === 'untried' || phase === 'text-failed')) {
       return { action: 'share', includeText: false, text: '' };
     }
@@ -231,11 +271,13 @@
   var api = {
     UNSUPPORTED_TOAST: UNSUPPORTED_TOAST,
     ZIP_TOAST: ZIP_TOAST,
+    CLIPBOARD_FAIL_TOAST: CLIPBOARD_FAIL_TOAST,
     SHARE_JPEG: SHARE_JPEG,
     SHARE_PNG: SHARE_PNG,
     orderPhotos: orderPhotos,
     descriptionText: descriptionText,
     oneToast: oneToast,
+    chromeOneToast: chromeOneToast,
     allToast: allToast,
     shareMime: shareMime,
     shareFileName: shareFileName,

@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.34</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.35</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1178,7 +1178,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.34</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.35</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2517,6 +2517,13 @@ function quickCopy(id) {
   copy(text); toast('คัดลอกรายละเอียดแล้ว');
 }
 const roomShareReady = new Map();
+let photoCopyCursor = { roomId: null, index: 0 };
+function isDesktopChromium() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod|CriOS/.test(ua)) return false;
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
+  return /Chrome\/|Chromium\//.test(ua);
+}
 function photoShareStem(u, i) { return String((u && u.project) || 'room').replace(/\s+/g, '_') + '_' + ((u && u.room) || '') + '_' + (i + 1); }
 function blobToPng(blob) {
   return new Promise((resolve, reject) => {
@@ -2620,10 +2627,19 @@ function prepareRoomShareFiles(id) {
 async function copyOnePng(file) {
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobToPng(file) })]);
 }
+async function writeMultiPng(files) {
+  const items = [];
+  for (let i = 0; i < files.length; i++) items.push(new ClipboardItem({ 'image/png': blobToPng(files[i]) }));
+  await navigator.clipboard.write(items);
+}
 function canSharePayload(payload) { try { return !!(navigator.canShare && navigator.canShare(payload)); } catch (e) { return false; } }
 function clipboardApi() {
   const write = !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function');
-  return { canWriteSinglePng: write && (typeof ClipboardItem !== 'function' || typeof ClipboardItem.supports !== 'function' || ClipboardItem.supports('image/png')) };
+  const supports = typeof ClipboardItem === 'function' && typeof ClipboardItem.supports === 'function' ? ClipboardItem.supports : null;
+  return {
+    canTryMulti: write,
+    canWriteSinglePng: write && (!supports || supports('image/png'))
+  };
 }
 function zipDownloadName(u) { return photoShareStem(u, 0).replace(/_1$/, '').replace(/[\\/]/g, '_') + '_photos.zip'; }
 function saveZipBlob(blob, name) {
@@ -2648,12 +2664,19 @@ async function downloadPhotoZip(u, files) { saveZipBlob(await zipBlobFromFiles(f
 async function sharePreparedPhotos(id, u, pairs, zipBlob) {
   const PC = window.MAX_PHOTO_COPY;
   const files = pairs.map(p => p.file);
+  const clip = clipboardApi();
   const ctx = {
     count: files.length,
     roomId: id,
     canShareFiles: canSharePayload({ files: files }),
-    canWriteSinglePng: clipboardApi().canWriteSinglePng,
-    sharePhase: 'untried'
+    desktopClipboard: isDesktopChromium(),
+    canTryMulti: clip.canTryMulti,
+    canWriteSinglePng: clip.canWriteSinglePng,
+    cursor: photoCopyCursor,
+    sharePhase: 'untried',
+    multiTried: false,
+    multiOk: false,
+    clipboardFailed: false
   };
   const planOf = () => PC ? PC.selectPhotoCopy(ctx) : { action: ctx.canShareFiles ? 'share' : 'zip', includeText: false, text: '', toast: 'แชร์รูปทั้งหมดทีเดียวไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว' };
   for (let step = 0; step < 4; step++) {
@@ -2671,6 +2694,15 @@ async function sharePreparedPhotos(id, u, pairs, zipBlob) {
       }
     }
     if (plan.action === 'silent' || plan.action === 'done') return;
+    if (plan.action === 'write-multi') {
+      ctx.multiTried = true;
+      try {
+        await writeMultiPng(files);
+        ctx.multiOk = true;
+        toast(plan.toast || (PC && PC.allToast(files.length)));
+        return;
+      } catch (e) { continue; }
+    }
     if (plan.action === 'zip') {
       try {
         if (zipBlob) saveZipBlob(zipBlob, zipDownloadName(u));
@@ -2680,9 +2712,16 @@ async function sharePreparedPhotos(id, u, pairs, zipBlob) {
       return;
     }
     if (plan.action === 'copy-one') {
-      try { await copyOnePng(files[0]); toast(plan.toast || (PC && PC.allToast(1))); }
-      catch (e) { toast('คัดลอกรูปไม่สำเร็จ'); }
-      return;
+      try {
+        await copyOnePng(files[plan.index] || files[0]);
+        if (plan.nextCursor) photoCopyCursor = plan.nextCursor;
+        toast(plan.toast || (PC && PC.allToast(1)));
+        return;
+      } catch (e) {
+        ctx.canWriteSinglePng = false;
+        ctx.clipboardFailed = true;
+        continue;
+      }
     }
     toast(plan.toast || 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้');
     return;
@@ -3546,7 +3585,7 @@ async function fullBlobOf(p) {
   if (!p) return null;
   if (p.full) return p.full;
   // Public room-photos URL first. The private user-photos bucket may be empty; waiting on it blocks copy/share.
-  if (p.url) { if (remoteBlobCache.has(p.url)) return remoteBlobCache.get(p.url); try { const r = await fetch(p.url); if (r.ok) { const b = await r.blob(); if (b && b.size) { remoteBlobCache.set(p.url, b); return b; } } } catch (e) {} }
+  if (p.url) { if (remoteBlobCache.has(p.url)) return remoteBlobCache.get(p.url); try { const r = await fetch(p.url, { mode: 'cors', credentials: 'omit' }); if (r.ok) { const b = await r.blob(); if (b && b.size) { remoteBlobCache.set(p.url, b); return b; } } } catch (e) {} }
   if (p.cloud && window.SYNC && SYNC.fullBlob) { try { const b = await SYNC.fullBlob(p); if (b) return b; } catch (e) {} }
   return p.thumb || null;
 }
@@ -3952,7 +3991,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.34';
+const APP_VERSION = '9.35';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4051,7 +4090,7 @@ function sfPreview() {
 })();
 </script>
 <script src="catalog-covers.js?v=1"></script>
-<script src="photo-copy.js?v=3"></script>
+<script src="photo-copy.js?v=4"></script>
 <script src="photo-safety.js?v=48"></script>
 <script src="features.js?v=45"></script>
 <script src="vendor/supabase.js"></script>
