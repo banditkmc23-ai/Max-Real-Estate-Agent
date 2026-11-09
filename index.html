@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.37</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.38</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1178,7 +1178,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.37</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.38</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2601,40 +2601,33 @@ function prepareRoomShareFiles(id) {
   job.finally(() => { if (inflight.get(id) === job) inflight.delete(id); });
   return job;
 }
-async function copyAndSharePhotos(unitId) {
-  const u = units.find(x => x.id === unitId); if (!u) return;
+function sharePreparedNow(files) {
   const PC = window.MAX_PHOTO_COPY;
-  // ก) ใช้ไฟล์ที่เตรียมไว้ตอนเปิดห้อง เพื่อให้ share เกิดในการกดครั้งนี้
-  let files = preparedShareFiles(unitId);
+  let canShareFiles = false;
+  try { canShareFiles = !!(navigator.canShare && navigator.canShare({ files: files })); } catch (e) { canShareFiles = false; }
+  const plan = PC ? PC.selectPhotoCopy({ count: files.length, canShareFiles: canShareFiles, sharePhase: 'untried' }) : { action: canShareFiles ? 'share' : 'download', toast: 'ดาวน์โหลดรูปแล้ว ถ้า Chrome ถาม ให้อนุญาตดาวน์โหลดหลายไฟล์' };
+  if (plan.action === 'download') {
+    downloadAllPhotos(files);
+    toast(plan.toast);
+    return;
+  }
+  if (plan.action !== 'share') return;
+  navigator.share({ files: files }).then(function () { toast('แชร์รูปแล้ว'); }, function (e) {
+    const phase = e && e.name === 'AbortError' ? 'abort' : 'not-allowed';
+    const next = PC ? PC.selectPhotoCopy({ count: files.length, canShareFiles: true, sharePhase: phase }) : { action: 'retry', toast: 'กดคัดลอกรูปภาพอีกครั้ง' };
+    if (next.action === 'download') return;
+    toast(next.toast || 'กดคัดลอกรูปภาพอีกครั้ง');
+  });
+}
+function copyAndSharePhotos(unitId) {
+  const u = units.find(x => x.id === unitId); if (!u) return;
+  const files = preparedShareFiles(unitId);
   if (!files) {
-    const pending = prepareRoomShareFiles.inflight && prepareRoomShareFiles.inflight.get(unitId);
-    if (pending) await pending;
-    files = preparedShareFiles(unitId);
+    prepareRoomShareFiles(unitId);
+    toast('กดคัดลอกรูปภาพอีกครั้ง');
+    return;
   }
-  if (!files) {
-    const raw = await getUnitPhotos(unitId);
-    const photos = PC && PC.sortByOrder ? PC.sortByOrder(raw) : raw;
-    // ข) ห้องนี้ไม่มีรูป
-    if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
-    // ค) สร้างไฟล์ jpeg ทุกใบ ชื่อโครงการ_ห้อง_ลำดับ.jpg
-    files = await filesForPhotos(photos, u);
-    if (files.length) roomShareReady.set(unitId, { stamp: PC ? PC.shareStamp(photos) : String(photos.length), files: files });
-  }
-  if (!files.length) return toast('ห้องนี้ยังไม่มีรูป');
-  // ง) แชร์รูปทั้งหมดในครั้งเดียว ไม่แนบข้อความห้อง
-  if (navigator.canShare && navigator.canShare({ files: files })) {
-    try {
-      await navigator.share({ files: files });
-      toast('แชร์รูปแล้ว');
-      return;
-    } catch (e) {
-      // จ) ผู้ใช้ปิดแผงแชร์
-      if (e && e.name === 'AbortError') { toast('ยกเลิก'); return; }
-    }
-  }
-  // ฉ) เบราว์เซอร์แชร์ไฟล์ไม่ได้ หรือแชร์ล้มเหลว — ดาวน์โหลดทุกไฟล์ในการกดนี้
-  downloadAllPhotos(files);
-  toast('ดาวน์โหลดรูปแล้ว ถ้า Chrome ถาม ให้อนุญาตดาวน์โหลดหลายไฟล์');
+  sharePreparedNow(files);
 }
 
 function copy(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text)); else fallbackCopy(text); }
@@ -3902,7 +3895,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.37';
+const APP_VERSION = '9.38';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4001,7 +3994,7 @@ function sfPreview() {
 })();
 </script>
 <script src="catalog-covers.js?v=1"></script>
-<script src="photo-copy.js?v=5"></script>
+<script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=48"></script>
 <script src="features.js?v=45"></script>
 <script src="vendor/supabase.js"></script>

@@ -8,6 +8,7 @@
   var SHARE_TOAST = 'แชร์รูปแล้ว';
   var CANCEL_TOAST = 'ยกเลิก';
   var DOWNLOAD_TOAST = 'ดาวน์โหลดรูปแล้ว ถ้า Chrome ถาม ให้อนุญาตดาวน์โหลดหลายไฟล์';
+  var PRESS_AGAIN_TOAST = 'กดคัดลอกรูปภาพอีกครั้ง';
 
   function orderPhotos(photos) {
     var list = (photos || []).map(function (p, i) { return { p: p, i: i }; });
@@ -57,14 +58,16 @@
     }).join('|');
   }
 
-  /* Share every file with no text. If that is unavailable or the share threw,
-     download every file. Abort is a cancel, not a download. */
+  /* Share every prepared file with no text. Download only when canShare is
+     missing or false. NotAllowedError means the click gesture was already gone,
+     so ask for another press instead of downloading. */
   function selectPhotoCopy(ctx) {
     ctx = ctx || {};
     var count = ctx.count | 0;
     if (count < 1) return { action: 'none', reason: 'no-photos' };
     var phase = ctx.sharePhase || 'untried';
     if (phase === 'abort') return { action: 'cancel', toast: CANCEL_TOAST, includeText: false, text: '' };
+    if (phase === 'not-allowed' || phase === 'failed') return { action: 'retry', toast: PRESS_AGAIN_TOAST, includeText: false, text: '' };
     if (phase === 'ok') return { action: 'done', via: 'share' };
     if (ctx.canShareFiles && (phase === 'untried' || phase === 'text-failed')) {
       return { action: 'share', includeText: false, text: '' };
@@ -76,6 +79,7 @@
     SHARE_TOAST: SHARE_TOAST,
     CANCEL_TOAST: CANCEL_TOAST,
     DOWNLOAD_TOAST: DOWNLOAD_TOAST,
+    PRESS_AGAIN_TOAST: PRESS_AGAIN_TOAST,
     orderPhotos: orderPhotos,
     sortByOrder: sortByOrder,
     descriptionText: descriptionText,
