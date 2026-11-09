@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.35</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.36</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1178,7 +1178,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.35</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.36</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2156,7 +2156,21 @@ async function loadDetailCover(unitId) {
     const ps = await getUnitPhotos(unitId);
     const wrap = document.getElementById('dvCoverStrip'), tr = document.getElementById('dvTrack');
     if (!wrap || !tr || detailUnitId !== unitId) return;
-    if (!ps.length) { wrap.classList.add('hidden'); return; }
+    if (!ps.length) {
+      const c = cloudCover(unitId);
+      if (c && c.thumb) {
+        tr.innerHTML = `<div class="dv-sl"><img alt=""></div>`;
+        const im = tr.querySelector('img');
+        im.onerror = function () { im.onerror = null; if (c.full && c.full !== c.thumb) im.src = c.full; };
+        im.src = c.thumb;
+        const dots = document.getElementById('dvDots'); if (dots) dots.innerHTML = '';
+        const cnt = document.getElementById('dvCnt'); if (cnt) cnt.textContent = '1/1';
+        wrap.classList.remove('hidden');
+        return;
+      }
+      wrap.classList.add('hidden');
+      return;
+    }
     ps.sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0));
     tr.innerHTML = ps.map((p, i) => `<div class="dv-sl" onclick="openGallery('${unitId}')"><img data-i="${i}" alt="" ${i > 1 ? 'loading="lazy"' : ''}></div>`).join('');
     const imgs = tr.querySelectorAll('img');
@@ -2177,6 +2191,8 @@ function renderDetailView() {
   const u = units.find(x => x.id === detailUnitId); if (!u) { closeDetailView(); return; }
   const m = statusOf(u), d = daysLeft(u.end), ps = postedState(u);
   const pic = photoCount[u.id] || 0, hasPhotos = pic > 0;
+  const previewCover = cloudCover(u.id);
+  const showStrip = hasPhotos || !!(previewCover && previewCover.thumb);
   const hasUrl = u.sourceUrl && isValidUrl(normalizeUrl(u.sourceUrl));
   const hasPhone = u.ownerPhone && /^\+?\d{6,}$/.test((u.ownerPhone || '').replace(/[^0-9+]/g, ''));
   const hasLine = !!u.ownerLine;
@@ -2189,7 +2205,7 @@ function renderDetailView() {
   const spec = [u.type ? esc(u.type) : '', u.bath ? esc(u.bath) + ' ห้องน้ำ' : '', u.size ? esc(u.size) + ' ตร.ม.' : '', u.floor ? 'ชั้น ' + esc(u.floor) : ''].filter(Boolean).join(' · ');
   const tab = window.dvTab || 'desc', T = k => `data-dvtab="${k}" ${tab === k ? '' : 'style="display:none"'}`;
   document.getElementById('detailContent').innerHTML = `
-    <div id="dvCoverStrip" class="dv-car rounded-2xl overflow-hidden bg-slate-100 ${pic ? '' : 'hidden'}"><div id="dvTrack" class="dv-track"></div><div id="dvCnt" class="dv-cnt">1/${pic}</div><div id="dvDots" class="dv-dots"></div></div>
+    <div id="dvCoverStrip" class="dv-car rounded-2xl overflow-hidden bg-slate-100 ${showStrip ? '' : 'hidden'}"><div id="dvTrack" class="dv-track"></div><div id="dvCnt" class="dv-cnt">1/${pic || (showStrip ? 1 : 0)}</div><div id="dvDots" class="dv-dots"></div></div>
     <div class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
       <div class="flex items-center gap-1.5 mb-2 flex-wrap">
         <button onclick="dvCycleStatus()" class="status-btn ${m.cls} border text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full ${m.dot}"></span>${m.label}</button>
@@ -2886,18 +2902,30 @@ function renderAvailableScroll() {
   const available = units.filter(u => u.status === 'AVAILABLE').slice(0, 8);
   if (!available.length) { container.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center w-full">ไม่มีห้องว่างในขณะนี้</p>`; return; }
   container.innerHTML = available.map(u => {
-    const pic = photoCount[u.id] || 0;
+    const stored = photoCount[u.id] || 0;
+    const cover = cloudCover(u.id);
+    const pic = stored || (cover && cover.n) || 0;
+    const showImg = !!(stored || (cover && cover.thumb));
     return `<div class="h-card" onclick="openDetailView('${u.id}')">
-      <div class="h-card-img">${pic ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full">${pic} รูป</span>` : ''}</div>
+      <div class="h-card-img">${showImg ? `<img id="hscroll-${u.id}" alt="">` : `<div class="w-full h-full flex items-center justify-center text-slate-300"><i data-lucide="image" class="w-8 h-8"></i></div>`}${pic ? `<span class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full">${pic} รูป</span>` : ''}</div>
       <div class="h-card-body"><p class="h-card-title truncate">${esc(u.project || '-')}</p><p class="h-card-sub truncate">${u.building ? esc(u.building) + ' · ' : ''}ห้อง ${esc(u.room)} · ${esc(u.type || '-')}</p><p class="h-card-price">${Number(u.rent) > 0 || !Number(u.salePrice) ? `${baht(u.rent)}<span class="text-[10px] font-normal text-slate-400">/เดือน</span>` : `ขาย ${baht(u.salePrice)}`}</p>${Number(u.rent) > 0 && Number(u.salePrice) > 0 ? `<p class="text-[10px] font-semibold text-brick-700">ขาย ${baht(u.salePrice)}</p>` : ''}</div>
     </div>`;
   }).join('');
   lucide.createIcons();
-  available.forEach(u => { if (photoCount[u.id]) loadHScrollPhoto(u.id); });
+  available.forEach(u => { const c = cloudCover(u.id); if (photoCount[u.id] || (c && c.thumb)) loadHScrollPhoto(u.id); });
+}
+function useCloudCover(img, unitId) {
+  const c = cloudCover(unitId);
+  if (!img || !c || !c.thumb) return false;
+  const full = c.full && c.full !== c.thumb ? c.full : '';
+  img.onerror = function () { img.onerror = null; if (full) img.src = full; };
+  img.src = c.thumb;
+  return true;
 }
 async function loadHScrollPhoto(unitId) {
   const img = document.getElementById('hscroll-' + unitId); if (!img) return;
-  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = coverSrc(ps[0]); if (!url) return; img.src = url; img.classList.add('w-full','h-full','object-cover'); } catch (e) {}
+  try { const ps = await getUnitPhotos(unitId); if (ps.length) { const url = coverSrc(ps[0]); if (url) { img.src = url; img.classList.add('w-full','h-full','object-cover'); return; } } } catch (e) {}
+  if (useCloudCover(img, unitId)) img.classList.add('w-full','h-full','object-cover');
 }
 
 // ============= ROOM RENDER =============
@@ -2997,17 +3025,23 @@ function render() {
   }
   if (detailUnitId) renderDetailView();
   lucide.createIcons();
-  list.forEach(x => { if (photoCount[x.id]) loadMiniCardPhoto(x.id); });
+  list.forEach(x => { const c = cloudCover(x.id); if (photoCount[x.id] || (c && c.thumb)) loadMiniCardPhoto(x.id); });
 }
 
+function cloudCover(unitId) {
+  try { const RS = window.ROOM_SUMMARY; return RS && RS.coverFor ? RS.coverFor(unitId) : null; } catch (e) { return null; }
+}
 function cardRowHTML(x) {
   const m = statusOf(x);
-  const pic = photoCount[x.id] || 0;
+  const stored = photoCount[x.id] || 0;
+  const cover = cloudCover(x.id);
+  const pic = stored || (cover && cover.n) || 0;
+  const showImg = !!(stored || (cover && cover.thumb));
   const rentShown = Number(x.rent) > 0 || !Number(x.salePrice);
   const sz = Number(x.size) ? ` · ${esc(x.size)} ตร.ม.` : '';
   return `<div class="unit-card g-card" onclick="openDetailView('${x.id}')">
     <div class="g-img">
-      ${pic ? `<img id="mini-${x.id}" alt="">` : `<i data-lucide="image" class="w-7 h-7 text-slate-300"></i>`}
+      ${showImg ? `<img id="mini-${x.id}" alt="">` : `<i data-lucide="image" class="w-7 h-7 text-slate-300"></i>`}
       <span class="g-badge ${m.cls} border">${m.short ? m.short : m.label}</span>
       <span class="g-fav" onclick="event.stopPropagation()">${favBtn(x)}</span>
       ${pic ? `<span class="g-cnt">${pic} รูป</span>` : ''}
@@ -3020,7 +3054,7 @@ function cardRowHTML(x) {
       ${x.station ? `<p class="g-sub">${esc(stationLabel(x))}</p>` : ''}
       <div class="g-btns" onclick="event.stopPropagation()">
         <button onclick="quickCopy('${x.id}')" class="g-b1"><i data-lucide="copy" class="w-3 h-3"></i>คัดข้อความ</button>
-        <button ${pic ? `onpointerdown="prepareRoomShareFiles('${x.id}')"` : ''} onclick="${pic ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="g-b2 ${pic ? '' : 'off'}"><i data-lucide="images" class="w-3 h-3"></i>รูปภาพ</button>
+        <button ${stored ? `onpointerdown="prepareRoomShareFiles('${x.id}')"` : ''} onclick="${stored ? `copyAndSharePhotos('${x.id}')` : `toast('ห้องนี้ยังไม่มีรูป')`}" class="g-b2 ${stored ? '' : 'off'}"><i data-lucide="images" class="w-3 h-3"></i>รูปภาพ</button>
       </div>
     </div>
   </div>`;
@@ -3060,7 +3094,8 @@ const miniPhotoCache = new Map();
 async function loadMiniCardPhoto(unitId) {
   const img = document.getElementById('mini-' + unitId); if (!img) return;
   if (miniPhotoCache.has(unitId)) { img.src = miniPhotoCache.get(unitId); return; }
-  try { const ps = await getUnitPhotos(unitId); if (!ps.length) return; const url = coverSrc(ps[0]); if (!url) return; miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; } catch (e) {}
+  try { const ps = await getUnitPhotos(unitId); if (ps.length) { const url = coverSrc(ps[0]); if (url) { miniPhotoCache.set(unitId, url); const img2 = document.getElementById('mini-' + unitId); if (img2) img2.src = url; return; } } } catch (e) {}
+  useCloudCover(img, unitId);
 }
 
 // ============== CRM CORE ==============
@@ -3991,7 +4026,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.35';
+const APP_VERSION = '9.36';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4094,7 +4129,8 @@ function sfPreview() {
 <script src="photo-safety.js?v=48"></script>
 <script src="features.js?v=45"></script>
 <script src="vendor/supabase.js"></script>
-<script src="sync.js?v=48"></script>
+<script src="room-summary.js?v=1"></script>
+<script src="sync.js?v=49"></script>
 <script src="photo-restore.js?v=46"></script>
 </body>
 </html>

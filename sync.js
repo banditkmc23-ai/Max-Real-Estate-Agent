@@ -64,9 +64,9 @@ const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^
 
 /* ---------- state ---------- */
 const SK = 'max_sync_v1';
-const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, cloudHash: {}, photoTry: {}, photoFail: {}, init: false, last: 0 });
+const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, cloudHash: {}, photoTry: {}, photoFail: {}, summary: {}, init: false, last: 0 });
 let st = J(SK, null) || fresh(null);
-['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail'].forEach(k => { st[k] = st[k] || {}; });
+['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail', 'summary'].forEach(k => { st[k] = st[k] || {}; });
 const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
 let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null, photoRestoreHold = false;
 let sessionPulled = false, loginPull = false, photoWriteAt = 0, draining = false;
@@ -261,6 +261,12 @@ async function push() {
   for (const k of keys) {
     if (k.startsWith('photo|')) continue;
     const d = st.dirty[k], [kind] = k.split('|', 1), id = k.slice(kind.length + 1);
+    const RS = W.ROOM_SUMMARY;
+    if (RS && kind === 'unit' && st.summary && st.summary[id]) {
+      const how = RS.pushDecision({ summary: true, deleted: !!d.del, sessionEdit: !!sessionEdits[k], explicit: !!(d && d.explicit) });
+      if (how === 'skip') continue;
+      if (how === 'delete') { delete st.summary[id]; docs.push({ k, row: { kind, id, rev: d.rev, deleted: true } }); continue; }
+    }
     if (d.del) { docs.push({ k, row: { kind, id, rev: d.rev, deleted: true } }); continue; }
     const a = adpFor(kind, id); if (!a) { delete st.dirty[k]; continue; }
     const m = cache[a.key + a.kind] || (cache[a.key + a.kind] = explode(a)); const s = m.get(id);
@@ -394,22 +400,40 @@ function queuePhotos(rows) {
 async function applyRows(rows, force) {
   const groups = new Map(), photos = []; let n = 0;
   const S = photoSafety();
-  for (const r of rows) {
+  const RS = W.ROOM_SUMMARY;
+  for (const r0 of rows) {
+    let r = r0;
     const k = r.kind + '|' + r.id, d = st.dirty[k];
     if (d && d.del && d.explicit && d.rev >= r.rev) continue;
     if (d && d.restore && d.rev >= r.rev) continue;
     if (r.kind === 'photo') { photos.push(r); continue; }
     const a = adpFor(r.kind, r.id); if (!a) continue;
+    let forceApply = false, summaryCloudHash = null;
+    if (r.kind === 'unit' && st.summary && st.summary[r.id] && RS) {
+      const info = st.summary[r.id];
+      let local = null;
+      try { const raw = explode(a).get(String(r.id)); local = raw ? JSON.parse(raw) : null; } catch (e) { local = null; }
+      if (!local && sessionEdits[k]) continue;
+      const up = RS.upgrade(info.base, local, { deleted: !!r.deleted, data: r.data });
+      if (up.action === 'keep') continue;
+      if (!local) delete st.summary[r.id];
+      if (up.action === 'apply') {
+        if (up.edited) summaryCloudHash = r.deleted || r.data == null ? null : contentHash('unit', JSON.stringify(r.data));
+        r = Object.assign({}, r, { data: up.data, deleted: up.data == null });
+        delete st.summary[r.id];
+        forceApply = true;
+      }
+    }
     const cloudJson = r.deleted || r.data == null ? null : JSON.stringify(r.data);
     const cloudHash = cloudJson == null ? null : contentHash(r.kind, cloudJson);
-    const decision = S && S.decideIncoming ? S.decideIncoming({
+    const decision = forceApply ? { action: 'apply' } : (S && S.decideIncoming ? S.decideIncoming({
       deleted: !!r.deleted,
       localHash: localHashOf(r.kind, r.id),
       cloudHash: cloudHash,
       cloudRev: r.rev,
       ackedRev: st.r[k] || 0,
       sessionEditAt: sessionEdits[k] || 0
-    }) : { action: 'apply' };
+    }) : { action: 'apply' });
     if (decision.action === 'keep-local') continue;
     if (decision.action === 'equal') {
       delete st.dirty[k]; st.r[k] = r.rev;
@@ -417,7 +441,7 @@ async function applyRows(rows, force) {
       continue;
     }
     const g = groups.get(a) || [];
-    g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev, hash: cloudHash });
+    g.push({ id: r.id, data: r.deleted ? null : r.data, k, rev: r.rev, hash: cloudHash, summaryCloudHash });
     groups.set(a, g);
   }
   for (const [a, g] of groups) {
@@ -426,7 +450,8 @@ async function applyRows(rows, force) {
       delete st.dirty[c.k]; st.r[c.k] = c.rev;
       const s = m.get(c.id);
       if (s == null) { delete st.h[c.k]; delete st.cloudHash[c.k]; }
-      else { const h = contentHash(a.kind, s); st.h[c.k] = h; st.cloudHash[c.k] = h; }
+      else { const h = contentHash(a.kind, s); st.h[c.k] = h; st.cloudHash[c.k] = c.summaryCloudHash && c.summaryCloudHash !== h ? c.summaryCloudHash : h; }
+      if (c.summaryCloudHash && c.summaryCloudHash !== st.h[c.k]) markDirty(c.k);
       n++;
     }
   }
@@ -547,6 +572,135 @@ async function fillFulls() {
   await Promise.all([0, 1, 2, 3, 4, 5].map(async () => { while (work.length && user && navigator.onLine && fail < 5) { const p = work.shift(); try { await fullBlob(p); } catch (e) { fail++; } i++; if (need.length > 3 && i % 5 === 0) setStatus(status, `ดาวน์โหลดรูปเต็ม ${i}/${need.length}`); } }));
 }
 
+/* ---------- room list preview (summary only; full rows replace it) ---------- */
+const PREVIEW_PAGE = 60;
+const PREVIEW_COLS = 'id,rev,project,building,room,floor,rent,sale_price,type,bath,size,view,status,station,station_dist,fav,created_at,last_posted,post_count,notes,source_url,owner,owner_phone,owner_line,start_date,end_date,cover_id,cover_url,cover_tsz,cover_fsz,photo_n';
+let previewing = null, previewView = true;
+function localUnitCount() {
+  const v = J('staylow_units_v1', []);
+  return Array.isArray(v) ? v.filter(x => x && x.id != null).length : 0;
+}
+function needsPreview() {
+  if (!user || !navigator.onLine) return false;
+  if (!localUnitCount()) return true;
+  if (!st.init) return true;
+  return false;
+}
+function applySummaries(rows) {
+  const RS = W.ROOM_SUMMARY;
+  const a = ADP.find(x => x.kind === 'unit');
+  if (!RS || !a || !rows || !rows.length) return 0;
+  const have = explode(a);
+  const changes = [], priv = [];
+  for (const row of rows) {
+    const id = String(row.id);
+    const k = 'unit|' + id;
+    let existing = null;
+    try { const raw = have.get(id); existing = raw ? JSON.parse(raw) : null; } catch (e) { existing = null; }
+    const spec = RS.coverSpec(row);
+    if (spec) RS.rememberCover(id, spec);
+    const gate = RS.acceptSummary({
+      existing: existing,
+      tracked: !!(st.summary && st.summary[id]),
+      sessionEdit: !!(sessionEdits[k] || (st.dirty && st.dirty[k])),
+      incomingRev: row.rev || 0,
+      haveRev: (st.summary && st.summary[id] && st.summary[id].rev) || 0
+    });
+    if (!gate.accept) continue;
+    const unit = RS.toUnit(row);
+    if (!unit) continue;
+    changes.push({ id, data: unit, rev: row.rev || 0 });
+    if (spec && spec.privateId) priv.push(spec);
+  }
+  if (priv.length) signCovers(priv);
+  if (!changes.length) return 0;
+  applyTo(a, changes);
+  const m = explode(a);
+  for (const c of changes) {
+    const s = m.get(c.id);
+    const k = 'unit|' + c.id;
+    st.summary[c.id] = { rev: c.rev, base: RS.baseOf(c.data) };
+    if (s != null) st.h[k] = contentHash('unit', s);
+    delete st.r[k];
+    delete st.cloudHash[k];
+    delete st.dirty[k];
+  }
+  saveSt();
+  return changes.length;
+}
+async function signCovers(specs) {
+  const RS = W.ROOM_SUMMARY;
+  if (!RS || !user || !specs.length || !sb.storage || !sb.storage.from) return;
+  const bucket = sb.storage.from(BUCKET);
+  if (!bucket.createSignedUrls) return;
+  const paths = [], owners = [];
+  for (const spec of specs) {
+    const leaf = encodeURIComponent(spec.privateId);
+    const thumb = user.id + '/' + leaf + '_t.jpg';
+    const full = user.id + '/' + leaf + '.jpg';
+    paths.push(spec.preferFull ? full : thumb, spec.preferFull ? thumb : full);
+    owners.push(spec);
+  }
+  try {
+    const { data, error } = await bucket.createSignedUrls(paths, 3600);
+    if (error || !data) return;
+    owners.forEach((spec, i) => {
+      const primary = data[i * 2] && data[i * 2].signedUrl;
+      const backup = data[i * 2 + 1] && data[i * 2 + 1].signedUrl;
+      const thumb = primary || backup || '';
+      const full = backup || primary || '';
+      if (thumb) RS.rememberCover(spec.unitId, { thumb, full: full && full !== thumb ? full : '', n: spec.n, privateId: '' });
+    });
+    queueAppRefresh(false);
+  } catch (e) { console.warn('room summary covers', e); }
+}
+async function fetchPreviewPage(from) {
+  if (previewView) {
+    const q = await sb.from('unit_list_summary').select(PREVIEW_COLS).order('fav', { ascending: false }).order('created_at', { ascending: false, nullsFirst: false }).order('id', { ascending: true }).range(from, from + PREVIEW_PAGE - 1);
+    if (!q.error) return q.data || [];
+    console.warn('room summary view', q.error.message || q.error);
+    previewView = false;
+    if (from) return [];
+  }
+  const q = await sb.from('user_docs').select('id,rev,data').eq('kind', 'unit').eq('deleted', false).order('id', { ascending: true }).range(from, from + PREVIEW_PAGE - 1);
+  if (q.error) throw q.error;
+  return q.data || [];
+}
+async function upgradeSummaries() {
+  const ids = Object.keys(st.summary || {});
+  if (!ids.length || !user) return 0;
+  let n = 0;
+  for (let i = 0; i < ids.length; i += 80) {
+    const slice = ids.slice(i, i + 80);
+    const { data, error } = await sb.from('user_docs').select('kind,id,data,rev,deleted,server_at').eq('kind', 'unit').in('id', slice);
+    if (error) throw error;
+    if (data && data.length) n += await applyRows(data, true);
+    await yieldThread();
+  }
+  return n;
+}
+async function prefetchRooms() {
+  if (!W.ROOM_SUMMARY || !needsPreview()) return;
+  let from = 0;
+  for (;;) {
+    if (!user) return;
+    const data = await fetchPreviewPage(from);
+    if (!data.length) break;
+    const n = applySummaries(data);
+    if (n) queueAppRefresh(true);
+    if (data.length < PREVIEW_PAGE) break;
+    from += data.length;
+    await yieldThread();
+  }
+  const upgraded = await upgradeSummaries();
+  if (upgraded) queueAppRefresh(true);
+}
+function startPreview() {
+  if (previewing || !needsPreview()) return previewing;
+  previewing = prefetchRooms().catch(e => console.warn('room summary', e)).finally(() => { previewing = null; });
+  return previewing;
+}
+
 /* ---------- main loop ---------- */
 let runStart = 0, gen = 0, wantFull = false;
 async function sync(opts = {}) {
@@ -562,6 +716,7 @@ async function sync(opts = {}) {
   // Opening an updated app keeps the cursor and asks for rows newer than it.
     stripInferredPhotoDeletes();
     const S = photoSafety();
+    if (needsPreview()) startPreview();
     const fullFirst = !!(opts.full || wantFull || (S && S.needsFullPullBeforePush(st, { uid: user.id, login: loginPull, sessionPulled, now: now() })));
     if (fullFirst) {
       loginPull = false; wantFull = false;
@@ -608,7 +763,7 @@ sb.auth.onAuthStateChange((ev, session) => {
   const u = session && session.user;
   if (u && (!user || user.id !== u.id)) {
     if (st.uid !== u.id) { st = fresh(u.id); saveSt(); }
-    user = u; loginPull = true; sessionPulled = false; setStatus('pending', 'กำลังดึงข้อมูลก่อนส่ง'); schedule(300);
+    user = u; loginPull = true; sessionPulled = false; setStatus('pending', 'กำลังดึงข้อมูลก่อนส่ง'); if (needsPreview()) startPreview(); schedule(300);
   } else if (!u && user) { user = null; setStatus('off'); }
   else if (!u) setStatus('off');
   if (ev === 'PASSWORD_RECOVERY') setTimeout(() => open('setpw'), 300);
