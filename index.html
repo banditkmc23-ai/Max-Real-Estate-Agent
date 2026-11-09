@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.36</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.37</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1178,7 +1178,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.36</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.37</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2533,70 +2533,38 @@ function quickCopy(id) {
   copy(text); toast('คัดลอกรายละเอียดแล้ว');
 }
 const roomShareReady = new Map();
-let photoCopyCursor = { roomId: null, index: 0 };
-function isDesktopChromium() {
-  const ua = navigator.userAgent || '';
-  if (/iPhone|iPad|iPod|CriOS/.test(ua)) return false;
-  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
-  return /Chrome\/|Chromium\//.test(ua);
+function preparedShareFiles(id) {
+  const hit = roomShareReady.get(id);
+  return hit && hit.files && hit.files.length ? hit.files : null;
 }
-function photoShareStem(u, i) { return String((u && u.project) || 'room').replace(/\s+/g, '_') + '_' + ((u && u.room) || '') + '_' + (i + 1); }
-function blobToPng(blob) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth || img.width || 1;
-      c.height = img.naturalHeight || img.height || 1;
-      c.getContext('2d').drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      c.toBlob(b => b ? resolve(b) : reject(new Error('png')), 'image/png');
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
-    img.src = url;
-  });
-}
-function blobToJpeg(blob) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth || img.width || 1;
-      c.height = img.naturalHeight || img.height || 1;
-      const g = c.getContext('2d');
-      g.fillStyle = '#ffffff';
-      g.fillRect(0, 0, c.width, c.height);
-      g.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      c.toBlob(b => b ? resolve(b) : reject(new Error('jpeg')), 'image/jpeg', 0.92);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
-    img.src = url;
-  });
-}
-async function shareFileFromBlob(blob, stem) {
+async function filesForPhotos(photos, u) {
   const PC = window.MAX_PHOTO_COPY;
-  const mime = PC && PC.shareMime ? PC.shareMime(blob && blob.type) : '';
-  if (mime) return new File([blob], PC.shareFileName(stem, mime), { type: mime });
-  const jpeg = await blobToJpeg(blob);
-  const name = PC && PC.shareFileName ? PC.shareFileName(stem, 'image/jpeg') : (stem + '.jpg');
-  return new File([jpeg], name, { type: 'image/jpeg' });
-}
-async function buildSharePairs(photos, u) {
   const allLocal = photos.length && photos.every(p => p && p.full && p.full.size);
   const blobs = allLocal ? photos.map(p => p.full) : await Promise.all(photos.map(p => fullBlobOf(p)));
-  const out = [];
+  const files = [];
   for (let i = 0; i < photos.length; i++) {
     const blob = blobs[i];
     if (!blob || !blob.size) continue;
-    try {
-      const file = await shareFileFromBlob(blob, photoShareStem(u, i));
-      if (file && file.size) out.push({ photo: photos[i], file: file });
-    } catch (e) {}
+    const name = PC ? PC.photoFileName(u && u.project, u && u.room, i) : ('photo_' + (i + 1) + '.jpg');
+    files.push(new File([blob], name, { type: 'image/jpeg' }));
   }
-  return out;
+  return files;
+}
+function downloadAllPhotos(files) {
+  const urls = [];
+  for (let i = 0; i < files.length; i++) {
+    const url = URL.createObjectURL(files[i]);
+    urls.push(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = files[i].name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  const revoke = () => { for (let i = 0; i < urls.length; i++) URL.revokeObjectURL(urls[i]); };
+  addEventListener('pagehide', revoke, { once: true });
+  requestAnimationFrame(revoke);
 }
 function dropRoomShare(id) {
   if (id) roomShareReady.delete(id); else roomShareReady.clear();
@@ -2607,8 +2575,7 @@ function dropRoomShare(id) {
 }
 function noteRoomPhotosChanged(id) { dropRoomShare(id); if (id) prepareRoomShareFiles(id); }
 function prepareRoomShareFiles(id) {
-  if (!id) return;
-  if (!db) { setTimeout(() => { if (db) prepareRoomShareFiles(id); }, 400); return; }
+  if (!id || !db) return;
   const tokens = prepareRoomShareFiles.tokens || (prepareRoomShareFiles.tokens = new Map());
   const inflight = prepareRoomShareFiles.inflight || (prepareRoomShareFiles.inflight = new Map());
   if (inflight.has(id)) return inflight.get(id);
@@ -2620,145 +2587,54 @@ function prepareRoomShareFiles(id) {
       const PC = window.MAX_PHOTO_COPY;
       const raw = await getUnitPhotos(id);
       if (tokens.get(id) !== token) return;
-      const photos = PC ? PC.orderPhotos(raw) : raw.slice();
+      const photos = PC && PC.sortByOrder ? PC.sortByOrder(raw) : raw.slice();
       if (!photos.length) { roomShareReady.delete(id); return; }
       const stamp = PC ? PC.shareStamp(photos) : String(photos.length);
       const hit = roomShareReady.get(id);
-      if (hit && hit.stamp === stamp && hit.pairs && hit.pairs.length) return;
-      const pairs = await buildSharePairs(photos, u);
-      if (tokens.get(id) !== token) return;
-      if (!pairs.length) return;
-      roomShareReady.set(id, { stamp: stamp, pairs: pairs, zipBlob: null });
-      let zipBlob = null;
-      try { zipBlob = await zipBlobFromFiles(pairs.map(p => p.file)); } catch (e) {}
-      if (tokens.get(id) !== token) return;
-      const stored = roomShareReady.get(id);
-      if (stored && stored.stamp === stamp) stored.zipBlob = zipBlob;
+      if (hit && hit.stamp === stamp && hit.files && hit.files.length) return;
+      const files = await filesForPhotos(photos, u);
+      if (tokens.get(id) !== token || !files.length) return;
+      roomShareReady.set(id, { stamp: stamp, files: files });
     } catch (e) {}
   })();
   inflight.set(id, job);
   job.finally(() => { if (inflight.get(id) === job) inflight.delete(id); });
   return job;
 }
-async function copyOnePng(file) {
-  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobToPng(file) })]);
-}
-async function writeMultiPng(files) {
-  const items = [];
-  for (let i = 0; i < files.length; i++) items.push(new ClipboardItem({ 'image/png': blobToPng(files[i]) }));
-  await navigator.clipboard.write(items);
-}
-function canSharePayload(payload) { try { return !!(navigator.canShare && navigator.canShare(payload)); } catch (e) { return false; } }
-function clipboardApi() {
-  const write = !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem === 'function');
-  const supports = typeof ClipboardItem === 'function' && typeof ClipboardItem.supports === 'function' ? ClipboardItem.supports : null;
-  return {
-    canTryMulti: write,
-    canWriteSinglePng: write && (!supports || supports('image/png'))
-  };
-}
-function zipDownloadName(u) { return photoShareStem(u, 0).replace(/_1$/, '').replace(/[\\/]/g, '_') + '_photos.zip'; }
-function saveZipBlob(blob, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 15000);
-}
-async function zipBlobFromFiles(files) {
+async function copyAndSharePhotos(unitId) {
+  const u = units.find(x => x.id === unitId); if (!u) return;
   const PC = window.MAX_PHOTO_COPY;
-  const entries = [];
-  for (let i = 0; i < files.length; i++) {
-    const data = new Uint8Array(await files[i].arrayBuffer());
-    entries.push({ name: PC ? PC.zipEntryName(files[i].name, i) : files[i].name, data: data });
+  // ก) ใช้ไฟล์ที่เตรียมไว้ตอนเปิดห้อง เพื่อให้ share เกิดในการกดครั้งนี้
+  let files = preparedShareFiles(unitId);
+  if (!files) {
+    const pending = prepareRoomShareFiles.inflight && prepareRoomShareFiles.inflight.get(unitId);
+    if (pending) await pending;
+    files = preparedShareFiles(unitId);
   }
-  return new Blob([PC.buildStoredZip(entries)], { type: 'application/zip' });
-}
-async function downloadPhotoZip(u, files) { saveZipBlob(await zipBlobFromFiles(files), zipDownloadName(u)); }
-async function sharePreparedPhotos(id, u, pairs, zipBlob) {
-  const PC = window.MAX_PHOTO_COPY;
-  const files = pairs.map(p => p.file);
-  const clip = clipboardApi();
-  const ctx = {
-    count: files.length,
-    roomId: id,
-    canShareFiles: canSharePayload({ files: files }),
-    desktopClipboard: isDesktopChromium(),
-    canTryMulti: clip.canTryMulti,
-    canWriteSinglePng: clip.canWriteSinglePng,
-    cursor: photoCopyCursor,
-    sharePhase: 'untried',
-    multiTried: false,
-    multiOk: false,
-    clipboardFailed: false
-  };
-  const planOf = () => PC ? PC.selectPhotoCopy(ctx) : { action: ctx.canShareFiles ? 'share' : 'zip', includeText: false, text: '', toast: 'แชร์รูปทั้งหมดทีเดียวไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว' };
-  for (let step = 0; step < 4; step++) {
-    const plan = planOf();
-    if (plan.action === 'share') {
-      try {
-        await navigator.share({ files: files });
-        ctx.sharePhase = 'ok';
-        toast('แชร์รูปแล้ว');
-        return;
-      } catch (e) {
-        if (e && e.name === 'AbortError') { ctx.sharePhase = 'abort'; return; }
-        ctx.sharePhase = 'failed';
-        continue;
-      }
-    }
-    if (plan.action === 'silent' || plan.action === 'done') return;
-    if (plan.action === 'write-multi') {
-      ctx.multiTried = true;
-      try {
-        await writeMultiPng(files);
-        ctx.multiOk = true;
-        toast(plan.toast || (PC && PC.allToast(files.length)));
-        return;
-      } catch (e) { continue; }
-    }
-    if (plan.action === 'zip') {
-      try {
-        if (zipBlob) saveZipBlob(zipBlob, zipDownloadName(u));
-        else await downloadPhotoZip(u, files);
-        toast(plan.toast || (PC && PC.ZIP_TOAST));
-      } catch (e) { toast('รวมรูปเป็น ZIP ไม่สำเร็จ'); }
+  if (!files) {
+    const raw = await getUnitPhotos(unitId);
+    const photos = PC && PC.sortByOrder ? PC.sortByOrder(raw) : raw;
+    // ข) ห้องนี้ไม่มีรูป
+    if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
+    // ค) สร้างไฟล์ jpeg ทุกใบ ชื่อโครงการ_ห้อง_ลำดับ.jpg
+    files = await filesForPhotos(photos, u);
+    if (files.length) roomShareReady.set(unitId, { stamp: PC ? PC.shareStamp(photos) : String(photos.length), files: files });
+  }
+  if (!files.length) return toast('ห้องนี้ยังไม่มีรูป');
+  // ง) แชร์รูปทั้งหมดในครั้งเดียว ไม่แนบข้อความห้อง
+  if (navigator.canShare && navigator.canShare({ files: files })) {
+    try {
+      await navigator.share({ files: files });
+      toast('แชร์รูปแล้ว');
       return;
+    } catch (e) {
+      // จ) ผู้ใช้ปิดแผงแชร์
+      if (e && e.name === 'AbortError') { toast('ยกเลิก'); return; }
     }
-    if (plan.action === 'copy-one') {
-      try {
-        await copyOnePng(files[plan.index] || files[0]);
-        if (plan.nextCursor) photoCopyCursor = plan.nextCursor;
-        toast(plan.toast || (PC && PC.allToast(1)));
-        return;
-      } catch (e) {
-        ctx.canWriteSinglePng = false;
-        ctx.clipboardFailed = true;
-        continue;
-      }
-    }
-    toast(plan.toast || 'เบราว์เซอร์นี้แชร์หรือคัดลอกรูปไม่ได้');
-    return;
   }
-}
-async function copyAndSharePhotos(id) {
-  const u = units.find(x => x.id === id); if (!u) return;
-  const ready = roomShareReady.get(id);
-  if (ready && ready.pairs && ready.pairs.length) return sharePreparedPhotos(id, u, ready.pairs, ready.zipBlob);
-  const pending = prepareRoomShareFiles.inflight && prepareRoomShareFiles.inflight.get(id);
-  if (pending) await pending;
-  const again = roomShareReady.get(id);
-  if (again && again.pairs && again.pairs.length) return sharePreparedPhotos(id, u, again.pairs, again.zipBlob);
-  const PC = window.MAX_PHOTO_COPY;
-  const raw = await getUnitPhotos(id);
-  const photos = PC ? PC.orderPhotos(raw) : raw;
-  if (!photos.length) return toast('ห้องนี้ยังไม่มีรูป');
-  const pairs = await buildSharePairs(photos, u);
-  if (!pairs.length) return toast('โหลดรูปไม่สำเร็จ');
-  roomShareReady.set(id, { stamp: PC ? PC.shareStamp(photos) : String(photos.length), pairs: pairs });
-  return sharePreparedPhotos(id, u, pairs);
+  // ฉ) เบราว์เซอร์แชร์ไฟล์ไม่ได้ หรือแชร์ล้มเหลว — ดาวน์โหลดทุกไฟล์ในการกดนี้
+  downloadAllPhotos(files);
+  toast('ดาวน์โหลดรูปแล้ว ถ้า Chrome ถาม ให้อนุญาตดาวน์โหลดหลายไฟล์');
 }
 
 function copy(text) { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text)); else fallbackCopy(text); }
@@ -4026,7 +3902,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.36';
+const APP_VERSION = '9.37';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4125,7 +4001,7 @@ function sfPreview() {
 })();
 </script>
 <script src="catalog-covers.js?v=1"></script>
-<script src="photo-copy.js?v=4"></script>
+<script src="photo-copy.js?v=5"></script>
 <script src="photo-safety.js?v=48"></script>
 <script src="features.js?v=45"></script>
 <script src="vendor/supabase.js"></script>
