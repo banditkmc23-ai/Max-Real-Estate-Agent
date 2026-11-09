@@ -41,175 +41,64 @@ test('share of every file is photos only, even when notes exist and canShare wou
   assert.deepEqual(noNotes, { action: 'share', includeText: false, text: '' });
 });
 
-test('a text share failure retries files only, and AbortError stays silent', () => {
-  const retry = C.selectPhotoCopy({ count: 4, canShareFiles: true, canShareWithText: true, description: 'โน้ต', sharePhase: 'text-failed', canTryMulti: true, roomId: 'u1' });
-  assert.deepEqual(retry, { action: 'share', includeText: false, text: '' });
-  assert.equal(JSON.stringify(retry).includes('โน้ต'), false);
-  const abort = C.selectPhotoCopy({ count: 4, canShareFiles: true, sharePhase: 'abort', canTryMulti: true, canWriteSinglePng: true, roomId: 'u1' });
-  assert.deepEqual(abort, { action: 'silent' });
-  assert.equal(abort.action === 'copy-one', false);
-});
-
-test('a set that cannot be shared becomes one ZIP, never a silent one-photo copy', () => {
-  const base = { count: 8, roomId: 'room-a', description: 'โน้ต รายละเอียดห้อง', canShareWithText: true, canTryMulti: true, canTryHtml: true, canWriteSinglePng: true };
-  const unavailable = C.selectPhotoCopy(Object.assign({}, base, { canShareFiles: false, sharePhase: 'untried' }));
-  assert.equal(unavailable.action, 'zip');
-  assert.equal(unavailable.includeText, false);
-  assert.equal(unavailable.text, '');
-  assert.equal(unavailable.toast, C.ZIP_TOAST);
-  assert.equal(unavailable.toast, 'แชร์รูปทั้งหมดทีเดียวไม่ได้ จึงดาวน์โหลดเป็น ZIP แล้ว');
-  assert.equal(JSON.stringify(unavailable).includes('โน้ต'), false);
-  assert.equal(JSON.stringify(unavailable).includes('รายละเอียด'), false);
+test('a failed or missing share downloads every file, and cancel does not', () => {
+  const base = { count: 8, description: 'โน้ต รายละเอียดห้อง' };
+  const missing = C.selectPhotoCopy(Object.assign({}, base, { canShareFiles: false, sharePhase: 'untried' }));
+  assert.equal(missing.action, 'download');
+  assert.equal(missing.count, 8);
+  assert.equal(missing.includeText, false);
+  assert.equal(missing.text, '');
+  assert.match(missing.toast, /ดาวน์โหลดรูปแล้ว/);
+  assert.equal(JSON.stringify(missing).includes('โน้ต'), false);
   const failed = C.selectPhotoCopy(Object.assign({}, base, { canShareFiles: true, sharePhase: 'failed' }));
-  assert.equal(failed.action, 'zip');
+  assert.equal(failed.action, 'download');
   assert.equal(failed.action === 'copy-one', false);
-  assert.equal(JSON.stringify(failed).includes('โน้ต'), false);
-  const blocked = C.selectPhotoCopy(Object.assign({}, base, { canShareFiles: false, canZip: false }));
-  assert.equal(blocked.action, 'unsupported');
-  assert.equal(blocked.toast, C.UNSUPPORTED_TOAST);
+  const cancel = C.selectPhotoCopy(Object.assign({}, base, { canShareFiles: true, sharePhase: 'abort' }));
+  assert.equal(cancel.action, 'cancel');
+  assert.equal(cancel.toast, 'ยกเลิก');
   assert.equal(C.selectPhotoCopy({ count: 0, canShareFiles: true }).action, 'none');
 });
 
-test('desktop Chrome copies a PNG for Facebook and does not download first', () => {
-  const described = { count: 8, roomId: 'room-a', description: 'รายละเอียดห้อง ใกล้ BTS', canShareFiles: true, canShareWithText: true, desktopClipboard: true, canWriteSinglePng: true, canTryMulti: true };
-  const multi = C.selectPhotoCopy(described);
-  assert.deepEqual(multi, { action: 'write-multi', includeText: false, text: '' });
-  assert.equal(JSON.stringify(multi).includes('BTS'), false);
-  const one = C.selectPhotoCopy(Object.assign({}, described, { multiTried: true, multiOk: false, cursor: null }));
-  assert.equal(one.action, 'copy-one');
-  assert.equal(one.index, 0);
-  assert.equal(one.includeText, false);
-  assert.equal(one.text, '');
-  assert.equal(one.toast, C.chromeOneToast(1, 8));
-  assert.match(one.toast, /ทีละรูป/);
-  assert.match(one.toast, /Facebook/);
-  assert.equal(JSON.stringify(one).includes('รายละเอียด'), false);
-  const next = C.selectPhotoCopy(Object.assign({}, described, { multiTried: true, cursor: one.nextCursor }));
-  assert.equal(next.index, 1);
-  assert.equal(next.number, 2);
-  assert.equal(next.toast, C.chromeOneToast(2, 8));
-  const single = C.selectPhotoCopy({ count: 1, roomId: 'a', desktopClipboard: true, canShareFiles: true, canWriteSinglePng: true, canTryMulti: true });
-  assert.equal(single.action, 'copy-one');
-  assert.equal(single.toast, 'คัดลอกรูปแล้ว วางใน Facebook ได้เลย');
-  const failed = C.selectPhotoCopy(Object.assign({}, described, { clipboardFailed: true, canWriteSinglePng: false }));
-  assert.equal(failed.action, 'zip');
-  assert.equal(failed.toast, C.CLIPBOARD_FAIL_TOAST);
-  assert.equal(failed.includeText, false);
-  const iphone = C.selectPhotoCopy({ count: 8, roomId: 'a', desktopClipboard: false, canShareFiles: true, canWriteSinglePng: true, description: 'โน้ต' });
-  assert.deepEqual(iphone, { action: 'share', includeText: false, text: '' });
+test('photo file names are sanitized jpeg names in storage order', () => {
+  assert.equal(C.photoFileName('Ideo Q', '12A', 0), 'Ideo_Q_12A_1.jpg');
+  assert.equal(C.photoFileName('a/b', 'c\\d', 2), 'ab_cd_3.jpg');
+  assert.equal(C.photoFileName('', '', 0), 'photo_1.jpg');
+  const input = [photo('a', { order: 3 }), photo('b', { order: 1 }), photo('c', { order: 2 })];
+  assert.deepEqual(C.sortByOrder(input).map(p => p.id), ['b', 'c', 'a']);
+  assert.deepEqual(input.map(p => p.id), ['a', 'b', 'c']);
 });
 
-test('one photo can still be copied when share is missing, and a set never cycles', () => {
-  const one = C.selectPhotoCopy({ count: 1, roomId: 'a', canShareFiles: false, canWriteSinglePng: true });
-  assert.equal(one.action, 'copy-one');
-  assert.equal(one.index, 0);
-  assert.equal(one.total, 1);
-  assert.equal(one.toast, C.allToast(1));
-  const shared = C.selectPhotoCopy({ count: 1, roomId: 'a', canShareFiles: true, description: 'โน้ต', sharePhase: 'untried' });
-  assert.deepEqual(shared, { action: 'share', includeText: false, text: '' });
-  const zipInstead = C.selectPhotoCopy({ count: 1, roomId: 'a', canShareFiles: false, canWriteSinglePng: false });
-  assert.equal(zipInstead.action, 'zip');
-  for (const count of [2, 8]) {
-    const step = C.selectPhotoCopy({ count, roomId: 'a', canShareFiles: false, canWriteSinglePng: true, cursor: { roomId: 'a', index: 3 } });
-    assert.equal(step.action, 'zip');
-    assert.equal(step.action === 'copy-one', false);
-  }
-});
-
-test('Chrome share files are jpeg or png with a matching extension', () => {
-  assert.equal(C.shareMime('image/jpg'), 'image/jpeg');
-  assert.equal(C.shareMime('image/jpeg; charset=binary'), 'image/jpeg');
-  assert.equal(C.shareMime('image/png'), 'image/png');
-  assert.equal(C.shareMime('image/x-png'), 'image/png');
-  assert.equal(C.shareMime('image/webp'), '');
-  assert.equal(C.shareMime('image/heic'), '');
-  assert.equal(C.shareMime(''), '');
-  assert.equal(C.shareFileName('Ideo_12_1', 'image/jpeg'), 'Ideo_12_1.jpg');
-  assert.equal(C.shareFileName('Ideo_12_1.jpg', 'image/png'), 'Ideo_12_1.png');
-  assert.equal(C.shareFileName('Ideo_12_1.webp', 'image/webp'), 'Ideo_12_1.jpg');
-  const jpeg = { type: 'image/jpeg', name: 'a.jpg', size: 4 };
-  const png = { type: 'image/png', name: 'b.png', size: 4 };
-  assert.equal(C.filesAreShareable([jpeg, png]), true);
-  assert.equal(C.filesAreShareable([jpeg, { type: 'image/webp', name: 'c.webp', size: 4 }]), false);
-  assert.equal(C.filesAreShareable([{ type: 'image/png', name: 'c.jpg', size: 4 }]), false);
-  assert.equal(C.filesAreShareable([{ type: 'image/jpeg', name: 'c.jpg', size: 0 }]), false);
-  const photos = [{ id: 'a', cover: false, order: 1, url: 'u', full: { size: 10 } }];
-  assert.notEqual(C.shareStamp(photos), C.shareStamp([{ id: 'a', cover: true, order: 1, url: 'u', full: { size: 10 } }]));
-  assert.notEqual(C.shareStamp(photos), C.shareStamp([{ id: 'b', cover: false, order: 1, url: 'u', full: { size: 10 } }]));
-});
-
-test('the ZIP holds every photo and no room text', () => {
-  assert.equal(C.crc32(new TextEncoder().encode('123456789')), 0xcbf43926);
-  const notes = 'รายละเอียดห้อง ใกล้ BTS';
-  const a = new TextEncoder().encode('jpeg-a');
-  const b = new TextEncoder().encode('png-b');
-  const zip = C.buildStoredZip([
-    { name: 'โครงการ_12_1.jpg', data: a },
-    { name: 'โครงการ_12_2.png', data: b },
-    { name: 'โครงการ_12_2.png', data: b }
-  ], new Date(2026, 0, 2, 3, 4, 6));
-  const files = readStoredZip(zip);
-  assert.deepEqual(files.map(f => f.name), ['โครงการ_12_1.jpg', 'โครงการ_12_2.png', 'โครงการ_12_2_2.png']);
-  assert.equal(files.length, 3);
-  for (const file of files) {
-    assert.equal(file.method, 0);
-    assert.equal(file.flags & 0x0800, 0x0800);
-    assert.equal(file.crc, C.crc32(file.data));
-  }
-  assert.deepEqual(files[0].data, a);
-  assert.deepEqual(files[1].data, b);
-  const blob = Buffer.from(zip).toString('utf8');
-  assert.equal(blob.includes(notes), false);
-  assert.equal(files.some(f => /\.txt$/i.test(f.name)), false);
-});
-
-test('the room button shares prepared files in the click and zips the rest', () => {
+test('one press shares every prepared file or downloads each file', () => {
   const html = read('index.html');
-  const tap = html.slice(html.indexOf('async function copyAndSharePhotos'), html.indexOf('function copy('));
-  const head = tap.slice(0, tap.indexOf('await '));
-  assert.match(head, /roomShareReady\.get\(id\)/);
-  assert.match(head, /return sharePreparedPhotos\(id, u, ready\.pairs, ready\.zipBlob\)/);
-  assert.equal(head.includes('getUnitPhotos'), false);
-  const share = html.slice(html.indexOf('async function sharePreparedPhotos'), html.indexOf('async function copyAndSharePhotos'));
-  assert.equal(share.indexOf('await '), share.indexOf('await navigator.share({ files: files })'));
-  assert.match(share, /navigator\.share\(\{ files: files \}\)/);
-  assert.match(share, /selectPhotoCopy/);
-  assert.match(share, /canSharePayload\(\{ files: files \}\)/);
-  assert.match(share, /แชร์รูปแล้ว/);
-  assert.match(share, /AbortError/);
-  assert.match(share, /downloadPhotoZip/);
-  assert.match(share, /copyOnePng\(files\[plan\.index\] \|\| files\[0\]\)/);
-  assert.match(share, /writeMultiPng\(files\)/);
-  assert.match(share, /desktopClipboard: isDesktopChromium\(\)/);
-  assert.match(html, /function isDesktopChromium/);
-  assert.match(html, /iPhone\|iPad\|iPod\|CriOS/);
-  assert.match(html, /'image\/png': blobToPng/);
-  assert.equal(html.slice(html.indexOf('async function writeMultiPng'), html.indexOf('function canSharePayload')).includes('text/plain'), false);
+  const fn = html.slice(html.indexOf('async function copyAndSharePhotos'), html.indexOf('function copy('));
+  const ready = fn.slice(0, fn.indexOf('await '));
+  assert.match(ready, /preparedShareFiles\(unitId\)/);
+  assert.equal(ready.includes('getUnitPhotos'), false);
+  assert.match(fn, /navigator\.share\(\{ files: files \}\)/);
+  assert.match(fn, /navigator\.canShare && navigator\.canShare\(\{ files: files \}\)/);
+  assert.match(fn, /แชร์รูปแล้ว/);
+  assert.match(fn, /toast\('ยกเลิก'\)/);
+  assert.match(fn, /downloadAllPhotos\(files\)/);
+  assert.match(fn, /ดาวน์โหลดรูปแล้ว/);
+  assert.match(fn, /อนุญาตดาวน์โหลดหลายไฟล์/);
+  assert.equal(fn.includes('plan.text'), false);
+  assert.equal(fn.includes('text:'), false);
+  assert.equal(fn.includes('clipboard.write'), false);
+  assert.equal(fn.includes('photoCopyCursor'), false);
+  assert.equal(fn.includes('ZIP'), false);
+  assert.equal(fn.includes('setTimeout'), false);
+  const download = html.slice(html.indexOf('function downloadAllPhotos'), html.indexOf('function dropRoomShare'));
+  assert.match(download, /a\.download = files\[i\]\.name/);
+  assert.match(download, /a\.click\(\)/);
+  assert.match(download, /URL\.revokeObjectURL/);
+  assert.match(download, /pagehide/);
+  assert.equal(download.includes('setTimeout'), false);
+  assert.match(html, /const allLocal = photos\.length && photos\.every/);
+  assert.match(html, /type: 'image\/jpeg'/);
   assert.match(html, /mode: 'cors', credentials: 'omit'/);
-  assert.equal(share.includes('plan.text'), false);
-  assert.equal(share.includes('text: plan'), false);
-  assert.equal(share.includes('title:'), false);
-  assert.equal(share.includes('files.forEach'), false);
-  const abort = share.slice(share.indexOf('AbortError'), share.indexOf("sharePhase = 'failed'"));
-  assert.match(abort, /return/);
-  assert.equal(abort.includes('downloadPhotoZip'), false);
-  const zipFn = html.slice(html.indexOf('function zipDownloadName'), html.indexOf('async function sharePreparedPhotos'));
-  assert.match(zipFn, /buildStoredZip/);
-  assert.match(zipFn, /\.download = /);
-  assert.match(zipFn, /_photos\.zip/);
-  assert.equal(zipFn.includes('notes'), false);
-  assert.equal(zipFn.includes('description'), false);
-  assert.equal(zipFn.includes('text/plain'), false);
-  const save = html.slice(html.indexOf('function saveZipBlob'), html.indexOf('async function zipBlobFromFiles'));
-  assert.equal(save.includes('await'), false);
-  assert.match(share, /if \(zipBlob\) saveZipBlob\(/);
   const open = html.slice(html.indexOf('function openDetailView'), html.indexOf('function closeDetailView'));
   assert.match(open, /prepareRoomShareFiles\(unitId\)/);
   assert.match(html, /onpointerdown="prepareRoomShareFiles/);
-  assert.match(html, /function shareFileFromBlob/);
-  assert.match(html, /PC\.shareMime/);
-  assert.match(html, /blobToJpeg/);
-  assert.match(html, /const allLocal = photos\.length && photos\.every/);
   const quick = html.slice(html.indexOf('function quickCopy'), html.indexOf('const roomShareReady'));
   assert.match(quick, /คัดลอกรายละเอียดแล้ว/);
   assert.match(quick, /copy\(text\)/);
@@ -217,10 +106,10 @@ test('the room button shares prepared files in the click and zips the rest', () 
   assert.match(html, /คัดลอกรูปภาพ \(\$\{pic\}\)/);
   assert.match(html, /class="dv-btn bg-brick-50 text-brick-700"/);
   assert.match(html, /#c2552d/);
-  assert.match(html, /photo-copy\.js\?v=4/);
-  assert.match(html, /const APP_VERSION = '9\.36'/);
+  assert.match(html, /photo-copy\.js\?v=5/);
+  assert.match(html, /const APP_VERSION = '9\.37'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v71'/);
+  assert.match(read('sw.js'), /const VERSION = 'v72'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);
@@ -232,27 +121,9 @@ test('the main script parses, so photo prefetch cannot blank the home screen', (
   const main = blocks.find(src => src.includes('function render('));
   assert.ok(main, 'main app script');
   new Function(main);
-  const prep = main.slice(main.indexOf('function prepareRoomShareFiles'), main.indexOf('async function copyOnePng'));
+  new Function(read('photo-copy.js'));
+  const prep = main.slice(main.indexOf('function prepareRoomShareFiles'), main.indexOf('async function copyAndSharePhotos'));
   assert.equal((prep.match(/const hit =/g) || []).length, 1);
-  assert.match(prep, /const stored = roomShareReady\.get\(id\)/);
+  assert.equal(main.includes('photoCopyCursor'), false);
+  assert.equal(main.includes('clipboard.write(['), false);
 });
-
-function readStoredZip(bytes) {
-  const files = [];
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let offset = 0;
-  while (offset + 30 <= bytes.length && view.getUint32(offset, true) === 0x04034b50) {
-    const flags = view.getUint16(offset + 6, true);
-    const method = view.getUint16(offset + 8, true);
-    const crc = view.getUint32(offset + 14, true);
-    const size = view.getUint32(offset + 18, true);
-    const nameLen = view.getUint16(offset + 26, true);
-    const extra = view.getUint16(offset + 28, true);
-    const start = offset + 30 + nameLen + extra;
-    const name = new TextDecoder().decode(bytes.subarray(offset + 30, offset + 30 + nameLen));
-    const data = bytes.subarray(start, start + size);
-    files.push({ name, flags, method, crc, data });
-    offset = start + size;
-  }
-  return files;
-}
