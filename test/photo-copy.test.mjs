@@ -70,6 +70,35 @@ test('a set that cannot be shared becomes one ZIP, never a silent one-photo copy
   assert.equal(C.selectPhotoCopy({ count: 0, canShareFiles: true }).action, 'none');
 });
 
+test('desktop Chrome copies a PNG for Facebook and does not download first', () => {
+  const described = { count: 8, roomId: 'room-a', description: 'รายละเอียดห้อง ใกล้ BTS', canShareFiles: true, canShareWithText: true, desktopClipboard: true, canWriteSinglePng: true, canTryMulti: true };
+  const multi = C.selectPhotoCopy(described);
+  assert.deepEqual(multi, { action: 'write-multi', includeText: false, text: '' });
+  assert.equal(JSON.stringify(multi).includes('BTS'), false);
+  const one = C.selectPhotoCopy(Object.assign({}, described, { multiTried: true, multiOk: false, cursor: null }));
+  assert.equal(one.action, 'copy-one');
+  assert.equal(one.index, 0);
+  assert.equal(one.includeText, false);
+  assert.equal(one.text, '');
+  assert.equal(one.toast, C.chromeOneToast(1, 8));
+  assert.match(one.toast, /ทีละรูป/);
+  assert.match(one.toast, /Facebook/);
+  assert.equal(JSON.stringify(one).includes('รายละเอียด'), false);
+  const next = C.selectPhotoCopy(Object.assign({}, described, { multiTried: true, cursor: one.nextCursor }));
+  assert.equal(next.index, 1);
+  assert.equal(next.number, 2);
+  assert.equal(next.toast, C.chromeOneToast(2, 8));
+  const single = C.selectPhotoCopy({ count: 1, roomId: 'a', desktopClipboard: true, canShareFiles: true, canWriteSinglePng: true, canTryMulti: true });
+  assert.equal(single.action, 'copy-one');
+  assert.equal(single.toast, 'คัดลอกรูปแล้ว วางใน Facebook ได้เลย');
+  const failed = C.selectPhotoCopy(Object.assign({}, described, { clipboardFailed: true, canWriteSinglePng: false }));
+  assert.equal(failed.action, 'zip');
+  assert.equal(failed.toast, C.CLIPBOARD_FAIL_TOAST);
+  assert.equal(failed.includeText, false);
+  const iphone = C.selectPhotoCopy({ count: 8, roomId: 'a', desktopClipboard: false, canShareFiles: true, canWriteSinglePng: true, description: 'โน้ต' });
+  assert.deepEqual(iphone, { action: 'share', includeText: false, text: '' });
+});
+
 test('one photo can still be copied when share is missing, and a set never cycles', () => {
   const one = C.selectPhotoCopy({ count: 1, roomId: 'a', canShareFiles: false, canWriteSinglePng: true });
   assert.equal(one.action, 'copy-one');
@@ -149,7 +178,14 @@ test('the room button shares prepared files in the click and zips the rest', () 
   assert.match(share, /แชร์รูปแล้ว/);
   assert.match(share, /AbortError/);
   assert.match(share, /downloadPhotoZip/);
-  assert.match(share, /copyOnePng\(files\[0\]\)/);
+  assert.match(share, /copyOnePng\(files\[plan\.index\] \|\| files\[0\]\)/);
+  assert.match(share, /writeMultiPng\(files\)/);
+  assert.match(share, /desktopClipboard: isDesktopChromium\(\)/);
+  assert.match(html, /function isDesktopChromium/);
+  assert.match(html, /iPhone\|iPad\|iPod\|CriOS/);
+  assert.match(html, /'image\/png': blobToPng/);
+  assert.equal(html.slice(html.indexOf('async function writeMultiPng'), html.indexOf('function canSharePayload')).includes('text/plain'), false);
+  assert.match(html, /mode: 'cors', credentials: 'omit'/);
   assert.equal(share.includes('plan.text'), false);
   assert.equal(share.includes('text: plan'), false);
   assert.equal(share.includes('title:'), false);
@@ -181,10 +217,10 @@ test('the room button shares prepared files in the click and zips the rest', () 
   assert.match(html, /คัดลอกรูปภาพ \(\$\{pic\}\)/);
   assert.match(html, /class="dv-btn bg-brick-50 text-brick-700"/);
   assert.match(html, /#c2552d/);
-  assert.match(html, /photo-copy\.js\?v=3/);
-  assert.match(html, /const APP_VERSION = '9\.34'/);
+  assert.match(html, /photo-copy\.js\?v=4/);
+  assert.match(html, /const APP_VERSION = '9\.35'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v69'/);
+  assert.match(read('sw.js'), /const VERSION = 'v70'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);
