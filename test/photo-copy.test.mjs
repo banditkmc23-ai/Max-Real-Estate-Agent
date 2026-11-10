@@ -113,9 +113,9 @@ test('the click shares prepared files without awaiting a network fetch', () => {
   assert.match(html, /class="dv-btn bg-brick-50 text-brick-700"/);
   assert.match(html, /#c2552d/);
   assert.match(html, /photo-copy\.js\?v=6/);
-  assert.match(html, /const APP_VERSION = '9\.39'/);
+  assert.match(html, /const APP_VERSION = '9\.40'/);
   assert.match(read('sw.js'), /photo-copy\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v74'/);
+  assert.match(read('sw.js'), /const VERSION = 'v75'/);
   const features = read('features.js');
   assert.match(features, /v9\.28: cloudLink's sig does not match/);
   assert.match(features, /async function bgShareUpdate/);

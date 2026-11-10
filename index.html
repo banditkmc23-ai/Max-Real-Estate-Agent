@@ -195,7 +195,7 @@
   .mini-photo { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #f1eeea; }
   .detail-view { position: fixed; inset: 0; background: rgba(28,25,23, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 44; opacity: 0; transition: opacity .3s ease; }
   .detail-view.show { opacity: 1; }
-  .detail-view-content { position: fixed; inset: 0; background: #f4f2ef; z-index: 45; overflow-y: auto; transform: translateY(20px); opacity: 0; transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
+  .detail-view-content { position: fixed; inset: 0; background: #f4f2ef; z-index: 45; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; transform: translateY(20px); opacity: 0; transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease; }
   .detail-view-content.show { transform: translateY(0); opacity: 1; }
   @media (min-width: 1024px) { .detail-view-content { max-width: 900px; left: 50%; right: auto; transform: translate(-50%, 20px) scale(.98); box-shadow: 0 24px 60px -12px rgba(28,25,23,.25); } .detail-view-content.show { transform: translate(-50%, 0) scale(1); } }
   .dv-header { padding-top: max(60px, env(safe-area-inset-top)); padding-bottom: 12px; }
@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.39</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.40</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1179,7 +1179,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.39</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.40</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2131,6 +2131,7 @@ function openDetailView(unitId) {
   setTimeout(() => loadDetailCover(unitId), 50);
 }
 function closeDetailView() {
+  if (window.keepFieldRestore) keepFieldRestore();
   detailUnitId = null;
   const dv = document.getElementById('detailView'), dvc = document.getElementById('detailViewContent');
   dv.classList.remove('show'); dvc.classList.remove('show');
@@ -2325,7 +2326,7 @@ function startInlineEdit(el, field, type = 'text') {
     options.forEach(([val, label]) => { const opt = document.createElement('option'); opt.value = val; opt.textContent = label; if (String(currentValue) === String(val)) opt.selected = true; editor.appendChild(opt); });
   } else { editor = document.createElement('input'); editor.type = type; editor.value = currentValue; editor.className = 'inline-input'; if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; } }
   if (field === 'station') { let dl = document.getElementById('dvStationList'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dvStationList'; document.body.appendChild(dl); } dl.innerHTML = [...new Set(units.map(x => (x.station || '').trim()).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join(''); editor.setAttribute('list', 'dvStationList'); editor.placeholder = 'เช่น BTS อ่อนนุช'; }
-  el.innerHTML = ''; el.appendChild(editor); editor.focus(); if (editor.select) editor.select();
+  el.innerHTML = ''; el.appendChild(editor); try { editor.focus({ preventScroll: true }); } catch (e) { editor.focus(); } if (editor.select) editor.select();
   let saved = false;
   const save = () => {
     if (saved) return; saved = true;
@@ -2342,6 +2343,110 @@ function startInlineEdit(el, field, type = 'text') {
   editor.addEventListener('keydown', e => { if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); } if (e.key === 'Escape') { e.preventDefault(); cancel(); } });
   if (type === 'select') editor.addEventListener('change', () => editor.blur());
 }
+/* The room detail and the edit sheet are position:fixed. On an iPhone the keyboard
+   covers that pane and does not shrink it, so the last field (ลิงก์ TikTok) sits
+   under the keyboard with no room left to scroll. While a text field in those
+   panes is focused, fit the pane to the visible viewport and scroll the field clear. */
+(function () {
+  const FALLBACK = 420;
+  let active = null, pane = null, timer = 0, sawKeyboard = false;
+  const narrow = () => matchMedia('(max-width: 1023px)').matches;
+  function textField(t) {
+    if (!t || !t.matches) return false;
+    if (t.matches('textarea')) return true;
+    if (!t.matches('input')) return false;
+    return ['text', 'url', 'tel', 'search', 'email', 'number', 'password'].indexOf((t.type || 'text').toLowerCase()) >= 0;
+  }
+  function scrollerOf(node) {
+    const el = node && node.closest && node.closest('#detailViewContent, #sheet');
+    if (!el) return null;
+    if (el.id === 'detailViewContent' && !el.classList.contains('show')) return null;
+    if (el.id === 'sheet' && !el.classList.contains('open')) return null;
+    return el;
+  }
+  function readFrame() {
+    const vv = window.visualViewport;
+    const offsetTop = vv ? vv.offsetTop : 0;
+    const height = vv ? vv.height : window.innerHeight;
+    const reported = Math.max(0, Math.round(window.innerHeight - height - offsetTop));
+    return { offsetTop: offsetTop, height: height, reported: reported };
+  }
+  function restore(el) {
+    if (!el) return;
+    el.style.top = '';
+    el.style.bottom = '';
+    el.style.height = '';
+    el.style.maxHeight = '';
+    delete el.dataset.kbGap;
+  }
+  function fit(el, box) {
+    if (el.id === 'detailViewContent') {
+      el.style.top = box.offsetTop + 'px';
+      el.style.bottom = 'auto';
+      el.style.height = box.height + 'px';
+    } else {
+      el.style.bottom = box.gap + 'px';
+      el.style.maxHeight = Math.max(220, box.height - 8) + 'px';
+    }
+    el.dataset.kbGap = String(box.gap);
+  }
+  function place(field, box) {
+    const el = scrollerOf(field);
+    if (!el || !narrow()) return;
+    if (box.reported >= 40) sawKeyboard = true;
+    else if (sawKeyboard) { restore(el); return; }
+    const gap = box.reported >= 40 ? box.reported : FALLBACK;
+    const laid = box.reported >= 40 ? box : { offsetTop: 0, height: window.innerHeight - FALLBACK, reported: 0, gap: FALLBACK };
+    pane = el;
+    fit(el, { offsetTop: laid.offsetTop, height: laid.height, gap: gap });
+    const bar = el.id === 'sheet' ? el.querySelector('.sf-bar') : null;
+    const barH = bar ? bar.offsetHeight : 0;
+    const header = el.id === 'detailViewContent' ? 108 : 8;
+    const limit = laid.offsetTop + laid.height - barH - 14;
+    const rect = field.getBoundingClientRect();
+    if (rect.bottom > limit) el.scrollTop += rect.bottom - limit + 10;
+    else if (rect.top < laid.offsetTop + header) el.scrollTop -= (laid.offsetTop + header) - rect.top;
+  }
+  function tick() {
+    if (!active || !active.isConnected || !scrollerOf(active)) { restore(pane); active = null; pane = null; return; }
+    place(active, readFrame());
+  }
+  function arm(field) {
+    active = field;
+    pane = scrollerOf(field);
+    sawKeyboard = false;
+    clearTimeout(timer);
+    tick();
+    requestAnimationFrame(tick);
+    timer = setTimeout(tick, 350);
+  }
+  function release() {
+    clearTimeout(timer);
+    restore(pane);
+    active = null;
+    pane = null;
+    sawKeyboard = false;
+  }
+  document.addEventListener('focusin', e => { if (textField(e.target) && scrollerOf(e.target)) arm(e.target); });
+  document.addEventListener('focusout', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const next = document.activeElement;
+      if (textField(next) && scrollerOf(next)) { active = next; pane = scrollerOf(next); return; }
+      release();
+    }, 140);
+  });
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', () => { if (active) tick(); });
+    visualViewport.addEventListener('scroll', () => { if (active) tick(); });
+  }
+  window.keepFieldVisible = function (field, box) {
+    if (!field) return;
+    active = field;
+    place(field, box || readFrame());
+  };
+  window.keepFieldRestore = release;
+})();
 function autoUpgradeToOccupied(u, silent) {
   if (!u.end) return false;
   const d = daysLeft(u.end); if (d === null) return false;
@@ -2449,6 +2554,7 @@ function openSheet(mode, id) {
   requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
 }
 function closeSheet() {
+  if (window.keepFieldRestore) keepFieldRestore();
   const isTemp = document.getElementById('f_isTemp').value === '1';
   const id = document.getElementById('f_id').value;
   if (isTemp && id && id.startsWith('temp_')) {
@@ -3899,7 +4005,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.39';
+const APP_VERSION = '9.40';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
