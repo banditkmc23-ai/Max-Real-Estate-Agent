@@ -6,7 +6,7 @@
   'use strict';
   var UNIT_DEFAULTS = {
     bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '',
-    sourceUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false
+    sourceUrl: '', tiktokUrl: '', internalNote: '', lastPosted: null, postCount: 0, expiredNotified: false
   };
   var CUST_DEFAULTS = {
     name: '', phone: '', line: '', email: '', interestProject: '', interestBuilding: '', interestType: '',
@@ -26,7 +26,7 @@
   function normalizeUnit(u, i) {
     u = u && typeof u === 'object' ? u : {};
     return Object.assign({
-      bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', internalNote: '',
+      bath: '1', building: '', station: '', stationDist: '', ownerLine: '', salePrice: '', sourceUrl: '', tiktokUrl: '', internalNote: '',
       lastPosted: null, postCount: 0, expiredNotified: false,
       createdAt: Date.now() - (9999 - i) * 1000
     }, u);

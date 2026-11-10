@@ -419,6 +419,8 @@ async function cloudLink(u, o, withPhotos) {
 async function buildLink(u, opts) {
   const c = cfg();
   const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', sn: u.station || '', sd: Number(u.stationDist) || 0, st: u.status || '', d: (opts.hideRoom && u.room ? (u.notes || '').replace(new RegExp('(?:ห้อง(?:เลขที่)?|room|unit|no\\.?|#)?\\s*[:：#]?\\s*' + String(u.room).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').replace(/[ \t]{2,}/g, ' ').trim() : (u.notes || '')).slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  const tt = (window.TIKTOK_LINK && TIKTOK_LINK.publicUrl(u.tiktokUrl)) || '';
+  if (tt) o.tt = tt;
   if (!opts.long) {
     let err;
     for (let t = 0; t < 2; t++) { try { return await cloudLink(u, o, !!opts.photo); } catch (e) { err = e; console.warn('cloud share failed', e); if (!navigator.onLine) break; await new Promise(r => setTimeout(r, 1500)); } }

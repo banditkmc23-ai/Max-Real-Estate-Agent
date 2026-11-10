@@ -451,7 +451,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.38</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.39</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1078,6 +1078,7 @@
     <label class="w15"><small>เริ่มสัญญา</small><input id="f_start" type="date" class="sf-in"></label>
     <label class="w15"><small>สิ้นสุด</small><input id="f_end" type="date" class="sf-in" onchange="onEndDateChange()"></label>
     <div class="w3"><small>🔗 ลิงก์ต้นทางโพสต์</small><div class="flex items-center gap-2"><input id="f_sourceUrl" type="url" class="sf-in flex-1" placeholder="https://..." oninput="updateUrlBtn()"><button type="button" id="urlOpenBtn" onclick="openSourceUrlFromInput()" class="sf-open" disabled><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิด</button></div></div>
+    <div class="w3"><small>🔗 ลิงก์ TikTok</small><div class="flex items-center gap-2"><input id="f_tiktokUrl" type="url" inputmode="url" autocomplete="off" class="sf-in flex-1" placeholder="https://vt.tiktok.com/..." oninput="updateTiktokBtn()"><button type="button" id="tiktokOpenBtn" onclick="openTiktokUrlFromInput()" class="sf-open" disabled><i data-lucide="external-link" class="w-3.5 h-3.5"></i>เปิด</button></div></div>
   </div></div>
 
   <div class="sf-c" style="background:#fffaf0"><div class="sf-ch" style="background:#fdf3dc">📝 โน้ตภายใน <span class="font-normal text-[11.5px] text-amber-700">ไม่แชร์ให้ลูกค้า</span></div>
@@ -1178,7 +1179,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.38</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.39</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1253,7 +1254,7 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="unit-shape.js?v=47"></script>
+<script src="unit-shape.js?v=48"></script>
 <script>
 // ============= DATA LAYER =============
 const KEY = 'staylow_units_v1';
@@ -1960,7 +1961,9 @@ function isValidUrl(url) { if (!url) return false; try { const u = new URL(url);
 function normalizeUrl(url) { if (!url) return ''; const s = url.trim(); if (!s) return ''; if (!/^https?:\/\//i.test(s)) return 'https://' + s; return s; }
 function openUrl(url) { if (!url) return toast('ไม่มีลิงก์'); const n = normalizeUrl(url); if (!isValidUrl(n)) return toast('ลิงก์ไม่ถูกต้อง'); const w = window.open(n, '_blank', 'noopener,noreferrer'); if (!w) location.href = n; }
 function openSourceUrlFromInput() { const v = document.getElementById('f_sourceUrl').value.trim(); if (!v) return; openUrl(normalizeUrl(v)); }
-function updateUrlBtn() { const btn = document.getElementById('urlOpenBtn'); if (!btn) return; const v = document.getElementById('f_sourceUrl').value.trim(); btn.disabled = !(v && isValidUrl(normalizeUrl(v))); }
+function updateUrlBtn() { const btn = document.getElementById('urlOpenBtn'); if (!btn) return; const v = document.getElementById('f_sourceUrl').value.trim(); btn.disabled = !(v && isValidUrl(normalizeUrl(v))); updateTiktokBtn(); }
+function openTiktokUrlFromInput() { const el = document.getElementById('f_tiktokUrl'); const v = el ? el.value.trim() : ''; if (!v) return; openUrl(normalizeUrl(v)); }
+function updateTiktokBtn() { const btn = document.getElementById('tiktokOpenBtn'); const el = document.getElementById('f_tiktokUrl'); if (!btn || !el) return; const v = el.value.trim(); btn.disabled = !(v && isValidUrl(normalizeUrl(v))); }
 function openSourceUrl(unitId) { const u = units.find(x => x.id === unitId); if (!u || !u.sourceUrl) return toast('ไม่มีลิงก์'); openUrl(u.sourceUrl); }
 function lineUrlOf(v) { v = (v || '').trim(); if (!v) return ''; if (/^https?:\/\//i.test(v)) return v; if (/line\.me\//i.test(v)) return 'https://' + v.replace(/^\/+/, ''); return 'https://line.me/ti/p/~' + encodeURIComponent(v.replace(/^@/, '')); }
 
@@ -2287,6 +2290,7 @@ function renderDetailView() {
     </div>
 
     <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm"><p class="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">🔗 ลิงก์ต้นทางโพสต์</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'sourceUrl', 'url')">${esc(u.sourceUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
+    <div class="bg-white border border-slate-700 rounded-2xl p-5 shadow-sm"><p class="text-xs text-slate-400 mb-2 font-semibold tracking-wider">🔗 ลิงก์ TikTok</p><p class="text-sm text-sky-600 break-all inline-edit block" onclick="startInlineEdit(this, 'tiktokUrl', 'url')">${esc(u.tiktokUrl || 'แตะเพื่อใส่ลิงก์')}</p></div>
 
     <button onclick="openGallery('${u.id}')" class="w-full bg-white border border-slate-700 rounded-2xl p-5 flex items-center justify-between hover:border-brick-500 transition-all shadow-sm">
       <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-brick-500/10 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-brick-600"></i></div><div class="text-left"><p class="text-sm font-semibold text-ink">รูปห้องทั้งหมด</p><p class="text-xs text-slate-400">${pic} รูป</p></div></div>
@@ -2392,7 +2396,7 @@ async function deleteFormPhoto(photoId) {
   const unitId = currentFormUnitId || (document.getElementById('f_id') && document.getElementById('f_id').value);
   try { await req(tx('readwrite').delete(photoId)); markPhotosUserDeleted([photoId], unitId, false); noteRoomPhotosChanged(unitId); await refreshCounts(); await renderFormPhotos(); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {} toast('ลบรูปแล้ว'); } catch (e) { toast('ลบไม่สำเร็จ'); }
 }
-const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
+const F = ['project','room','floor','building','station','stationDist','rent','size','type','bath','view','status','salePrice','sourceUrl','tiktokUrl','owner','ownerPhone','ownerLine','start','end','notes','internalNote'];
 function allProjectNames() { return [...new Set(units.map(u => (u.project || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')); }
 function showProjectSuggest() {
   const input = document.getElementById('f_project'), box = document.getElementById('projectSuggest');
@@ -3895,7 +3899,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.38';
+const APP_VERSION = '9.39';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -3996,7 +4000,8 @@ function sfPreview() {
 <script src="catalog-covers.js?v=1"></script>
 <script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=48"></script>
-<script src="features.js?v=45"></script>
+<script src="tiktok-link.js?v=1"></script>
+<script src="features.js?v=46"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
 <script src="sync.js?v=49"></script>

@@ -25,10 +25,28 @@ function extract(desc, sn, sd) {
   return { sn, sd, cn, tm };
 }
 
+// https only, and only these hosts. Anything else is dropped, including http and lookalike domains.
+function tiktokLink(v: unknown) {
+  const s = String(v ?? "").trim();
+  if (!s || s.length > 500) return "";
+  if (/[\u0000-\u0020\\]/.test(s)) return "";
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(s);
+  if (!scheme || scheme[1].toLowerCase() !== "https") return "";
+  let u: URL;
+  try { u = new URL(s); } catch { return ""; }
+  if (u.protocol !== "https:") return "";
+  if (u.username || u.password) return "";
+  if (u.port) return "";
+  const host = String(u.hostname || "").toLowerCase().replace(/\.$/, "");
+  if (host !== "tiktok.com" && host !== "www.tiktok.com" && host !== "vt.tiktok.com" && host !== "vm.tiktok.com") return "";
+  return u.href;
+}
 // public view of a room: never expose the free-text description
 function pub(d: any) {
   d = d && typeof d === "object" ? { ...d } : {};
   if ("d" in d) { const x = extract(d.d, d.sn, d.sd); d.sn = x.sn; d.sd = x.sd; d.cn = d.cn ?? x.cn; d.tm = d.tm ?? x.tm; delete d.d; }
+  const tt = tiktokLink(d.tt);
+  if (tt) d.tt = tt; else delete d.tt;
   return d;
 }
 function cors(req: Request) { const o = req.headers.get("origin") || ""; return { "Access-Control-Allow-Origin": ORIGINS.includes(o) ? o : ORIGINS[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Vary": "Origin" }; }
@@ -45,7 +63,10 @@ const str = (v: unknown, n: number) => String(v ?? "").slice(0, n);
 const num = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x >= 0 && x < 1e10 ? x : 0; };
 function clean0(d: any) {
   d = d && typeof d === "object" ? d : {}; const a = d.a && typeof d.a === "object" ? d.a : {};
-  return { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), sn: str(d.sn, 60), sd: num(d.sd), st: str(d.st, 20), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
+  const c: any = { v: 1, p: str(d.p, 120), b: str(d.b, 80), r: str(d.r, 30), f: str(d.f, 20), rent: num(d.rent), sale: num(d.sale) || "", sz: num(d.sz), t: str(d.t, 40), bt: str(d.bt, 10), vw: str(d.vw, 40), sn: str(d.sn, 60), sd: num(d.sd), st: str(d.st, 20), hr: d.hr ? 1 : 0, a: { n: str(a.n, 60), ph: str(a.ph, 30), l: str(a.l, 60) } };
+  const tt = tiktokLink(d.tt);
+  if (tt) c.tt = tt;
+  return c;
 }
 function clean(d: any) { const c: any = clean0(d); const x = extract(str(d && d.d, 4000), c.sn, c.sd); c.sn = x.sn.slice(0, 60); c.sd = num(x.sd); c.cn = x.cn; c.tm = x.tm; return c; }
 const sha256 = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t))), b => b.toString(16).padStart(2, "0")).join("");
