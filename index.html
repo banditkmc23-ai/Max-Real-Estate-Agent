@@ -361,6 +361,9 @@
   #advFilterSheet .af-f{flex:1;min-width:0}#advFilterSheet .af-f span{display:block;font-size:13px;color:#6b7280;margin-bottom:4px}
   #advFilterSheet .af-dash{color:#9ca3af;padding-bottom:11px}
   #advFilterSheet .af-sel{flex:1;width:100%;min-width:0;height:42px;border:1px solid #e5e7eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#1f2937;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+  #advFilterSheet input.af-num{background-image:none;padding:0 12px;caret-color:#c2552d;box-shadow:none}
+  #advFilterSheet input.af-num::placeholder{color:#9ca3af;font-weight:400}
+  #advFilterSheet input.af-num:focus{outline:none;border-color:#c2552d}
   #advFilterSheet .af-grid{display:grid;gap:8px}.af-g2{grid-template-columns:repeat(2,1fr)}.af-g3{grid-template-columns:repeat(3,1fr)}.af-g4{grid-template-columns:repeat(4,1fr)}
   #advFilterSheet .af-c{height:38px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:15px;color:#1f2937}
   #advFilterSheet .af-p{border:1px solid #e5e7eb;border-radius:999px;padding:6px 13px;font-size:14px;background:#fff;color:#1f2937;white-space:nowrap}
@@ -451,7 +454,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.40</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.41</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -856,14 +859,14 @@
   <div class="af-hd"><div class="w-9 h-1 bg-slate-300 rounded-full mx-auto mb-2 lg:hidden"></div><h2>ตัวกรอง</h2><button onclick="closeAdvancedFilter()" class="af-x" aria-label="ปิด"><i data-lucide="x" class="w-5 h-5"></i></button></div>
   <div class="af-body">
     <div class="af-card"><div class="af-t"><i data-lucide="banknote" class="w-[18px] h-[18px]"></i>ช่วงราคา (บาท/เดือน)</div>
-      <div class="af-row"><label class="af-f"><span>ต่ำสุด</span><select id="advPriceMin" class="af-sel" onchange="advDraftChanged()"><option value="">ไม่ระบุ</option><option value="5000">5,000</option><option value="8000">8,000</option><option value="10000">10,000</option><option value="12000">12,000</option><option value="15000">15,000</option><option value="18000">18,000</option><option value="20000">20,000</option><option value="25000">25,000</option><option value="30000">30,000</option><option value="35000">35,000</option><option value="40000">40,000</option><option value="50000">50,000</option><option value="60000">60,000</option><option value="80000">80,000</option><option value="100000">100,000</option><option value="150000">150,000</option></select></label><span class="af-dash">–</span><label class="af-f"><span>สูงสุด</span><select id="advPriceMax" class="af-sel" onchange="advDraftChanged()"><option value="">ไม่ระบุ</option><option value="5000">5,000</option><option value="8000">8,000</option><option value="10000">10,000</option><option value="12000">12,000</option><option value="15000">15,000</option><option value="18000">18,000</option><option value="20000">20,000</option><option value="25000">25,000</option><option value="30000">30,000</option><option value="35000">35,000</option><option value="40000">40,000</option><option value="50000">50,000</option><option value="60000">60,000</option><option value="80000">80,000</option><option value="100000">100,000</option><option value="150000">150,000</option></select></label></div></div>
+      <div class="af-row"><label class="af-f"><span>ต่ำสุด</span><input id="advPriceMin" class="af-sel af-num" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="ไม่ระบุ" oninput="onAdvNumInput(this)" onblur="onAdvNumBlur(this)"></label><span class="af-dash">–</span><label class="af-f"><span>สูงสุด</span><input id="advPriceMax" class="af-sel af-num" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="ไม่ระบุ" oninput="onAdvNumInput(this)" onblur="onAdvNumBlur(this)"></label></div></div>
     <div class="af-card"><div class="af-t"><i data-lucide="bed-double" class="w-[18px] h-[18px]"></i>ประเภทห้อง</div>
       <div class="af-grid af-g3" data-grp="types"><button type="button" class="af-c" data-v="Studio" onclick="advChip(this)">Studio</button><button type="button" class="af-c" data-v="1 Bed" onclick="advChip(this)">1 Bed</button><button type="button" class="af-c" data-v="2 Bed" onclick="advChip(this)">2 Bed</button></div>
       <div class="af-grid af-g2 mt-2" data-grp="types"><button type="button" class="af-c" data-v="3 Bed" onclick="advChip(this)">3 Bed</button><button type="button" class="af-c" data-v="Duplex" onclick="advChip(this)">Duplex</button></div></div>
     <div class="af-card"><div class="af-t"><i data-lucide="bath" class="w-[18px] h-[18px]"></i>ห้องน้ำ</div>
       <div class="af-grid af-g4" data-grp="baths"><button type="button" class="af-c" data-v="1" onclick="advChip(this)">1</button><button type="button" class="af-c" data-v="2" onclick="advChip(this)">2</button><button type="button" class="af-c" data-v="3" onclick="advChip(this)">3</button><button type="button" class="af-c" data-v="4" onclick="advChip(this)">4+</button></div></div>
     <div class="af-card"><div class="af-t"><i data-lucide="ruler" class="w-[18px] h-[18px]"></i>ขนาดพื้นที่ (ตร.ม.)</div>
-      <div class="af-row"><select id="advSizeMin" class="af-sel" onchange="advDraftChanged()"><option value="">ต่ำสุด</option><option value="20">20 ตร.ม.</option><option value="25">25 ตร.ม.</option><option value="30">30 ตร.ม.</option><option value="35">35 ตร.ม.</option><option value="40">40 ตร.ม.</option><option value="50">50 ตร.ม.</option><option value="60">60 ตร.ม.</option><option value="80">80 ตร.ม.</option><option value="100">100 ตร.ม.</option><option value="150">150 ตร.ม.</option></select><span class="af-dash">–</span><select id="advSizeMax" class="af-sel" onchange="advDraftChanged()"><option value="">สูงสุด</option><option value="20">20 ตร.ม.</option><option value="25">25 ตร.ม.</option><option value="30">30 ตร.ม.</option><option value="35">35 ตร.ม.</option><option value="40">40 ตร.ม.</option><option value="50">50 ตร.ม.</option><option value="60">60 ตร.ม.</option><option value="80">80 ตร.ม.</option><option value="100">100 ตร.ม.</option><option value="150">150 ตร.ม.</option></select></div></div>
+      <div class="af-row"><input id="advSizeMin" class="af-sel af-num" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="ต่ำสุด" oninput="onAdvNumInput(this)" onblur="onAdvNumBlur(this)"><span class="af-dash">–</span><input id="advSizeMax" class="af-sel af-num" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="สูงสุด" oninput="onAdvNumInput(this)" onblur="onAdvNumBlur(this)"></div></div>
     <div class="af-card"><div class="af-t"><i data-lucide="train-front" class="w-[18px] h-[18px]"></i>โซน BTS / MRT<small id="advStaCount"></small></div>
       <div id="advStations"></div></div>
   </div>
@@ -1179,7 +1182,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.40</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.41</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1323,10 +1326,63 @@ function renderStationChips() {
   box.innerHTML = STATION_LINES.map(l => `<div class="af-lt"><span class="af-dot" style="background:${l.color}"></span>${l.line}</div><div class="af-wrap" data-grp="stations">` + l.stations.map(st => `<button type="button" class="af-p" data-v="${st.key || st.name}" onclick="advChip(this)">${st.name}</button>`).join('') + '</div>').join('');
   box.dataset.done = '1';
 }
+function parseAdvNum(v) {
+  const digits = String(v == null ? '' : v).replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+function advNumText(id, n) {
+  if (n === null || n === undefined || n === '') return '';
+  const v = Math.round(Number(n));
+  if (!Number.isFinite(v)) return '';
+  return String(id).indexOf('Price') >= 0 ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(v);
+}
+function paintAdvNum(id, n) {
+  const el = document.getElementById(id);
+  if (el) el.value = advNumText(id, n);
+}
+function onAdvNumInput(el) {
+  const price = el.id.indexOf('Price') >= 0;
+  const start = el.selectionStart || 0;
+  const digitsBefore = el.value.slice(0, start).replace(/\D/g, '').length;
+  let digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const cap = price ? 9 : 6;
+  if (digits.length > cap) digits = digits.slice(0, cap);
+  el.value = price && digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : digits;
+  let pos = 0;
+  if (digitsBefore > 0) {
+    let seen = 0;
+    pos = el.value.length;
+    for (let i = 0; i < el.value.length; i++) {
+      const c = el.value.charCodeAt(i);
+      if (c >= 48 && c <= 57) seen++;
+      if (seen >= digitsBefore) { pos = i + 1; break; }
+    }
+  }
+  try { el.setSelectionRange(pos, pos); } catch (e) {}
+  advDraftChanged();
+}
+function onAdvNumBlur(el) {
+  paintAdvNum(el.id, parseAdvNum(el.value));
+  const pair = el.id.indexOf('Price') >= 0 ? ['advPriceMin', 'advPriceMax'] : ['advSizeMin', 'advSizeMax'];
+  const otherId = pair[0] === el.id ? pair[1] : pair[0];
+  const other = document.getElementById(otherId);
+  if (other && document.activeElement !== other) {
+    const a = parseAdvNum(document.getElementById(pair[0]).value);
+    const b = parseAdvNum(document.getElementById(pair[1]).value);
+    if (a !== null && b !== null && a > b) { paintAdvNum(pair[0], b); paintAdvNum(pair[1], a); }
+  }
+  advDraftChanged();
+}
 function readAdvDraft() {
-  const num = id => { const v = document.getElementById(id).value; return v ? Number(v) : null; };
+  const num = id => parseAdvNum(document.getElementById(id).value);
+  let priceMin = num('advPriceMin'), priceMax = num('advPriceMax');
+  let sizeMin = num('advSizeMin'), sizeMax = num('advSizeMax');
+  if (priceMin !== null && priceMax !== null && priceMin > priceMax) { const t = priceMin; priceMin = priceMax; priceMax = t; }
+  if (sizeMin !== null && sizeMax !== null && sizeMin > sizeMax) { const t = sizeMin; sizeMin = sizeMax; sizeMax = t; }
   const grp = g => [...document.querySelectorAll(`#advFilterSheet [data-grp="${g}"] .on`)].map(b => b.dataset.v);
-  return { priceMin: num('advPriceMin'), priceMax: num('advPriceMax'), sizeMin: num('advSizeMin'), sizeMax: num('advSizeMax'), types: grp('types'), baths: grp('baths'), stations: grp('stations') };
+  return { priceMin, priceMax, sizeMin, sizeMax, types: grp('types'), baths: grp('baths'), stations: grp('stations') };
 }
 function advChip(btn) { btn.classList.toggle('on'); advDraftChanged(); }
 function advDraftChanged() {
@@ -1672,10 +1728,10 @@ function clearParseInput() {
 // ============= ADVANCED FILTER =============
 function openAdvancedFilter() {
   renderStationChips();
-  document.getElementById('advPriceMin').value = advFilter.priceMin ?? '';
-  document.getElementById('advPriceMax').value = advFilter.priceMax ?? '';
-  document.getElementById('advSizeMin').value = advFilter.sizeMin ?? '';
-  document.getElementById('advSizeMax').value = advFilter.sizeMax ?? '';
+  paintAdvNum('advPriceMin', advFilter.priceMin);
+  paintAdvNum('advPriceMax', advFilter.priceMax);
+  paintAdvNum('advSizeMin', advFilter.sizeMin);
+  paintAdvNum('advSizeMax', advFilter.sizeMax);
   ['types','baths','stations'].forEach(g => document.querySelectorAll(`#advFilterSheet [data-grp="${g}"] [data-v]`).forEach(b => b.classList.toggle('on', (advFilter[g] || []).includes(b.dataset.v))));
   advDraftChanged();
   if (window.lucide) lucide.createIcons();
@@ -2343,10 +2399,11 @@ function startInlineEdit(el, field, type = 'text') {
   editor.addEventListener('keydown', e => { if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); } if (e.key === 'Escape') { e.preventDefault(); cancel(); } });
   if (type === 'select') editor.addEventListener('change', () => editor.blur());
 }
-/* The room detail and the edit sheet are position:fixed. On an iPhone the keyboard
-   covers that pane and does not shrink it, so the last field (ลิงก์ TikTok) sits
-   under the keyboard with no room left to scroll. While a text field in those
-   panes is focused, fit the pane to the visible viewport and scroll the field clear. */
+/* The room detail, the edit sheet, and the filter sheet are position:fixed.
+   On an iPhone the keyboard covers that pane and does not shrink it, so a
+   focused field can sit under the keyboard with no room left to scroll.
+   While a text field in those panes is focused, fit the pane to the visible
+   viewport and scroll the field clear. */
 (function () {
   const FALLBACK = 420;
   let active = null, pane = null, timer = 0, sawKeyboard = false;
@@ -2358,10 +2415,10 @@ function startInlineEdit(el, field, type = 'text') {
     return ['text', 'url', 'tel', 'search', 'email', 'number', 'password'].indexOf((t.type || 'text').toLowerCase()) >= 0;
   }
   function scrollerOf(node) {
-    const el = node && node.closest && node.closest('#detailViewContent, #sheet');
+    const el = node && node.closest && node.closest('#detailViewContent, #sheet, #advFilterSheet');
     if (!el) return null;
     if (el.id === 'detailViewContent' && !el.classList.contains('show')) return null;
-    if (el.id === 'sheet' && !el.classList.contains('open')) return null;
+    if ((el.id === 'sheet' || el.id === 'advFilterSheet') && !el.classList.contains('open')) return null;
     return el;
   }
   function readFrame() {
@@ -2399,9 +2456,9 @@ function startInlineEdit(el, field, type = 'text') {
     const laid = box.reported >= 40 ? box : { offsetTop: 0, height: window.innerHeight - FALLBACK, reported: 0, gap: FALLBACK };
     pane = el;
     fit(el, { offsetTop: laid.offsetTop, height: laid.height, gap: gap });
-    const bar = el.id === 'sheet' ? el.querySelector('.sf-bar') : null;
+    const bar = el.id === 'sheet' ? el.querySelector('.sf-bar') : (el.id === 'advFilterSheet' ? el.querySelector('.af-bar') : null);
     const barH = bar ? bar.offsetHeight : 0;
-    const header = el.id === 'detailViewContent' ? 108 : 8;
+    const header = el.id === 'detailViewContent' ? 108 : (el.id === 'advFilterSheet' ? 64 : 8);
     const limit = laid.offsetTop + laid.height - barH - 14;
     const rect = field.getBoundingClientRect();
     if (rect.bottom > limit) el.scrollTop += rect.bottom - limit + 10;
@@ -4005,7 +4062,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.40';
+const APP_VERSION = '9.41';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
