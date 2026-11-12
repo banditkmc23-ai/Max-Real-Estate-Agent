@@ -6,9 +6,9 @@
 <title>ห้องพัก — แบบจำลอง MAX Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="mock.css">
-<script>document.documentElement.classList.add(new URLSearchParams(location.search).get('v')==='now'?'v-now':'v-next');</script>
+<script>(function(){var q=new URLSearchParams(location.search);var look=q.get('look');document.documentElement.classList.add(q.get('v')==='now'?'v-now':'v-next',look==='b'||look==='c'?'look-'+look:'look-a');})();</script>
 </head>
 <body>
 <a class="skip" href="#list">ข้ามไปรายการห้อง</a>
@@ -67,7 +67,7 @@
           <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
           <input id="q" type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." autocomplete="off">
         </label>
-        <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg></button>
+        <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')+'&look='+(document.documentElement.classList.contains('look-b')?'b':document.documentElement.classList.contains('look-c')?'c':'a')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg></button>
       </div>
     </header>
     <header class="dhead">
@@ -76,7 +76,7 @@
         <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
         <input id="q2" type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" autocomplete="off">
       </label>
-      <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg><span class="only-next">ตัวกรอง</span></button>
+      <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')+'&look='+(document.documentElement.classList.contains('look-b')?'b':document.documentElement.classList.contains('look-c')?'c':'a')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg><span class="only-next">ตัวกรอง</span></button>
     </header>
     <main class="main" id="list">
       <div class="chiprow">

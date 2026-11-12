@@ -6,9 +6,9 @@
 <title>ตัวกรอง — แบบจำลอง MAX Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="mock.css">
-<script>document.documentElement.classList.add(new URLSearchParams(location.search).get('v')==='now'?'v-now':'v-next');</script>
+<script>(function(){var q=new URLSearchParams(location.search);var look=q.get('look');document.documentElement.classList.add(q.get('v')==='now'?'v-now':'v-next',look==='b'||look==='c'?'look-'+look:'look-a');})();</script>
 </head>
 <body class="sheet-open">
 <a class="skip" href="#sheet">ข้ามไปตัวกรอง</a>

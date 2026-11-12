@@ -6,9 +6,9 @@
 <title>The Base Sukhumvit 77 — แบบจำลองหน้าแชร์ลูกค้า</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="mock.css">
-<script>document.documentElement.classList.add(new URLSearchParams(location.search).get('v')==='now'?'v-now':'v-next');</script>
+<script>(function(){var q=new URLSearchParams(location.search);var look=q.get('look');document.documentElement.classList.add(q.get('v')==='now'?'v-now':'v-next',look==='b'||look==='c'?'look-'+look:'look-a');})();</script>
 </head>
 <body class="sharepage">
 <a class="skip" href="#detail">ข้ามไปรายละเอียด</a>
@@ -29,6 +29,7 @@
         <div class="dots" aria-hidden="true"><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
         <button class="navabs prev only-next" id="prev" type="button" aria-label="รูปก่อนหน้า"><svg class="ico" aria-hidden="true"><use href="icons.svg#chevron"/></svg></button>
         <button class="navabs next only-next" id="next" type="button" aria-label="รูปถัดไป"><svg class="ico" aria-hidden="true"><use href="icons.svg#chevron"/></svg></button>
+        <button class="navabs pause only-next" id="pause" type="button" aria-pressed="false">หยุด</button>
       </div>
       <div class="thumbs" aria-label="รูปย่อ">
         <button type="button" data-go="0" aria-label="ดูรูปที่ 1"><div class="pic" style="--h:16"><span class="win"></span></div></button>
@@ -102,9 +103,15 @@
 <script src="mock.js"></script>
 <script>
 (function () {
-  var i = 0, n = 4;
+  var i = 0, n = 4, timer, hold, x0 = null, paused = false;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var track = document.getElementById('track');
   var dots = [].slice.call(document.querySelectorAll('.dot'));
+  var hero = document.getElementById('hero');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var pause = document.getElementById('pause');
+  if (reduced) paused = true;
   function go(k) {
     i = (k + n) % n;
     track.style.transform = 'translateX(' + (-i * 100) + '%)';
@@ -112,26 +119,47 @@
     var frac = document.getElementById('frac');
     if (frac) frac.textContent = (i + 1) + ' / ' + n;
   }
-  var prev = document.getElementById('prev');
-  var next = document.getElementById('next');
-  if (prev) prev.onclick = function () { go(i - 1); };
-  if (next) next.onclick = function () { go(i + 1); };
+  function stop() { clearInterval(timer); }
+  function start() {
+    stop();
+    if (paused || document.documentElement.classList.contains('v-now') || n < 2) return;
+    timer = setInterval(function () { go(i + 1); }, 3200);
+  }
+  function bump() { stop(); clearTimeout(hold); hold = setTimeout(start, 4000); }
+  if (prev) prev.onclick = function () { go(i - 1); bump(); };
+  if (next) next.onclick = function () { go(i + 1); bump(); };
+  if (pause) {
+    pause.setAttribute('aria-label', paused ? 'เล่นเลื่อนรูป' : 'หยุดเลื่อนรูป');
+    if (paused) pause.textContent = 'เล่น';
+    pause.onclick = function () {
+      paused = !paused;
+      pause.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      pause.textContent = paused ? 'เล่น' : 'หยุด';
+      pause.setAttribute('aria-label', paused ? 'เล่นเลื่อนรูป' : 'หยุดเลื่อนรูป');
+      if (paused) stop(); else start();
+    };
+  }
   document.querySelectorAll('[data-go]').forEach(function (b) {
-    b.onclick = function () { go(Number(b.getAttribute('data-go'))); };
+    b.onclick = function () { go(Number(b.getAttribute('data-go'))); bump(); };
   });
-  var x0 = null;
-  var hero = document.getElementById('hero');
-  hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; stop(); }, { passive: true });
   hero.addEventListener('touchend', function (e) {
-    if (x0 == null) return;
-    var dx = e.changedTouches[0].clientX - x0;
-    if (Math.abs(dx) > 40) go(i + (dx < 0 ? 1 : -1));
+    if (x0 != null) {
+      var dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 40) go(i + (dx < 0 ? 1 : -1));
+    }
     x0 = null;
+    bump();
   });
+  hero.addEventListener('mouseenter', stop);
+  hero.addEventListener('mouseleave', start);
+  hero.addEventListener('focusin', stop);
+  hero.addEventListener('focusout', start);
   hero.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') go(i + 1);
-    if (e.key === 'ArrowLeft') go(i - 1);
+    if (e.key === 'ArrowRight') { go(i + 1); bump(); }
+    if (e.key === 'ArrowLeft') { go(i - 1); bump(); }
   });
+  start();
 })();
 </script>
 </body>
