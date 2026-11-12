@@ -2,7 +2,20 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<script>
+/* iOS standalone ignores user-scalable=no for pinch. Cancel gesture and multi-touch page zoom.
+   One-finger scroll, the photo carousel, and the lightbox's own pinch handler stay intact. */
+(function () {
+  function stopGesture(e) { e.preventDefault(); }
+  document.addEventListener('gesturestart', stopGesture, { passive: false });
+  document.addEventListener('gesturechange', stopGesture, { passive: false });
+  document.addEventListener('gestureend', stopGesture, { passive: false });
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+})();
+</script>
 <!-- iOS 26+: no apple-mobile-web-app-capable / status-bar-style and no manifest on iOS.
      With that markup iOS uses a legacy home-screen layout path that leaves an unpaintable strip
      (about one status-bar height) below the page. iOS 26 opens home-screen icons standalone without it. -->
@@ -302,7 +315,7 @@
   input.srch-in{height:45.72px;width:114.29% !important;transform:scale(.875);transform-origin:left center;margin:-2.86px -14.29% -2.86px 0;padding-left:44px !important;font-size:16px !important}
   /* v33: no iOS focus-zoom, no horizontal overflow */
   input, select, textarea, .inp, .sheet label .inp, input.inline-input, select.inline-select, textarea.inline-textarea, #priceMin, #priceMax { font-size:16px !important; }
-  html, body { max-width:100%; overflow-x:hidden; }
+  html, body { max-width:100%; overflow-x:hidden; touch-action: manipulation; }
   .sheet, .sheet * { max-width:100%; } .sheet { box-sizing:border-box; } .sheet .grid > * { min-width:0; }
   #lbImg { touch-action:none; transform-origin:center center; will-change:transform; }
   .fav-btn { width:28px; height:28px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; color:#c9bfb6; }
@@ -374,6 +387,11 @@
   #advFilterSheet .af-bar{position:sticky;bottom:0;z-index:2;background:#fff;border-top:1px solid #eee;padding:10px 16px max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px}
   #advFilterSheet .af-clear{width:84px;font-size:15px;color:#6b7280}
   #advFilterSheet .af-go{flex:1;height:46px;border-radius:12px;background:#c2552d;color:#fff;font-size:16px;font-weight:600}
+  /* iOS focus-zoom starts below 16px. The compact room form sets a smaller size with an id selector, so match that specificity. Desktop layout is unchanged. */
+  @media (max-width: 1024px) {
+    input, select, textarea { font-size: 16px !important; }
+    #sheet .sf-in, #sheet .sf-ta, #advFilterSheet .af-sel, #advFilterSheet input.af-num { font-size: 16px !important; }
+  }
 </style>
 </head>
 <body>
@@ -454,7 +472,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.41</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.42</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1182,7 +1200,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.41</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.42</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -4062,7 +4080,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.41';
+const APP_VERSION = '9.42';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
