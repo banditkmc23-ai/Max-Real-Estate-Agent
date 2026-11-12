@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ตัวกรอง — แบบจำลอง MAX Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="mock.css">
+<script>document.documentElement.classList.add(new URLSearchParams(location.search).get('v')==='now'?'v-now':'v-next');</script>
+</head>
+<body class="sheet-open">
+<a class="skip" href="#sheet">ข้ามไปตัวกรอง</a>
+<div class="shell">
+  <header class="mhead">
+    <div class="wash" aria-hidden="true"></div>
+    <div class="row">
+      <div>
+        <p class="brandline"><svg class="ico" aria-hidden="true"><use href="icons.svg#pin"/></svg> Staylow</p>
+        <h1>สวัสดี MAX</h1>
+        <p class="when">พฤหัสบดี 12 พฤศจิกายน</p>
+      </div>
+      <div class="tools">
+        <button class="avatar" type="button" aria-label="โปรไฟล์ตัวอย่าง">M</button>
+      </div>
+    </div>
+    <div class="searchrow">
+      <label class="search">
+        <span class="vh">ค้นหา</span>
+        <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
+        <input type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." value="อ่อนนุช">
+      </label>
+      <button class="iconbtn filt" id="openf" type="button" aria-label="ตัวกรองขั้นสูง" aria-expanded="true"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg></button>
+    </div>
+  </header>
+  <header class="dhead">
+    <label class="search">
+      <span class="vh">ค้นหา</span>
+      <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
+      <input type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" value="อ่อนนุช">
+    </label>
+    <button class="iconbtn filt" id="openfd" type="button" aria-label="ตัวกรองขั้นสูง"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg><span class="only-next">ตัวกรอง</span></button>
+  </header>
+  <main class="main">
+    <p class="sumline">แสดง <b>4</b> จาก 4 ห้อง</p>
+    <div class="grid">
+      <article class="card"><div class="media"><div class="pic" style="--h:16" role="img" aria-label="รูปตัวอย่าง The Base Sukhumvit 77"><span class="win"></span></div><span class="badge free"><i></i>ว่าง</span></div><div class="body"><h2>The Base Sukhumvit 77</h2><p class="price">฿18,000<span>/เดือน</span></p><p class="meta">BTS อ่อนนุช</p></div></article>
+      <article class="card"><div class="media"><div class="pic" style="--h:205" role="img" aria-label="รูปตัวอย่าง Ideo Mobi Asok"><span class="win"></span></div><span class="badge hold"><i></i>จอง</span></div><div class="body"><h2>Ideo Mobi Asok</h2><p class="price">฿15,500<span>/เดือน</span></p><p class="meta">MRT เพชรบุรี</p></div></article>
+    </div>
+  </main>
+</div>
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="ftitle">
+  <div class="af-hd">
+    <div class="grab" aria-hidden="true"></div>
+    <h1 id="ftitle">ตัวกรอง</h1>
+    <button class="af-x" id="closef" type="button" aria-label="ปิด"><svg class="ico" aria-hidden="true"><use href="icons.svg#x"/></svg></button>
+  </div>
+  <div class="af-body">
+    <div class="af-card">
+      <div class="af-t"><svg class="ico" aria-hidden="true"><use href="icons.svg#cash"/></svg>ช่วงราคา (บาท/เดือน)</div>
+      <div class="af-row">
+        <label class="af-f"><span>ต่ำสุด</span><input id="pmin" inputmode="numeric" value="15,000"></label>
+        <span class="dash" aria-hidden="true">–</span>
+        <label class="af-f"><span>สูงสุด</span><input id="pmax" inputmode="numeric" value="25,000"></label>
+      </div>
+    </div>
+    <div class="af-card">
+      <div class="af-t"><svg class="ico" aria-hidden="true"><use href="icons.svg#bed"/></svg>ประเภทห้อง</div>
+      <div class="choices g3">
+        <button class="chip" type="button" aria-pressed="false">Studio</button>
+        <button class="chip on" type="button" aria-pressed="true"><svg class="ico tick" aria-hidden="true"><use href="icons.svg#check"/></svg>1 Bed</button>
+        <button class="chip" type="button" aria-pressed="false">2 Bed</button>
+      </div>
+      <div class="choices g2">
+        <button class="chip" type="button" aria-pressed="false">3 Bed</button>
+        <button class="chip" type="button" aria-pressed="false">Duplex</button>
+      </div>
+    </div>
+    <div class="af-card">
+      <div class="af-t"><svg class="ico" aria-hidden="true"><use href="icons.svg#bath"/></svg>ห้องน้ำ</div>
+      <div class="choices g4">
+        <button class="chip on" type="button" aria-pressed="true"><svg class="ico tick" aria-hidden="true"><use href="icons.svg#check"/></svg>1</button>
+        <button class="chip" type="button" aria-pressed="false">2</button>
+        <button class="chip" type="button" aria-pressed="false">3</button>
+        <button class="chip" type="button" aria-pressed="false">4+</button>
+      </div>
+    </div>
+    <div class="af-card sizebox">
+      <div class="af-t"><svg class="ico" aria-hidden="true"><use href="icons.svg#ruler"/></svg>ขนาดพื้นที่ (ตร.ม.)</div>
+      <div class="af-row">
+        <label class="af-f"><span>ต่ำสุด</span><input id="smin" inputmode="numeric" placeholder="ต่ำสุด"></label>
+        <span class="dash" aria-hidden="true">–</span>
+        <label class="af-f"><span>สูงสุด</span><input id="smax" inputmode="numeric" placeholder="สูงสุด"></label>
+      </div>
+    </div>
+    <div class="af-card">
+      <div class="af-t"><svg class="ico" aria-hidden="true"><use href="icons.svg#train"/></svg>โซน BTS / MRT</div>
+      <p class="grouplabel">BTS</p>
+      <div class="stations">
+        <button class="chip pill on" type="button" aria-pressed="true"><svg class="ico tick" aria-hidden="true"><use href="icons.svg#check"/></svg>อ่อนนุช</button>
+        <button class="chip pill" type="button" aria-pressed="false">อโศก</button>
+        <button class="chip pill" type="button" aria-pressed="false">พระโขนง</button>
+        <button class="chip pill" type="button" aria-pressed="false">เอกมัย</button>
+      </div>
+      <p class="grouplabel">MRT</p>
+      <div class="stations">
+        <button class="chip pill" type="button" aria-pressed="false">เพชรบุรี</button>
+        <button class="chip pill" type="button" aria-pressed="false">สุขุมวิท</button>
+        <button class="chip pill" type="button" aria-pressed="false">พระราม 9</button>
+      </div>
+    </div>
+  </div>
+  <div class="af-bar">
+    <button class="af-clear" id="clear" type="button">ล้างค่า</button>
+    <button class="af-go" id="go" type="button">แสดง 2 ห้อง</button>
+  </div>
+</section>
+<p class="vh" id="live" role="status" aria-live="polite"></p>
+<div class="toast" id="toast" role="status"></div>
+<script src="mock.js"></script>
+<script>
+(function () {
+  var sheet = document.getElementById('sheet');
+  function setOpen(on) {
+    document.body.classList.toggle('sheet-open', on);
+    document.getElementById('openf').setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) document.getElementById('closef').focus();
+  }
+  document.getElementById('closef').onclick = function () { setOpen(false); };
+  document.getElementById('scrim').onclick = function () { setOpen(false); };
+  document.getElementById('openf').onclick = function () { setOpen(true); };
+  document.getElementById('openfd').onclick = function () { setOpen(true); };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('sheet-open')) setOpen(false);
+  });
+  sheet.addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    var on = chip.getAttribute('aria-pressed') !== 'true';
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    chip.classList.toggle('on', on);
+    recount();
+  });
+  function digits(id) { return (document.getElementById(id).value || '').replace(/[^\d]/g, ''); }
+  function recount() {
+    var beds = [].slice.call(document.querySelectorAll('.g3 .chip.on, .g2 .chip.on')).map(function (b) { return b.textContent.trim(); });
+    var n = 2;
+    if (beds.indexOf('Studio') !== -1 && beds.indexOf('1 Bed') === -1) n = 1;
+    if (beds.indexOf('2 Bed') !== -1 && beds.length === 1) n = 1;
+    if (!beds.length) n = 4;
+    var lo = Number(digits('pmin') || 0), hi = Number(digits('pmax') || 999999);
+    if (lo > 20000) n = Math.max(1, n - 1);
+    if (hi && hi < 16000) n = 1;
+    document.getElementById('go').textContent = 'แสดง ' + n + ' ห้อง';
+    return n;
+  }
+  ['pmin','pmax','smin','smax'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', recount);
+  });
+  document.getElementById('clear').onclick = function () {
+    sheet.querySelectorAll('.chip.on').forEach(function (c) { c.classList.remove('on'); c.setAttribute('aria-pressed', 'false'); });
+    ['pmin','pmax','smin','smax'].forEach(function (id) { document.getElementById(id).value = ''; });
+    recount();
+    document.getElementById('live').textContent = 'ล้างตัวกรองแล้ว ตรงกับ 4 ห้อง';
+  };
+  document.getElementById('go').onclick = function () {
+    var n = recount();
+    document.getElementById('live').textContent = 'เงื่อนไขนี้ตรงกับ ' + n + ' ห้อง';
+    mockToast('แบบจำลอง — แสดง ' + n + ' ห้อง');
+    setOpen(false);
+  };
+})();
+</script>
+</body>
+</html>

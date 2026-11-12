@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้องพัก — แบบจำลอง MAX Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="mock.css">
+<script>document.documentElement.classList.add(new URLSearchParams(location.search).get('v')==='now'?'v-now':'v-next');</script>
+</head>
+<body>
+<a class="skip" href="#list">ข้ามไปรายการห้อง</a>
+<div class="shell">
+  <aside class="side">
+    <div class="brandbox">
+      <div class="mark" aria-hidden="true">S</div>
+      <div>
+        <p class="brandline" style="color:var(--brand-ink);letter-spacing:.08em;font-size:12px;font-weight:700">STAYLOW</p>
+        <p style="font-weight:700">Property Manager</p>
+      </div>
+    </div>
+    <nav aria-label="เมนูหลัก">
+      <h2>ภาพรวม</h2>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — หน้าภาพรวมยังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#dash"/></svg>Dashboard <span class="hint">D</span></button>
+      <button class="navitem on" type="button" aria-current="page"><svg class="ico" aria-hidden="true"><use href="icons.svg#building"/></svg>ห้องพัก <span class="hint">R</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — หน้าลูกค้ายังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#users"/></svg>ลูกค้า <span class="num">0</span></button>
+      <h2>สถานะห้อง</h2>
+      <button class="navitem" type="button" data-quick="free"><svg class="ico" aria-hidden="true"><use href="icons.svg#home"/></svg>ว่าง <span class="num">2</span></button>
+      <button class="navitem" type="button" data-quick="busy"><svg class="ico" aria-hidden="true"><use href="icons.svg#building"/></svg>มีผู้เช่า <span class="num">1</span></button>
+      <button class="navitem" type="button" data-quick="hold"><svg class="ico" aria-hidden="true"><use href="icons.svg#check"/></svg>จอง <span class="num">1</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ไม่มีห้องรอตรวจ"><svg class="ico" aria-hidden="true"><use href="icons.svg#alert"/></svg>รอตรวจ <span class="num">0</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ไม่มีสัญญาใกล้หมด"><svg class="ico" aria-hidden="true"><use href="icons.svg#alert"/></svg>ใกล้หมดสัญญา <span class="num">0</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ยังไม่โพสต์คือตัวอย่าง"><svg class="ico" aria-hidden="true"><use href="icons.svg#megaphone"/></svg>ยังไม่โพสต์ <span class="num">1</span></button>
+      <h2>CRM</h2>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ไม่มีข้อมูลลูกค้า"><svg class="ico" aria-hidden="true"><use href="icons.svg#user-plus"/></svg>ลูกค้าใหม่ <span class="num">0</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ไม่มีรายการต้องติดตาม"><svg class="ico" aria-hidden="true"><use href="icons.svg#bell"/></svg>ต้องติดตาม <span class="num">0</span></button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ยังไม่มีการปิดการขาย"><svg class="ico" aria-hidden="true"><use href="icons.svg#trophy"/></svg>ปิดการขาย <span class="num">0</span></button>
+      <h2>จัดการ</h2>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — ไม่ได้สำรองข้อมูลจริง"><svg class="ico" aria-hidden="true"><use href="icons.svg#database"/></svg>สำรองข้อมูล</button>
+      <button class="navitem" type="button" data-toast="แบบจำลอง — หน้าตั้งค่ายังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#settings"/></svg>ตั้งค่า</button>
+    </nav>
+    <div class="sidefoot">
+      <button class="addroom" type="button" data-toast="แบบจำลอง — ยังไม่เปิดฟอร์มเพิ่มห้อง"><svg class="ico" aria-hidden="true"><use href="icons.svg#plus"/></svg>เพิ่มห้องใหม่</button>
+      <p class="ver">ตัวอย่าง · 4 ห้อง · 0 ลูกค้า</p>
+    </div>
+  </aside>
+  <div class="maincol">
+    <header class="mhead">
+      <div class="wash" aria-hidden="true"></div>
+      <div class="row">
+        <div>
+          <p class="brandline"><svg class="ico" aria-hidden="true"><use href="icons.svg#pin"/></svg> Staylow</p>
+          <h1>สวัสดี MAX<span class="only-now"> 👋</span></h1>
+          <p class="when">พฤหัสบดี 12 พฤศจิกายน</p>
+        </div>
+        <div class="tools">
+          <button class="iconbtn" type="button" aria-label="ยังไม่ซิงก์" data-toast="แบบจำลอง — ไม่ได้เชื่อมเครื่องจริง"><svg class="ico" aria-hidden="true"><use href="icons.svg#cloud"/></svg></button>
+          <button class="iconbtn" type="button" aria-label="การแจ้งเตือน" data-toast="แบบจำลอง — ไม่มีการแจ้งเตือน"><svg class="ico" aria-hidden="true"><use href="icons.svg#bell"/></svg></button>
+          <button class="avatar" type="button" aria-label="โปรไฟล์ตัวอย่าง" data-toast="แบบจำลอง — โปรไฟล์ตัวอย่าง">M</button>
+        </div>
+      </div>
+      <div class="searchrow">
+        <label class="search">
+          <span class="vh">ค้นหาห้อง คอนโด หรือลูกค้า</span>
+          <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
+          <input id="q" type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า..." autocomplete="off">
+        </label>
+        <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg></button>
+      </div>
+    </header>
+    <header class="dhead">
+      <label class="search">
+        <span class="vh">ค้นหาห้อง คอนโด หรือลูกค้า</span>
+        <svg class="ico" aria-hidden="true"><use href="icons.svg#search"/></svg>
+        <input id="q2" type="search" placeholder="ค้นหาห้อง, คอนโด, ลูกค้า... (⌘K)" autocomplete="off">
+      </label>
+      <button class="iconbtn filt" type="button" aria-label="ตัวกรองขั้นสูง" onclick="location.href='filter.html?v='+(document.documentElement.classList.contains('v-now')?'now':'next')"><svg class="ico" aria-hidden="true"><use href="icons.svg#sliders"/></svg><span class="only-next">ตัวกรอง</span></button>
+    </header>
+    <main class="main" id="list">
+      <div class="chiprow">
+        <div class="chips" role="toolbar" aria-label="ตัวกรองด่วน">
+          <button class="fchip on" type="button" data-quick="all" aria-pressed="true">ทั้งหมด</button>
+          <button class="fchip" type="button" data-quick="fav" aria-pressed="false"><span class="only-now" aria-hidden="true">⭐ </span><svg class="ico only-next" aria-hidden="true"><use href="icons.svg#star"/></svg>น่าสนใจ</button>
+          <button class="fchip" type="button" data-quick="free" aria-pressed="false"><svg class="ico tick" aria-hidden="true"><use href="icons.svg#check"/></svg>ว่าง</button>
+          <button class="fchip" type="button" data-quick="busy" aria-pressed="false">มีผู้เช่า</button>
+          <button class="fchip" type="button" data-quick="hold" aria-pressed="false">จอง</button>
+          <button class="fchip" type="button" data-quick="wait" aria-pressed="false">รอตรวจ</button>
+          <button class="fchip" type="button" data-quick="sale" aria-pressed="false">ขาย</button>
+          <button class="fchip" type="button" data-quick="soon" aria-pressed="false">ใกล้หมดสัญญา</button>
+          <button class="fchip" type="button" data-quick="nopost" aria-pressed="false">ยังไม่โพสต์</button>
+          <button class="fchip" type="button" data-quick="oldpost" aria-pressed="false">โพสต์เกิน 7 วัน</button>
+          <button class="fchip" type="button" data-quick="nonote" aria-pressed="false">ไม่มีรายละเอียด</button>
+          <button class="fchip" type="button" data-quick="note" aria-pressed="false">มีรายละเอียด</button>
+          <button class="fchip" type="button" data-quick="photo" aria-pressed="false">มีรูป</button>
+          <button class="fchip" type="button" data-quick="nophoto" aria-pressed="false">ไม่มีรูป</button>
+        </div>
+        <button class="pricepill" type="button" data-toast="แบบจำลอง — ช่วงราคาอยู่ในการ์ดตัวอย่าง">฿ ราคา</button>
+      </div>
+      <div class="sumline">
+        <span id="countline">แสดง <b id="count">4</b> จาก 4 ห้อง<span class="deskonly"> · เรียง: ว่างก่อน</span></span>
+        <button class="sort phoneonly" type="button" data-toast="แบบจำลอง — เรียงว่างก่อนอยู่แล้ว"><span class="only-now">⇅ ว่างก่อน ▾</span><span class="only-next"><svg class="ico" aria-hidden="true"><use href="icons.svg#sort"/></svg> ว่างก่อน</span></button>
+      </div>
+      <div class="filtersum" id="filtersum" hidden>
+        <span>กำลังกรอง: <b id="filtername">ว่าง</b></span>
+        <button class="clear" type="button" id="clearf">ล้างตัวกรอง</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </main>
+    <nav class="tabbar" aria-label="เมนูล่าง">
+      <button class="tab" type="button" data-toast="แบบจำลอง — หน้าภาพรวมยังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#home"/></svg><span>ภาพรวม</span></button>
+      <button class="tab on" type="button" aria-current="page"><svg class="ico" aria-hidden="true"><use href="icons.svg#building"/></svg><span>ห้องพัก</span></button>
+      <button class="fab" type="button" aria-label="เพิ่มห้องใหม่" data-toast="แบบจำลอง — ยังไม่เปิดฟอร์มเพิ่มห้อง"><svg class="ico" aria-hidden="true"><use href="icons.svg#plus"/></svg></button>
+      <button class="tab" type="button" data-toast="แบบจำลอง — หน้าลูกค้ายังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#users"/></svg><span>ลูกค้า</span></button>
+      <button class="tab" type="button" data-toast="แบบจำลอง — หน้าตั้งค่ายังไม่ทำ"><svg class="ico" aria-hidden="true"><use href="icons.svg#settings"/></svg><span>ตั้งค่า</span></button>
+    </nav>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="mock.js"></script>
+<script>
+(function () {
+  var rooms = [
+    { id: 'base', project: 'The Base Sukhumvit 77', type: '1 Bed', size: 35, rent: 18000, station: 'BTS อ่อนนุช', status: 'free', label: 'ว่าง', photos: 8, fav: true, added: '12 พ.ย. · 09:40', h: 16 },
+    { id: 'ideo', project: 'Ideo Mobi Asok', type: 'Studio', size: 28, rent: 15500, station: 'MRT เพชรบุรี', status: 'hold', label: 'จอง', photos: 5, fav: false, added: '11 พ.ย. · 16:05', h: 205 },
+    { id: 'life', project: 'Life Asoke', type: '2 Bed', size: 52, rent: 28000, station: 'MRT เพชรบุรี', status: 'busy', label: 'มีผู้เช่า', photos: 12, fav: false, added: '10 พ.ย. · 11:20', h: 32 },
+    { id: 'knight', project: 'Knightsbridge Prime Onnut', type: '1 Bed', size: 32, rent: 16500, station: 'BTS อ่อนนุช', status: 'free', label: 'ว่าง', photos: 0, fav: false, added: '9 พ.ย. · 14:12', h: 40, nophoto: true }
+  ];
+  var baht = function (n) { return '฿' + n.toLocaleString('en-US'); };
+  var ico = function (id) { return '<svg class="ico" aria-hidden="true"><use href="icons.svg#' + id + '"/></svg>'; };
+  function card(r, mode) {
+    var cls = r.status === 'free' ? 'free' : r.status === 'hold' ? 'hold' : 'busy';
+    var art = r.nophoto
+      ? '<div class="pic empty" role="img" aria-label="ยังไม่มีรูปตัวอย่าง ' + r.project + '"><div class="ph">' + ico('image') + '<div>ยังไม่มีรูป</div></div></div>'
+      : '<div class="pic" style="--h:' + r.h + '" role="img" aria-label="รูปตัวอย่าง ' + r.project + '"><span class="win"></span><span class="plant"></span></div>';
+    var count = r.photos ? '<span class="count">' + (mode === 'next' ? ico('camera') + ' ' : '') + r.photos + ' รูป</span>' : '';
+    var star = r.fav ? 'star-fill' : 'star';
+    var favLabel = (r.fav ? 'นำออกจากน่าสนใจ ' : 'เก็บเป็นน่าสนใจ ') + r.project;
+    var photoBtn = r.photos
+      ? '<button class="b2" type="button" data-toast="แบบจำลอง — เปิดรูปตัวอย่าง ' + r.photos + ' รูป">' + ico('image') + 'รูปภาพ</button>'
+      : (mode === 'next'
+        ? '<button class="b2 off" type="button" aria-disabled="true">ยังไม่มีรูป</button>'
+        : '<button class="b2 off" type="button" data-toast="ห้องนี้ยังไม่มีรูป">' + ico('image') + 'รูปภาพ</button>');
+    return '<article class="card only-' + mode + '" data-status="' + r.status + '" data-fav="' + (r.fav ? '1' : '0') + '" data-photos="' + r.photos + '">' +
+      '<div class="media">' + art +
+      '<span class="badge ' + cls + '"><i aria-hidden="true"></i>' + r.label + '</span>' +
+      '<button class="fav' + (r.fav ? ' on' : '') + '" type="button" aria-pressed="' + (r.fav ? 'true' : 'false') + '" aria-label="' + favLabel + '" data-toast="แบบจำลอง — ยังไม่บันทึกดาว">' +
+        '<span>' + ico(star) + '</span></button>' + count + '</div>' +
+      '<div class="body"><h2>' + r.project + '</h2><p class="added">ลง ' + r.added + '</p>' +
+      '<p class="meta">' + r.type + ' · ' + r.size + ' ตร.ม.</p>' +
+      '<p class="price">' + baht(r.rent) + '<span>/เดือน</span></p>' +
+      '<p class="meta">' + r.station + '</p>' +
+      '<div class="acts"><button class="b1" type="button" data-toast="คัดลอกข้อความตัวอย่างของ ' + r.project + ' แล้ว">' + ico('copy') + 'คัดข้อความ</button>' +
+      photoBtn + '</div></div>' +
+      '<button class="openhit" type="button" aria-label="ดูรายละเอียด ' + r.project + ' ' + r.label + ' ' + baht(r.rent) + ' ต่อเดือน" data-toast="แบบจำลอง — ยังไม่เปิดหน้ารายละเอียด"></button></article>';
+  }
+  var html = rooms.map(function (r) { return card(r, 'now') + card(r, 'next'); }).join('');
+  document.getElementById('grid').innerHTML = html;
+
+  var active = 'all';
+  function cards() {
+    var mode = document.documentElement.classList.contains('v-now') ? 'now' : 'next';
+    return [].slice.call(document.querySelectorAll('.card.only-' + mode));
+  }
+  function apply(key) {
+    active = key;
+    var shown = 0;
+    cards().forEach(function (el) {
+      var ok = key === 'all' || (key === 'fav' ? el.dataset.fav === '1' : key === 'photo' ? Number(el.dataset.photos) > 0 : key === 'nophoto' ? Number(el.dataset.photos) === 0 : el.dataset.status === key);
+      if (key === 'wait' || key === 'sale' || key === 'soon' || key === 'nopost' || key === 'oldpost' || key === 'nonote' || key === 'note') ok = false;
+      el.hidden = !ok;
+      if (ok) shown++;
+    });
+    document.getElementById('count').textContent = String(shown);
+    document.querySelectorAll('[data-quick]').forEach(function (b) {
+      var on = b.getAttribute('data-quick') === key;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var sum = document.getElementById('filtersum');
+    var chip = document.querySelector('.fchip[data-quick="' + key + '"]');
+    if (key === 'all' || !chip) sum.hidden = true;
+    else { sum.hidden = false; document.getElementById('filtername').textContent = chip.textContent.replace(/\s+/g, ' ').trim(); }
+  }
+  document.getElementById('list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-quick]');
+    if (!b) return;
+    apply(b.getAttribute('data-quick'));
+  });
+  document.getElementById('clearf').addEventListener('click', function () { apply('all'); });
+  function onType(v) {
+    var q = v.trim().toLowerCase();
+    cards().forEach(function (el) {
+      var name = el.querySelector('h2').textContent.toLowerCase();
+      el.hidden = q && name.indexOf(q) === -1;
+    });
+    var n = cards().filter(function (el) { return !el.hidden; }).length;
+    document.getElementById('count').textContent = String(n);
+  }
+  document.getElementById('q').addEventListener('input', function () { document.getElementById('q2').value = this.value; onType(this.value); });
+  document.getElementById('q2').addEventListener('input', function () { document.getElementById('q').value = this.value; onType(this.value); });
+})();
+</script>
+</body>
+</html>

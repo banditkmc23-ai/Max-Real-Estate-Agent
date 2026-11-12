@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แบบจำลองหน้าตา MAX Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --brand:#c2552d; --ink:#1c1917; --muted:#5c534c; --bg:#f6f3ef; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; }
+  a { color: #8f3d1f; }
+  header, main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+  header { padding: 36px 0 8px; }
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .08em; color: var(--brand); margin: 0; }
+  h1 { font-size: 34px; line-height: 1.25; margin: 6px 0; }
+  .lead { font-size: 17px; color: var(--muted); max-width: 68ch; }
+  .note { background: #fff; border: 1px solid #e7e0da; border-radius: 16px; padding: 14px 16px; }
+  h2 { font-size: 26px; margin: 36px 0 8px; }
+  h3 { margin: 0 0 6px; font-size: 18px; }
+  ol { list-style: none; padding: 0; display: grid; gap: 12px; }
+  li { background: #fff; border: 1px solid #e7e0da; border-radius: 16px; padding: 16px; }
+  .n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #fbeee8; color: #8f3d1f; font-weight: 700; margin-right: 8px; }
+  p { margin: 6px 0; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin: 18px 0 8px; }
+  figure { margin: 0; }
+  figcaption { font-weight: 700; margin-bottom: 8px; }
+  figcaption small { display: block; font-weight: 500; color: var(--muted); }
+  .device, .desk {
+    border: 8px solid #1c1917; border-radius: 28px; overflow: hidden; background: #fff;
+    box-shadow: 0 18px 40px rgba(28,25,23,.12);
+  }
+  .device { width: calc(390px * .62); height: calc(844px * .62); }
+  .desk { width: calc(1440px * .36); height: calc(900px * .36); border-radius: 16px; }
+  iframe { border: 0; transform-origin: top left; }
+  .device iframe { width: 390px; height: 844px; transform: scale(.62); }
+  .desk iframe { width: 1440px; height: 900px; transform: scale(.36); }
+  .links { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 8px 0 28px; }
+  footer { width: min(1120px, calc(100% - 32px)); margin: 12px auto 40px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 800px) {
+    .pair { grid-template-columns: 1fr; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">แบบจำลองเท่านั้น · ไม่ได้แก้แอปที่ใช้งานจริง</p>
+  <h1>ปรับหน้าตา MAX Agent ให้กดง่ายและอ่านชัดขึ้น</h1>
+  <p class="lead">เทียบจากหน้าจอปัจจุบันใน index.html และหน้าแชร์ลูกค้า ใช้กฎเรื่องตัวหนังสือ ระยะห่าง สี จุดสัมผัส ปุ่ม และการเคลื่อนไหวจากชุดข้อมูล ui-ux-pro-max เป็นตัวตั้ง แล้วคงสีแบรนด์ #c2552d ชื่อคอนโดภาษาอังกฤษ ข้อความไทย เมนูล่าง 5 ช่อง และโครงคอมแบบแถบซ้ายไว้เหมือนเดิม</p>
+  <p class="note">สคริปต์ออกแบบแนะนำสีเขียว #0F766E และฟอนต์ Cinzel / Josefin Sans แบบกระจกฝ้า ทั้งชุดนี้ใช้กับภาษาไทยไม่ได้และทับสีแบรนด์ จึงไม่นำมาใช้ หน้าที่นี้ใช้เฉพาะกฎที่ใช้ได้จริง: คอนทราสต์ 4.5:1, จุดสัมผัส 44px บนไอโฟน, ไม่ใช้ตัวหนังสือเล็กกว่า 12px, มีป้ายชื่อช่องกรอก, ไม่ใช้สีอย่างเดียว, ไม่ใช้อิโมจิแทนไอคอน, และมีปุ่มเลื่อนรูปเอง</p>
+</header>
+<main>
+  <h2>8 จุดที่ควรปรับ</h2>
+  <ol>
+    <li><h3><span class="n">1</span>ปุ่มเล็กเกินนิ้ว</h3><p><b>ตอนนี้</b> ชิปตัวกรองสูง 30px ดาวบนรูป 28px ปุ่มในการ์ดประมาณ 30px ปุ่มปิดตัวกรองประมาณ 32px ชิปห้องน้ำ 38px</p><p><b>ปรับแล้ว</b> จุดสัมผัสอย่างน้อย 44px และห่างกัน 8px</p><p><b>เพราะ</b> แอปนี้ใช้บนไอโฟน เป้าที่เล็กกว่า 44px ทำให้นิ้วกดพลาด</p></li>
+    <li><h3><span class="n">2</span>ตัวหนังสือเล็กไป</h3><p><b>ตอนนี้</b> เมนูล่าง 10px ป้ายสถานะและวันที่ 10px จำนวนรูป 9px รายละเอียดการ์ด 11px ข้อความท้ายหน้าแชร์ 11px</p><p><b>ปรับแล้ว</b> ข้อความประกอบไม่ต่ำกว่า 12px ข้อความทั่วไป 14–16px ราคา 18px ระยะบรรทัด 1.5</p><p><b>เพราะ</b> ภาษาไทยอ่านยากเมื่อเล็กกว่า 12px</p></li>
+    <li><h3><span class="n">3</span>สีจาง อ่านไม่ชัด</h3><p><b>ตอนนี้</b> ข้อความสี #8e8680 บนขาวได้ 3.58:1 เมนูล่าง #8a8078 ได้ 3.86:1 ชิปที่เลือกในตัวกรอง (#c2552d บนพื้น #fbeee8) ได้ 3.99:1 ปุ่มรูปที่ปิดใช้ #aaa บน #eee ได้ 2:1 สถานะเขียว #1a8a4a ได้ 4.39:1 เกณฑ์ตัวหนังสือปกติคือ 4.5:1</p><p><b>ปรับแล้ว</b> ข้อความรองเป็น #5c534c (7.5:1) ตัวหนังสือแบรนด์ขนาดเล็กเป็น #8f3d1f (7.3:1) ชิปที่เลือกใช้ตัวเข้มบนพื้นอ่อนพร้อมเครื่องหมายถูก สถานะว่างใช้เขียว #1f7a3a ปุ่มพื้นแบรนด์ยังเป็น #c2552d ตัวหนังสือขาวได้ 4.53:1</p><p><b>เพราะ</b> ตัวเลขและสถานะต้องอ่านได้กลางแดด และคนที่แยกสีไม่ชัดต้องไม่พึ่งสีอย่างเดียว</p></li>
+    <li><h3><span class="n">4</span>ระยะห่างไม่เป็นจังหวะ</h3><p><b>ตอนนี้</b> ในการ์ดเว้นบรรทัดแค่ 1px ขอบใน 8–9px ชิปห่าง 6px</p><p><b>ปรับแล้ว</b> ใช้ขั้น 4 และ 8px ขอบในการ์ด 12px ช่องระหว่างกลุ่มในตัวกรอง 16px</p><p><b>เพราะ</b> ระยะเท่ากันทำให้กวาดตาหาราคาได้เร็ว โดยไม่ต้องเปลี่ยนโครงหน้ารายการ</p></li>
+    <li><h3><span class="n">5</span>อิโมจิแทนไอคอน</h3><p><b>ตอนนี้</b> ทักทายมี 👋 ชิปน่าสนใจมี ⭐ หน้าแชร์มี 📷 และ 📍 ไอคอนพวกนี้ขนาดและสีไม่เท่ากันระหว่างไอโฟนกับแมค</p><p><b>ปรับแล้ว</b> ใช้ไอคอนเส้นชุดเดียวกัน และปุ่มที่มีแต่รูปมีชื่อสำหรับโปรแกรมอ่านหน้าจอ</p><p><b>เพราะ</b> อิโมจิคุมสีและขนาดไม่ได้ และไม่ควรเป็นตัวบอกสถานะ</p></li>
+    <li><h3><span class="n">6</span>ตัวกรองบอกสถานะไม่ครบ</h3><p><b>ตอนนี้</b> ช่องขนาดพื้นที่ไม่มีป้าย เหลือแค่คำจางในช่องซึ่งหายตอนเริ่มพิมพ์ ชิปที่เลือกเปลี่ยนแค่สี แถบสรุปตัวกรองในโค้ดถูกซ่อนด้วย display:none</p><p><b>ปรับแล้ว</b> มีป้าย “ต่ำสุด / สูงสุด” ชิปที่เลือกมีเครื่องหมายถูกและสถานะ aria-pressed แถบ “กำลังกรอง” โชว์ใต้ชิป พร้อมปุ่มล้าง</p><p><b>เพราะ</b> คนที่ใช้คีย์บอร์ดและโปรแกรมอ่านหน้าจอต้องรู้ว่าเลือกอะไรอยู่ ไม่ใช่เดาจากสี</p></li>
+    <li><h3><span class="n">7</span>การ์ดห้องกดยากและคำถูกตัด</h3><p><b>ตอนนี้</b> รูปไม่มีคำอธิบาย ปุ่ม “คัดข้อความ” กว้างไม่พอจนคำถูกตัด ห้องที่ไม่มีรูปยังกดปุ่มรูปได้แต่เป็นสีเทาจาง จุดโฟกัสคีย์บอร์ดถูกเอาออก และหน้าแรกห้ามซูมด้วย maximum-scale=1</p><p><b>ปรับแล้ว</b> รูปตัวอย่างมีคำอธิบาย บนจอแคบปุ่มสองปุ่มเรียงลงมาให้คำอ่านครบและสูง 44px ห้องไม่มีรูปขึ้นว่า “ยังไม่มีรูป” และกดไม่ได้ มีวงโฟกัสชัด หน้านี้ซูมได้ ลำดับข้อมูลในการ์ดยังเป็นชื่อ วันที่ ประเภท ราคา สถานีเหมือนเดิม</p><p><b>เพราะ</b> การ์ดคืองานหลักของเอเจนต์ ต้องกดคัดข้อความได้จริงทั้งนิ้วและคีย์บอร์ด</p></li>
+    <li><h3><span class="n">8</span>การเคลื่อนไหวไม่มีการควบคุม</h3><p><b>ตอนนี้</b> การ์ดลอยขึ้นเมื่อเอาเมาส์ไปชี้ ซึ่งนิ้วบนไอโฟนไม่ได้ชี้ หน้าแชร์เลื่อนรูปเองทุก 3 วินาทีโดยไม่มีปุ่มหยุด และไม่ได้ดูค่า prefers-reduced-motion</p><p><b>ปรับแล้ว</b> ตอนกดปุ่มเปลี่ยนความทึบใน 120ms โดยไม่ดันเลย์เอาต์ รูปเลื่อนเมื่อกดก่อนหน้า/ถัดไปหรือปัด ชีตตัวกรองใช้ 280ms ถ้าเครื่องตั้งค่าลดการเคลื่อนไหว แอนิเมชันจะถูกปิด</p><p><b>เพราะ</b> ของที่ขยับเองทำให้เวียนหัว และคนที่ใช้เมาส์บนแมคต้องเห็นโฟกัสไม่ใช่แค่ตอนเอาเมาส์ไปชี้</p></li>
+  </ol>
+
+  <h2>รายการห้อง</h2>
+  <p>เมนูล่างยังเป็น ภาพรวม · ห้องพัก · ปุ่มบวก · ลูกค้า · ตั้งค่า บนคอมยังเป็นแถบซ้าย ช่องค้นหาด้านบน และกริด 3 คอลัมน์</p>
+  <div class="pair">
+    <figure>
+      <figcaption>ตอนนี้<small>ชิปเตี้ย ตัวเล็ก คำในปุ่มถูกตัด</small></figcaption>
+      <div class="device"><iframe title="รายการห้องแบบปัจจุบัน" src="rooms.html?v=now"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption>ปรับแล้ว<small>อ่านชัด กดได้เต็มคำ สีแบรนด์เดิม</small></figcaption>
+      <div class="device"><iframe title="รายการห้องแบบปรับแล้ว" src="rooms.html?v=next"></iframe></div>
+    </figure>
+  </div>
+  <p class="links"><a href="rooms.html?v=now">เปิดรายการแบบปัจจุบัน</a><a href="rooms.html?v=next">เปิดรายการแบบปรับแล้ว</a></p>
+  <div class="pair">
+    <figure>
+      <figcaption>คอม ตอนนี้<small>แถบซ้ายเดิม ตัวหนังสือส่วนกำกับยัง 10px</small></figcaption>
+      <div class="desk"><iframe title="รายการห้องบนคอมแบบปัจจุบัน" src="rooms.html?v=now"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption>คอม ปรับแล้ว<small>โครงเดิม ปุ่มสูงขึ้น ตัวกรองมีคำกำกับ</small></figcaption>
+      <div class="desk"><iframe title="รายการห้องบนคอมแบบปรับแล้ว" src="rooms.html?v=next"></iframe></div>
+    </figure>
+  </div>
+
+  <h2>ตัวกรอง</h2>
+  <p>มือถือยังเป็นชีตจากด้านล่าง คอมยังเป็นกล่องกลางจอ หัวข้อยังเป็นราคา ประเภทห้อง ห้องน้ำ ขนาด และโซน BTS / MRT</p>
+  <div class="pair">
+    <figure>
+      <figcaption>ตอนนี้<small>ช่องขนาดไม่มีป้าย ชิปที่เลือกพึ่งสี</small></figcaption>
+      <div class="device"><iframe title="ตัวกรองแบบปัจจุบัน" src="filter.html?v=now"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption>ปรับแล้ว<small>มีป้ายชื่อ เครื่องหมายถูก และปุ่มปิด 44px</small></figcaption>
+      <div class="device"><iframe title="ตัวกรองแบบปรับแล้ว" src="filter.html?v=next"></iframe></div>
+    </figure>
+  </div>
+  <p class="links"><a href="filter.html?v=now">เปิดตัวกรองแบบปัจจุบัน</a><a href="filter.html?v=next">เปิดตัวกรองแบบปรับแล้ว</a></p>
+
+  <h2>หน้าแชร์ให้ลูกค้า</h2>
+  <p>ลำดับเดิม: รูป ชื่อ ราคา รายละเอียด เงื่อนไข แผนที่ เอเจนต์ และปุ่มทัก LINE กับโทร บนคอมรูปอยู่ซ้าย รายละเอียดติดขวา ข้อมูลติดต่อเป็นตัวอย่าง ไม่มีเบอร์จริง</p>
+  <div class="pair">
+    <figure>
+      <figcaption>ตอนนี้<small>รูปกินจอ อิโมจิ และตัวเล็กท้ายหน้า</small></figcaption>
+      <div class="device"><iframe title="หน้าแชร์แบบปัจจุบัน" src="share.html?v=now"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption>ปรับแล้ว<small>เห็นราคาตั้งแต่แรก และมีปุ่มเลื่อนรูป</small></figcaption>
+      <div class="device"><iframe title="หน้าแชร์แบบปรับแล้ว" src="share.html?v=next"></iframe></div>
+    </figure>
+  </div>
+  <p class="links"><a href="share.html?v=now">เปิดหน้าแชร์แบบปัจจุบัน</a><a href="share.html?v=next">เปิดหน้าแชร์แบบปรับแล้ว</a></p>
+  <div class="pair">
+    <figure>
+      <figcaption>คอม ตอนนี้</figcaption>
+      <div class="desk"><iframe title="หน้าแชร์บนคอมแบบปัจจุบัน" src="share.html?v=now"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption>คอม ปรับแล้ว</figcaption>
+      <div class="desk"><iframe title="หน้าแชร์บนคอมแบบปรับแล้ว" src="share.html?v=next"></iframe></div>
+    </figure>
+  </div>
+</main>
+<footer>
+  ข้อมูลทั้งหมดเป็นตัวอย่าง: The Base Sukhumvit 77, Ideo Mobi Asok, Life Asoke, Knightsbridge Prime Onnut, เบอร์ 080-000-0000 และ LINE @max.example ไม่มีโน้ตส่วนตัวและไม่ได้ต่อกับฐานข้อมูล
+</footer>
+</body>
+</html>
