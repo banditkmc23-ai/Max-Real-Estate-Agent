@@ -20,7 +20,19 @@
       .replace(/['’]/g, '')
       .replace(/[^a-z0-9]+/g, ' ')
       .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\bthong lo\b/g, 'thonglor')
+      .replace(/\bphrom phong\b/g, 'phromphong')
+      .replace(/\bon nut\b/g, 'onnut')
+      .replace(/\bekamai\b/g, 'ekkamai')
+      .replace(/\bpetchaburi\b/g, 'phetchaburi')
+      .replace(/\bpetchburi\b/g, 'phetchaburi')
+      .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  function lettered(f) {
+    return !!(f && /[a-z]/.test(f));
   }
 
   function latinish(t) {
@@ -94,9 +106,10 @@
         var rk = rawKey(k);
         if (rk) by[rk] = p;
         var f = fold(k);
-        if (!f) return;
+        if (!lettered(f)) return;
         by[f] = p;
-        tight[f.replace(/ /g, '')] = p;
+        var squashed = f.replace(/ /g, '');
+        if (lettered(squashed)) tight[squashed] = p;
       });
     });
     return { by: by, tight: tight, list: list };
@@ -110,9 +123,9 @@
       var rk = rawKey(tried[i]);
       if (rk && idx.by[rk]) return idx.by[rk];
       f = fold(tried[i]);
-      if (f && idx.by[f]) return idx.by[f];
+      if (lettered(f) && idx.by[f]) return idx.by[f];
       t = f.replace(/ /g, '');
-      if (t && idx.tight[t]) return idx.tight[t];
+      if (lettered(t) && idx.tight[t]) return idx.tight[t];
     }
     var best = null, bestD = 3;
     for (i = 0; i < tried.length; i++) {

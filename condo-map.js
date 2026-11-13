@@ -746,44 +746,49 @@
     if (selectedKey) focusCard(selectedKey, false);
   }
 
+  function clearFilters() {
+    state.statuses = {};
+    state.beds = {};
+    state.deal = 'all';
+    state.priceMin = state.priceMax = state.sizeMin = state.sizeMax = null;
+    state.q = '';
+    state.fav = false;
+  }
+  function enter() {
+    keep = true;
+    try { switchView('dashboard'); } catch (e) {}
+    keep = false;
+    show();
+  }
   var api = {
     open: function () {
-      keep = true;
-      try { switchView('dashboard'); } catch (e) {}
-      keep = false;
-      show();
-    },
-    openFromList: function () {
-      var fav = false, statuses = {}, deal = 'all';
-      try {
-        if (typeof activeFilters !== 'undefined' && activeFilters) {
-          if (activeFilters.has('FAV')) fav = true;
-          ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'].forEach(function (s) { if (activeFilters.has(s)) statuses[s] = 1; });
-          if (activeFilters.has('FOR_SALE')) deal = 'sale';
-        }
-      } catch (e) {}
-      state.statuses = statuses;
-      state.beds = {};
-      state.deal = deal;
-      state.priceMin = state.priceMax = state.sizeMin = state.sizeMax = null;
-      state.q = '';
-      state.fav = fav;
+      clearFilters();
       fitted = false;
       selectedKey = '';
       mode = 'map';
-      this.open();
+      enter();
+    },
+    openFromList: function () {
+      clearFilters();
+      try {
+        if (typeof activeFilters !== 'undefined' && activeFilters) {
+          if (activeFilters.has('FAV')) state.fav = true;
+          ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'].forEach(function (s) { if (activeFilters.has(s)) state.statuses[s] = 1; });
+          if (activeFilters.has('FOR_SALE')) state.deal = 'sale';
+        }
+      } catch (e) {}
+      fitted = false;
+      selectedKey = '';
+      mode = 'map';
+      enter();
     },
     openFav: function () {
-      state.statuses = {};
-      state.beds = {};
-      state.deal = 'all';
-      state.priceMin = state.priceMax = state.sizeMin = state.sizeMax = null;
-      state.q = '';
+      clearFilters();
       state.fav = true;
       fitted = false;
       selectedKey = '';
       mode = 'map';
-      this.open();
+      enter();
     },
     close: close,
     onLeave: function () { if (!keep) hide(); },
