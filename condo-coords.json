@@ -96,20 +96,12 @@
     },
     {
       "keys": [
-        "Blocs 77"
-      ],
-      "name": "Blocs 77",
-      "lat": 13.710632,
-      "lng": 100.60155,
-      "src": "nominatim"
-    },
-    {
-      "keys": [
+        "Blocs 77",
         "Blocs77 (บล็อคส์ 77)",
         "Blocs77",
         "บล็อคส์ 77"
       ],
-      "name": "Blocs77",
+      "name": "Blocs 77",
       "lat": 13.710632,
       "lng": 100.60155,
       "src": "nominatim"
@@ -219,6 +211,16 @@
     },
     {
       "keys": [
+        "IDEO Mobi Sukhumvit 81",
+        "Ideo Mobi Sukhumvit"
+      ],
+      "name": "IDEO Mobi Sukhumvit 81",
+      "lat": 13.70474,
+      "lng": 100.60225,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
         "IDEO Morhp 38",
         "IDEO Morph 38"
       ],
@@ -240,15 +242,7 @@
       "keys": [
         "Ideo S93",
         "Ideo S93 (ไอดีโอ เอส93)",
-        "ไอดีโอ เอส93"
-      ],
-      "name": "Ideo S93",
-      "lat": 13.698893,
-      "lng": 100.605517,
-      "src": "nominatim"
-    },
-    {
-      "keys": [
+        "ไอดีโอ เอส93",
         "IDEO Sukhumvit 93"
       ],
       "name": "IDEO Sukhumvit 93",
@@ -519,6 +513,20 @@
     },
     {
       "keys": [
+        "Park Origin Phrom Phong",
+        "Park Origin 24 Phrom Phong",
+        "Park Origin 24 Phrom Phong (พาร์ค ออริจิ้น 24 พร้อมพงษ์)",
+        "พาร์ค ออริจิ้น 24 พร้อมพงษ์",
+        "Park Origin Phrom Phong / Park 24 (พาร์ค ออริจิ้น พร้อมพงษ์)",
+        "พาร์ค ออริจิ้น พร้อมพงษ์"
+      ],
+      "name": "Park Origin Phrom Phong",
+      "lat": 13.72512,
+      "lng": 100.56565,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
         "Q Asoke (คิว อโศก)",
         "Q Asoke",
         "คิว อโศก"
@@ -665,6 +673,17 @@
     },
     {
       "keys": [
+        "Siamese Sukhumvit 48 (ไซมิส สุขุมวิท 48)",
+        "Siamese Sukhumvit 48",
+        "ไซมิส สุขุมวิท 48"
+      ],
+      "name": "Siamese Sukhumvit 48",
+      "lat": 13.70893,
+      "lng": 100.59852,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
         "Siri At Sukhumvit"
       ],
       "name": "Siri At Sukhumvit",
@@ -730,6 +749,17 @@
       "name": "The Base Sukhumvit 77",
       "lat": 13.710999,
       "lng": 100.602507,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Clover Thonglor",
+        "The Clover Thonglor 18",
+        "The Clover"
+      ],
+      "name": "The Clover Thonglor",
+      "lat": 13.73446,
+      "lng": 100.58488,
       "src": "nominatim"
     },
     {
@@ -887,6 +917,16 @@
       "name": "The Room Sukhumvit 79",
       "lat": 13.708462,
       "lng": 100.601656,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Teak Sukhumvit 39",
+        "The Teak"
+      ],
+      "name": "The Teak Sukhumvit 39",
+      "lat": 13.7406687,
+      "lng": 100.5735142,
       "src": "nominatim"
     },
     {
