@@ -753,6 +753,26 @@
       keep = false;
       show();
     },
+    openFromList: function () {
+      var fav = false, statuses = {}, deal = 'all';
+      try {
+        if (typeof activeFilters !== 'undefined' && activeFilters) {
+          if (activeFilters.has('FAV')) fav = true;
+          ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'PENDING'].forEach(function (s) { if (activeFilters.has(s)) statuses[s] = 1; });
+          if (activeFilters.has('FOR_SALE')) deal = 'sale';
+        }
+      } catch (e) {}
+      state.statuses = statuses;
+      state.beds = {};
+      state.deal = deal;
+      state.priceMin = state.priceMax = state.sizeMin = state.sizeMax = null;
+      state.q = '';
+      state.fav = fav;
+      fitted = false;
+      selectedKey = '';
+      mode = 'map';
+      this.open();
+    },
     openFav: function () {
       state.statuses = {};
       state.beds = {};

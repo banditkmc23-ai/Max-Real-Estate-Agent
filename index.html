@@ -318,11 +318,9 @@
   .g-b1{background:#c2552d;color:#fff}.g-b2{background:#fbeee7;color:#c2552d}.g-b2.off{background:#eee;color:#aaa}
   /* v41 list header + compact search */
   .lh-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-  .fav-head{display:flex;align-items:center;gap:8px;margin:0 0 8px;min-width:0}
-  .fav-head h2{font-size:16px;font-weight:700;color:#1c1917;line-height:1.2}
-  .fav-map-pill{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 11px 0 9px;border-radius:999px;background:#c2552d;color:#fff;font-size:12px;font-weight:700;flex:none;line-height:1}
-  .fav-map-pill svg{display:block}
   #viewRooms .filter-btn{height:30px;padding:0 12px !important;font-size:12px;display:inline-flex;align-items:center;background:#fff;border:1px solid #ece6e1;flex-shrink:0}
+  #viewRooms .map-chip{gap:4px}
+  #viewRooms .map-chip svg{flex:none}
   #viewRooms .filter-btn.on{background:#c2552d;border-color:#c2552d;color:#fff;box-shadow:none}
   .lh-pill{height:30px;padding:0 12px;border-radius:9999px !important;font-size:12px;font-weight:500;background:#fff;border:1px solid #ece6e1;color:#5b534d;white-space:nowrap}
   .lh-pill.on{background:#fbeee7;border-color:#c2552d;color:#c2552d;font-weight:600}
@@ -794,14 +792,11 @@
 
       <div id="viewRooms" class="pt-3 lg:pt-6 hidden">
         <div class="lg:sticky lg:top-0 lg:z-30 lg:bg-slate-950 lg:-mx-6 lg:px-6 lg:pb-3 lg:pt-4 lg:border-b lg:border-slate-700/60">
-          <div class="fav-head">
-            <h2>⭐ น่าสนใจ</h2>
-            <button type="button" class="fav-map-pill" onclick="CondoMap.openFav()" aria-label="เปิดแผนที่ห้องน่าสนใจ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>แผนที่</button>
-          </div>
           <div class="lh-row">
             <div class="flex gap-1.5 flex-1 min-w-0 overflow-x-auto hide-scrollbar">
             <button onclick="toggleFilter('all')" data-f="all" class="filter-btn px-3 py-1.5">ทั้งหมด</button>
             <button onclick="toggleFilter('FAV')" data-f="FAV" class="filter-btn px-3 py-1.5 whitespace-nowrap">⭐ น่าสนใจ</button>
+            <button type="button" class="filter-btn map-chip px-3 py-1.5 whitespace-nowrap" onclick="CondoMap.openFromList()" aria-label="Map"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>Map</button>
             <button onclick="toggleFilter('AVAILABLE')" data-f="AVAILABLE" class="filter-btn px-3 py-1.5">ว่าง</button>
             <button onclick="toggleFilter('OCCUPIED')" data-f="OCCUPIED" class="filter-btn px-3 py-1.5">มีผู้เช่า</button>
             <button onclick="toggleFilter('RESERVED')" data-f="RESERVED" class="filter-btn px-3 py-1.5">จอง</button>
@@ -4225,6 +4220,6 @@ function sfPreview() {
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="vendor/leaflet/leaflet.markercluster.js"></script>
 <script src="condo-geo.js?v=43"></script>
-<script src="condo-map.js?v=46"></script>
+<script src="condo-map.js?v=47"></script>
 </body>
 </html>
