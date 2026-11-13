@@ -21,7 +21,7 @@
 
   var state = {
     statuses: {}, beds: {}, deal: 'all',
-    priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, q: ''
+    priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, q: '', fav: false
   };
   var db = null, idx = null, loadError = '';
   var map = null, cluster = null, markers = {}, ready = false, open = false, keep = false;
@@ -78,7 +78,7 @@
   }
   function filtersOn(s) {
     s = s || state;
-    return !!(Object.keys(s.statuses).length || Object.keys(s.beds).length || s.deal !== 'all' || s.priceMin != null || s.priceMax != null || s.sizeMin != null || s.sizeMax != null || s.q);
+    return !!(s.fav || Object.keys(s.statuses).length || Object.keys(s.beds).length || s.deal !== 'all' || s.priceMin != null || s.priceMax != null || s.sizeMin != null || s.sizeMax != null || s.q);
   }
   function stationLine(u) {
     if (!u) return '';
@@ -112,6 +112,7 @@
     return ok;
   }
   function pass(u) {
+    if (state.fav && !u.fav) return false;
     if (Object.keys(state.statuses).length && !state.statuses[u.status]) return false;
     var rent = GEO.amount(u.rent), sale = GEO.amount(u.salePrice);
     if (state.deal === 'rent' && !(rent > 0)) return false;
@@ -208,6 +209,8 @@
       '.cm-back,.cm-locate{width:36px;height:36px;border-radius:999px;background:#fff;border:1px solid #ece7e2;display:flex;align-items:center;justify-content:center;flex:none;color:#1c1917;box-shadow:0 1px 4px rgba(28,25,23,.06)}',
       '.cm-title{font-size:16px;font-weight:700;color:#1c1917;line-height:1.2;min-width:0}',
       '.cm-title span{color:#a8a29e;font-weight:500;font-size:14px;margin-left:4px}',
+      '.cm-favchip{flex:none;width:100%;text-align:center;padding:7px 12px;background:#fbeee8;color:#c2552d;font-size:12px;font-weight:700;border-bottom:1px solid #f3d7cb}',
+      '.cm-favchip[hidden]{display:none}',
       '.cm-stage{flex:1;position:relative;min-height:0;background:#e7e2dc}',
       '#condoMap{position:absolute;inset:0;z-index:1;background:#e7e2dc;touch-action:none}',
       '#condoMap.leaflet-container{width:100%;height:100%;font-family:inherit;touch-action:none;background:#e7e2dc}',
@@ -284,6 +287,7 @@
       '<div id="viewCondoMap" class="hidden" aria-hidden="true">',
       '<div class="cm-head"><button type="button" class="cm-back" id="cmBack" aria-label="กลับ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>',
       '<h2 class="cm-title">แผนที่ปักหมุดคอนโด <span id="cmCount">(0 ห้อง)</span></h2></div>',
+      '<button type="button" id="cmFavChip" class="cm-favchip" hidden>⭐ เฉพาะห้องน่าสนใจ · แตะเพื่อล้าง</button>',
       '<div class="cm-stage">',
       '<div id="condoMap"></div>',
       '<button type="button" class="cm-locate" id="cmLocate" aria-label="จัดหมุดให้อยู่ในจอ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>',
@@ -295,6 +299,7 @@
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px"><h3>ตัวกรอง</h3><button type="button" id="cmFx" aria-label="ปิด" style="width:30px;height:30px;border-radius:99px;background:#f5f5f4">×</button></div>',
       '<div class="cm-fbody">',
       '<div class="cm-frow" id="cmStatus"></div>',
+      '<div class="cm-frow"><button type="button" class="cm-chip" id="cmFavOnly">⭐ น่าสนใจ</button></div>',
       '<div class="cm-frow"><div class="cm-seg" id="cmDeal" role="group" aria-label="เช่าหรือขาย">',
       '<button type="button" data-deal="all" class="on">ทั้งหมด</button><button type="button" data-deal="rent">เช่า</button><button type="button" data-deal="sale">ขาย</button></div></div>',
       '<div class="cm-nums">',
@@ -366,6 +371,8 @@
       $(id).addEventListener('input', function () { onNum(this, 5); refreshApplyCount(); });
     });
     $('cmSearch').addEventListener('input', refreshApplyCount);
+    $('cmFavOnly').onclick = function () { this.classList.toggle('on'); refreshApplyCount(); };
+    $('cmFavChip').onclick = function () { state.fav = false; fitted = false; selectedKey = ''; draw(true); };
     $('cmRail').addEventListener('click', onCardClick);
     $('cmList').addEventListener('click', onCardClick);
     $('cmRail').addEventListener('scroll', onRailScroll, { passive: true });
@@ -402,7 +409,8 @@
       statuses: statuses, beds: beds,
       deal: dealBtn ? dealBtn.getAttribute('data-deal') : 'all',
       priceMin: p0, priceMax: p1, sizeMin: s0, sizeMax: s1,
-      q: ($('cmSearch') && $('cmSearch').value || '').trim()
+      q: ($('cmSearch') && $('cmSearch').value || '').trim(),
+      fav: !!($('cmFavOnly') && $('cmFavOnly').classList.contains('on'))
     };
   }
   function paintDraft() {
@@ -417,6 +425,7 @@
     [].forEach.call(document.querySelectorAll('#cmDeal [data-deal]'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-deal') === state.deal);
     });
+    if ($('cmFavOnly')) $('cmFavOnly').classList.toggle('on', !!state.fav);
     function put(id, n) { var el = $(id); if (el) el.value = n == null ? '' : String(n); }
     put('cmPriceMin', state.priceMin); put('cmPriceMax', state.priceMax);
     put('cmSizeMin', state.sizeMin); put('cmSizeMax', state.sizeMax);
@@ -431,6 +440,7 @@
     [].forEach.call(document.querySelectorAll('#cmBeds [data-bed]'), function (b) { b.classList.remove('on'); });
     [].forEach.call(document.querySelectorAll('#cmDeal [data-deal]'), function (b) { b.classList.toggle('on', b.getAttribute('data-deal') === 'all'); });
     ['cmPriceMin', 'cmPriceMax', 'cmSizeMin', 'cmSizeMax', 'cmSearch'].forEach(function (id) { if ($(id)) $(id).value = ''; });
+    if ($('cmFavOnly')) $('cmFavOnly').classList.remove('on');
     if ($('cmPriceMinLbl')) $('cmPriceMinLbl').textContent = 'ราคาต่ำสุด';
     if ($('cmPriceMaxLbl')) $('cmPriceMaxLbl').textContent = 'ราคาสูงสุด';
   }
@@ -583,6 +593,7 @@
 
   function show() {
     ensureDom();
+    setMode(mode);
     open = true;
     document.body.classList.add('condo-map-open');
     var el = $('viewCondoMap');
@@ -696,6 +707,8 @@
     if (count) count.textContent = loadError ? '(' + loadError + ')' : '(' + total + ' ห้อง)';
     var dot = $('cmFilterDot');
     if (dot) dot.hidden = !filtersOn();
+    var favChip = $('cmFavChip');
+    if (favChip) favChip.hidden = !state.fav;
     var known = {};
     g.placed.forEach(function (p) { known[p.key] = 1; });
     if (!known[selectedKey]) selectedKey = g.placed.length ? g.placed[0].key : '';
@@ -739,6 +752,18 @@
       try { switchView('dashboard'); } catch (e) {}
       keep = false;
       show();
+    },
+    openFav: function () {
+      state.statuses = {};
+      state.beds = {};
+      state.deal = 'all';
+      state.priceMin = state.priceMax = state.sizeMin = state.sizeMax = null;
+      state.q = '';
+      state.fav = true;
+      fitted = false;
+      selectedKey = '';
+      mode = 'map';
+      this.open();
     },
     close: close,
     onLeave: function () { if (!keep) hide(); },
