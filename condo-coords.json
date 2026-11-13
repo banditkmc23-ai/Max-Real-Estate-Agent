@@ -1,0 +1,992 @@
+{
+  "updated": "2026-11-13",
+  "license": "Coordinates © OpenStreetMap contributors, geocoded once via Nominatim (ODbL). https://www.openstreetmap.org/copyright",
+  "projects": [
+    {
+      "keys": [
+        "28 Chidlom"
+      ],
+      "name": "28 Chidlom",
+      "lat": 13.746839,
+      "lng": 100.543841,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "59 Heritage (59 เฮอริเทจ)",
+        "59 Heritage",
+        "59 เฮอริเทจ"
+      ],
+      "name": "59 Heritage",
+      "lat": 13.724465,
+      "lng": 100.581736,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Ashton Asoke-Rama 9",
+        "Ashton Asoke–Rama 9 (แอชตัน อโศก–พระราม 9)",
+        "Ashton Asoke–Rama 9",
+        "แอชตัน อโศก–พระราม 9"
+      ],
+      "name": "Ashton Asoke-Rama 9",
+      "lat": 13.755627,
+      "lng": 100.564214,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Aspire Onnut Station"
+      ],
+      "name": "Aspire Onnut Station",
+      "lat": 13.707512,
+      "lng": 100.599184,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Aspire Rama 9 (แอสปาย พระราม 9)",
+        "Aspire Rama 9",
+        "แอสปาย พระราม 9"
+      ],
+      "name": "Aspire Rama 9",
+      "lat": 13.754495,
+      "lng": 100.566666,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Aspire Sukhumvit 48"
+      ],
+      "name": "Aspire Sukhumvit 48",
+      "lat": 13.710354,
+      "lng": 100.594084,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "BaanSiri 24 (บ้านสิริ 24)",
+        "BaanSiri 24",
+        "บ้านสิริ 24"
+      ],
+      "name": "BaanSiri 24",
+      "lat": 13.726019,
+      "lng": 100.56821,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Bangkok Feliz Sukhumvit 69-2"
+      ],
+      "name": "Bangkok Feliz Sukhumvit 69-2",
+      "lat": 13.715907,
+      "lng": 100.59183,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Beatniq Sukhumvit 32 (บีทนิค สุขุมวิท 32)",
+        "Beatniq Sukhumvit 32",
+        "บีทนิค สุขุมวิท 32"
+      ],
+      "name": "Beatniq Sukhumvit 32",
+      "lat": 13.725871,
+      "lng": 100.57545,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Blocs 77"
+      ],
+      "name": "Blocs 77",
+      "lat": 13.710632,
+      "lng": 100.60155,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Blocs77 (บล็อคส์ 77)",
+        "Blocs77",
+        "บล็อคส์ 77"
+      ],
+      "name": "Blocs77",
+      "lat": 13.710632,
+      "lng": 100.60155,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Ceil By Sansiri"
+      ],
+      "name": "Ceil By Sansiri",
+      "lat": 13.730557,
+      "lng": 100.587795,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Chapter Thonglor 25"
+      ],
+      "name": "Chapter Thonglor 25",
+      "lat": 13.742325,
+      "lng": 100.583902,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Chewathai Residence Asoke"
+      ],
+      "name": "Chewathai Residence Asoke",
+      "lat": 13.753937,
+      "lng": 100.564074,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Coco Parc Rama 4"
+      ],
+      "name": "Coco Parc Rama 4",
+      "lat": 13.721861,
+      "lng": 100.553422,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Culture Chula"
+      ],
+      "name": "Culture Chula",
+      "lat": 13.730681,
+      "lng": 100.53234,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Edge Sukhumvit 23"
+      ],
+      "name": "Edge Sukhumvit 23",
+      "lat": 13.73645,
+      "lng": 100.563464,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Fynn Asoke"
+      ],
+      "name": "Fynn Asoke",
+      "lat": 13.735689,
+      "lng": 100.55673,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Grand Park View Asoke"
+      ],
+      "name": "Grand Park View Asoke",
+      "lat": 13.743819,
+      "lng": 100.561737,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "H Sukhumvit 43 (เอช สุขุมวิท 43)",
+        "H Sukhumvit 43",
+        "เอช สุขุมวิท 43"
+      ],
+      "name": "H Sukhumvit 43",
+      "lat": 13.733031,
+      "lng": 100.573988,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Hasu Haus"
+      ],
+      "name": "Hasu Haus",
+      "lat": 13.714014,
+      "lng": 100.602101,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Ideo Mobi Asoke (ไอดีโอ โมบิ อโศก)",
+        "Ideo Mobi Asoke",
+        "ไอดีโอ โมบิ อโศก"
+      ],
+      "name": "Ideo Mobi Asoke",
+      "lat": 13.747968,
+      "lng": 100.565941,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "IDEO Morhp 38",
+        "IDEO Morph 38"
+      ],
+      "name": "IDEO Morhp 38",
+      "lat": 13.720922,
+      "lng": 100.578835,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "IDEO Rama 9-Asoke"
+      ],
+      "name": "IDEO Rama 9-Asoke",
+      "lat": 13.754066,
+      "lng": 100.567179,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Ideo S93",
+        "Ideo S93 (ไอดีโอ เอส93)",
+        "ไอดีโอ เอส93"
+      ],
+      "name": "Ideo S93",
+      "lat": 13.698893,
+      "lng": 100.605517,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "IDEO Sukhumvit 93"
+      ],
+      "name": "IDEO Sukhumvit 93",
+      "lat": 13.698893,
+      "lng": 100.605517,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Kawa Haus",
+        "Kawa Haus (คาวะ เฮาส์)",
+        "คาวะ เฮาส์"
+      ],
+      "name": "Kawa Haus",
+      "lat": 13.715007,
+      "lng": 100.605264,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Khun by Yoo"
+      ],
+      "name": "Khun by Yoo",
+      "lat": 13.732757,
+      "lng": 100.582697,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Knightsbridge Prime Onnut (ไนท์บริดจ์ ไพร์ม อ่อนนุช)",
+        "Knightsbridge Prime Onnut",
+        "ไนท์บริดจ์ ไพร์ม อ่อนนุช"
+      ],
+      "name": "Knightsbridge Prime Onnut",
+      "lat": 13.709774,
+      "lng": 100.602381,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Le Cote"
+      ],
+      "name": "Le Cote",
+      "lat": 13.736226,
+      "lng": 100.560206,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Life Asoke (ไลฟ์ อโศก)",
+        "Life Asoke",
+        "ไลฟ์ อโศก"
+      ],
+      "name": "Life Asoke",
+      "lat": 13.750498,
+      "lng": 100.564733,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Life Asoke Hype"
+      ],
+      "name": "Life Asoke Hype",
+      "lat": 13.754237,
+      "lng": 100.562801,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Life One Wireless"
+      ],
+      "name": "Life One Wireless",
+      "lat": 13.747836,
+      "lng": 100.549121,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Life Rama 4 - Asoke",
+        "Life Rama 4 - Asoke (ไลฟ์ พระราม 4 - อโศก)",
+        "ไลฟ์ พระราม 4 - อโศก"
+      ],
+      "name": "Life Rama 4 - Asoke",
+      "lat": 13.72008,
+      "lng": 100.561831,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Life Sukhumvit 48"
+      ],
+      "name": "Life Sukhumvit 48",
+      "lat": 13.711135,
+      "lng": 100.59456,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Lumpini Suite Sukhumvit 41 (ลุมพินี สวีท สุขุมวิท 41)",
+        "Lumpini Suite Sukhumvit 41",
+        "ลุมพินี สวีท สุขุมวิท 41"
+      ],
+      "name": "Lumpini Suite Sukhumvit 41",
+      "lat": 13.729912,
+      "lng": 100.572129,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Mayfair Place Sukhumvit 50"
+      ],
+      "name": "Mayfair Place Sukhumvit 50",
+      "lat": 13.70515,
+      "lng": 100.594877,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Modiz Sukhumvit 50"
+      ],
+      "name": "Modiz Sukhumvit 50",
+      "lat": 13.70227,
+      "lng": 100.589601,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Mori Haus"
+      ],
+      "name": "Mori Haus",
+      "lat": 13.715292,
+      "lng": 100.602964,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Mycondo Sukhumvit 52 (มายคอนโด สุขุมวิท 52)",
+        "Mycondo Sukhumvit 52",
+        "มายคอนโด สุขุมวิท 52"
+      ],
+      "name": "Mycondo Sukhumvit 52",
+      "lat": 13.703752,
+      "lng": 100.600191,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Around 33",
+        "Noble Around 33 (โนเบิล อราวน์ 33)",
+        "โนเบิล อราวน์ 33"
+      ],
+      "name": "Noble Around 33",
+      "lat": 13.735938,
+      "lng": 100.567449,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Around Ari"
+      ],
+      "name": "Noble Around Ari",
+      "lat": 13.777723,
+      "lng": 100.544737,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble BE19"
+      ],
+      "name": "Noble BE19",
+      "lat": 13.742301,
+      "lng": 100.559172,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble BE33 (โนเบิล บีอี 33)",
+        "Noble BE33",
+        "โนเบิล บีอี 33",
+        "NOBLE BE33"
+      ],
+      "name": "Noble BE33",
+      "lat": 13.735509,
+      "lng": 100.567272,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Ploenchit"
+      ],
+      "name": "Noble Ploenchit",
+      "lat": 13.743948,
+      "lng": 100.548566,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Remix Thonglor",
+        "Noble Remix Thonglor (โนเบิล รีมิกซ์ ทองหล่อ)",
+        "โนเบิล รีมิกซ์ ทองหล่อ"
+      ],
+      "name": "Noble Remix Thonglor",
+      "lat": 13.724113,
+      "lng": 100.577105,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Reveal Ekkamai"
+      ],
+      "name": "Noble Reveal Ekkamai",
+      "lat": 13.72189,
+      "lng": 100.584901,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble Revo Silom (โนเบิล รีโว สีลม)",
+        "Noble Revo Silom",
+        "โนเบิล รีโว สีลม"
+      ],
+      "name": "Noble Revo Silom",
+      "lat": 13.719385,
+      "lng": 100.519244,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Noble State 39",
+        "Noble State 39 (โนเบิล สเตท 39)",
+        "โนเบิล สเตท 39"
+      ],
+      "name": "Noble State 39",
+      "lat": 13.734296,
+      "lng": 100.570718,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Nue District R9"
+      ],
+      "name": "Nue District R9",
+      "lat": 13.75714,
+      "lng": 100.567828,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Oka Haus",
+        "Oka Haus (โอกะ เฮาส์)",
+        "โอกะ เฮาส์"
+      ],
+      "name": "Oka Haus",
+      "lat": 13.716902,
+      "lng": 100.574675,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "One9Five Asoke-Rama 9 (วันไนน์ไฟว์ อโศก-พระราม 9)",
+        "One9Five Asoke-Rama 9",
+        "วันไนน์ไฟว์ อโศก-พระราม 9"
+      ],
+      "name": "One9Five Asoke-Rama 9",
+      "lat": 13.757425,
+      "lng": 100.568317,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Q Asoke (คิว อโศก)",
+        "Q Asoke",
+        "คิว อโศก"
+      ],
+      "name": "Q Asoke",
+      "lat": 13.748304,
+      "lng": 100.562755,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Q House Sukhumvit 79"
+      ],
+      "name": "Q House Sukhumvit 79",
+      "lat": 13.707598,
+      "lng": 100.600754,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Q Langsuan"
+      ],
+      "name": "Q Langsuan",
+      "lat": 13.739161,
+      "lng": 100.542503,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Quattro by Sansiri (ควอตโตร บาย แสนสิริ)",
+        "Quattro by Sansiri",
+        "ควอตโตร บาย แสนสิริ"
+      ],
+      "name": "Quattro by Sansiri",
+      "lat": 13.727582,
+      "lng": 100.581598,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Qube Suites Sukhumvit 46 (คิวบ์ สวีท สุขุมวิท 46)",
+        "Qube Suites Sukhumvit 46",
+        "คิวบ์ สวีท สุขุมวิท 46"
+      ],
+      "name": "Qube Suites Sukhumvit 46",
+      "lat": 13.713632,
+      "lng": 100.59059,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Quintara Arte Sukhumvit 52 (ควินทารา อาร์เต้ สุขุมวิท 52)",
+        "Quintara Arte Sukhumvit 52",
+        "ควินทารา อาร์เต้ สุขุมวิท 52"
+      ],
+      "name": "Quintara Arte Sukhumvit 52",
+      "lat": 13.702824,
+      "lng": 100.599205,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Ramada by Wyndham (Siamese) Sukhumvit 87 (รามาดา บาย วินด์แฮม ไซมิส สุขุมวิท 87)",
+        "Ramada by Wyndham   Sukhumvit 87",
+        "Siamese",
+        "รามาดา บาย วินด์แฮม ไซมิส สุขุมวิท 87",
+        "Ramada by Wyndham Sukhumvit 87"
+      ],
+      "name": "Ramada by Wyndham Sukhumvit 87",
+      "lat": 13.701743,
+      "lng": 100.603709,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Residence 52 (เรสซิเดนซ์ 52)",
+        "Residence 52",
+        "เรสซิเดนซ์ 52"
+      ],
+      "name": "Residence 52",
+      "lat": 13.702159,
+      "lng": 100.598942,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Asoke",
+        "Rhythm Asoke (ริทึ่ม อโศก)",
+        "ริทึ่ม อโศก"
+      ],
+      "name": "Rhythm Asoke",
+      "lat": 13.754478,
+      "lng": 100.564209,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Asoke 2 (ริทึ่ม อโศก 2)",
+        "Rhythm Asoke 2",
+        "ริทึ่ม อโศก 2"
+      ],
+      "name": "Rhythm Asoke 2",
+      "lat": 13.753869,
+      "lng": 100.565008,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Sukhumvit 36-38 (ริทึ่ม สุขุมวิท 36-38)",
+        "Rhythm Sukhumvit 36-38",
+        "ริทึ่ม สุขุมวิท 36-38"
+      ],
+      "name": "Rhythm Sukhumvit 36-38",
+      "lat": 13.721808,
+      "lng": 100.576787,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Sukhumvit 42"
+      ],
+      "name": "Rhythm Sukhumvit 42",
+      "lat": 13.717803,
+      "lng": 100.585476,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Sukhumvit 44/1"
+      ],
+      "name": "Rhythm Sukhumvit 44/1",
+      "lat": 13.715202,
+      "lng": 100.59047,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Rhythm Sukhumvit 50"
+      ],
+      "name": "Rhythm Sukhumvit 50",
+      "lat": 13.706434,
+      "lng": 100.59945,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Siri At Sukhumvit"
+      ],
+      "name": "Siri At Sukhumvit",
+      "lat": 13.72244,
+      "lng": 100.579982,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Skyrise Sukhumvit 64"
+      ],
+      "name": "Skyrise Sukhumvit 64",
+      "lat": 13.684182,
+      "lng": 100.607438,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Alcove Thonglor 10",
+        "The Alcove Thonglor 10 (เดอะ อัลโคฟ ทองหล่อ 10)",
+        "เดอะ อัลโคฟ ทองหล่อ 10"
+      ],
+      "name": "The Alcove Thonglor 10",
+      "lat": 13.731245,
+      "lng": 100.586383,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Base Park East"
+      ],
+      "name": "The Base Park East",
+      "lat": 13.713791,
+      "lng": 100.60045,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Base Park West"
+      ],
+      "name": "The Base Park West",
+      "lat": 13.713018,
+      "lng": 100.600112,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Base Sukhumvit 50",
+        "The Base Sukhumvit 50 (เดอะ เบส สุขุมวิท 50)",
+        "เดอะ เบส สุขุมวิท 50"
+      ],
+      "name": "The Base Sukhumvit 50",
+      "lat": 13.704981,
+      "lng": 100.591997,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Base Sukhumvit 77",
+        "The Base Sukhumvit 77 (เดอะ เบส สุขุมวิท 77)",
+        "เดอะ เบส สุขุมวิท 77"
+      ],
+      "name": "The Base Sukhumvit 77",
+      "lat": 13.710999,
+      "lng": 100.602507,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Crest Sukhumvit 34"
+      ],
+      "name": "The Crest Sukhumvit 34",
+      "lat": 13.725201,
+      "lng": 100.576522,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Emporio Place Sukhumvit 24 (ดิ เอ็มโพริโอ เพลส สุขุมวิท 24)",
+        "The Emporio Place Sukhumvit 24",
+        "ดิ เอ็มโพริโอ เพลส สุขุมวิท 24"
+      ],
+      "name": "The Emporio Place Sukhumvit 24",
+      "lat": 13.722996,
+      "lng": 100.567146,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Esse Asoke (ดิ เอส อโศก)",
+        "The Esse Asoke",
+        "ดิ เอส อโศก"
+      ],
+      "name": "The Esse Asoke",
+      "lat": 13.743205,
+      "lng": 100.561357,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Esse Sukhumvit 36",
+        "The Esse Sukhumvit 36 (ดิ เอส สุขุมวิท 36)",
+        "ดิ เอส สุขุมวิท 36"
+      ],
+      "name": "The Esse Sukhumvit 36",
+      "lat": 13.723963,
+      "lng": 100.577613,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Excel Hideaway Sukhumvit 50"
+      ],
+      "name": "The Excel Hideaway Sukhumvit 50",
+      "lat": 13.706287,
+      "lng": 100.590932,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Excel Hideaway Sukhumvit 71"
+      ],
+      "name": "The Excel Hideaway Sukhumvit 71",
+      "lat": 13.717334,
+      "lng": 100.601455,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Line Sukhumvit 71 (เดอะ ไลน์ สุขุมวิท 71)",
+        "The Line Sukhumvit 71",
+        "เดอะ ไลน์ สุขุมวิท 71"
+      ],
+      "name": "The Line Sukhumvit 71",
+      "lat": 13.715418,
+      "lng": 100.594209,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Loft Ekkamai"
+      ],
+      "name": "The Loft Ekkamai",
+      "lat": 13.718377,
+      "lng": 100.587655,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Lumpini 24"
+      ],
+      "name": "The Lumpini 24",
+      "lat": 13.722793,
+      "lng": 100.566123,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Nest Ploenchit (เดอะ เนสท์ เพลินจิต)",
+        "The Nest Ploenchit",
+        "เดอะ เนสท์ เพลินจิต"
+      ],
+      "name": "The Nest Ploenchit",
+      "lat": 13.746326,
+      "lng": 100.549657,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Nest Sukhumvit 71"
+      ],
+      "name": "The Nest Sukhumvit 71",
+      "lat": 13.713195,
+      "lng": 100.598315,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Niche Mono Sukhumvit 50"
+      ],
+      "name": "The Niche Mono Sukhumvit 50",
+      "lat": 13.704544,
+      "lng": 100.592511,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The President Sukhumvit 81"
+      ],
+      "name": "The President Sukhumvit 81",
+      "lat": 13.704994,
+      "lng": 100.60182,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Reserve Sukhumvit 61"
+      ],
+      "name": "The Reserve Sukhumvit 61",
+      "lat": 13.729672,
+      "lng": 100.584025,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Room Sukhumvit 21 Asoke (เดอะ รูม สุขุมวิท 21 อโศก)",
+        "The Room Sukhumvit 21 Asoke",
+        "เดอะ รูม สุขุมวิท 21 อโศก",
+        "The Room Sukhumvit 21"
+      ],
+      "name": "The Room Sukhumvit 21 Asoke",
+      "lat": 13.743806,
+      "lng": 100.561318,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Room Sukhumvit 79"
+      ],
+      "name": "The Room Sukhumvit 79",
+      "lat": 13.708462,
+      "lng": 100.601656,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The Tempo Ratchada"
+      ],
+      "name": "The Tempo Ratchada",
+      "lat": 13.779177,
+      "lng": 100.575633,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "The XXXIX Sukhumvit 39"
+      ],
+      "name": "The XXXIX Sukhumvit 39",
+      "lat": 13.732305,
+      "lng": 100.570539,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "U Delight @ Onnut Station"
+      ],
+      "name": "U Delight @ Onnut Station",
+      "lat": 13.710777,
+      "lng": 100.603863,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Waterford Diamond Sukhumvit 30/1 (วอเตอร์ฟอร์ด ไดมอนด์)",
+        "Waterford Diamond Sukhumvit 30/1",
+        "วอเตอร์ฟอร์ด ไดมอนด์"
+      ],
+      "name": "Waterford Diamond Sukhumvit 30/1",
+      "lat": 13.726501,
+      "lng": 100.573087,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Whizdom Connect Sukhumvit"
+      ],
+      "name": "Whizdom Connect Sukhumvit",
+      "lat": 13.686482,
+      "lng": 100.612897,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Whizdom Essence Sukhumvit 101"
+      ],
+      "name": "Whizdom Essence Sukhumvit 101",
+      "lat": 13.685891,
+      "lng": 100.612465,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Whizdom Inspire Sukhumvit 101 (วิสซ์ดอม อินสไปร์ สุขุมวิท 101)",
+        "Whizdom Inspire Sukhumvit 101",
+        "วิสซ์ดอม อินสไปร์ สุขุมวิท 101",
+        "Whizdom Inspire Sukhumvit (วิสดอม อินสปาย สุขุมวิท)",
+        "Whizdom Inspire Sukhumvit",
+        "วิสดอม อินสปาย สุขุมวิท"
+      ],
+      "name": "Whizdom Inspire Sukhumvit 101",
+      "lat": 13.685181,
+      "lng": 100.612091,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "Wyne By Sansiri",
+        "Wyne Sukhumvit"
+      ],
+      "name": "Wyne By Sansiri",
+      "lat": 13.712683,
+      "lng": 100.593842,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "XT Ekkamai"
+      ],
+      "name": "XT Ekkamai",
+      "lat": 13.734015,
+      "lng": 100.586611,
+      "src": "nominatim"
+    },
+    {
+      "keys": [
+        "บ้านเดี่ยว ทองหล่อ",
+        "Thong Lo Bangkok"
+      ],
+      "name": "บ้านเดี่ยว ทองหล่อ",
+      "lat": 13.724226,
+      "lng": 100.578505,
+      "src": "area"
+    }
+  ]
+}

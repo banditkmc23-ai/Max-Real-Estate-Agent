@@ -5,14 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script>
 /* iOS standalone ignores user-scalable=no for pinch. Cancel gesture and multi-touch page zoom.
-   One-finger scroll, the photo carousel, and the lightbox's own pinch handler stay intact. */
+   One-finger scroll, the photo carousel, and the lightbox's own pinch handler stay intact.
+   Pinch and drag inside #condoMap are exempt so the condo map can zoom. */
 (function () {
-  function stopGesture(e) { e.preventDefault(); }
+  var mapTouch = false;
+  function fromMap(e) {
+    if (mapTouch) return true;
+    var n = e.target;
+    if (n && n.nodeType === 3) n = n.parentNode;
+    return !!(n && n.closest && n.closest('#condoMap'));
+  }
+  function stopGesture(e) { if (!fromMap(e)) e.preventDefault(); }
+  document.addEventListener('touchstart', function (e) {
+    var n = e.target;
+    if (n && n.nodeType === 3) n = n.parentNode;
+    mapTouch = !!(n && n.closest && n.closest('#condoMap'));
+  }, { passive: true, capture: true });
+  function endTouch(e) { if (!e.touches || !e.touches.length) mapTouch = false; }
+  document.addEventListener('touchend', endTouch, { passive: true, capture: true });
+  document.addEventListener('touchcancel', endTouch, { passive: true, capture: true });
   document.addEventListener('gesturestart', stopGesture, { passive: false });
   document.addEventListener('gesturechange', stopGesture, { passive: false });
   document.addEventListener('gestureend', stopGesture, { passive: false });
   document.addEventListener('touchmove', function (e) {
-    if (e.touches && e.touches.length > 1) e.preventDefault();
+    if (e.touches && e.touches.length > 1 && !fromMap(e)) e.preventDefault();
   }, { passive: false });
 })();
 </script>
@@ -42,6 +58,8 @@
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="stylesheet" href="tailwind.min.css?v=42">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -472,7 +490,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.42</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.43</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -557,6 +575,15 @@
               เริ่มต้น <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </div>
           </div>
+        </button>
+
+        <button type="button" onclick="CondoMap.open()" id="condoMapEntry" class="w-full mb-5 bg-white border border-slate-700 rounded-2xl px-4 py-3 flex items-center gap-3 text-left shadow-sm hover:border-brick-500 active:scale-[0.99] transition-all">
+          <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:#fbeee8;color:#c2552d"><i data-lucide="map-pin" class="w-5 h-5"></i></span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-sm font-bold text-ink">แผนที่ปักหมุดคอนโด</span>
+            <span class="block text-[11px] text-slate-500">ดูทุกโครงการบนแผนที่ กรองสถานะ ราคา และขนาด</span>
+          </span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
         </button>
 
         <div class="flex items-center justify-between mb-3">
@@ -1200,7 +1227,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.42</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.43</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -4080,7 +4107,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.42';
+const APP_VERSION = '9.43';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4187,5 +4214,9 @@ function sfPreview() {
 <script src="room-summary.js?v=1"></script>
 <script src="sync.js?v=49"></script>
 <script src="photo-restore.js?v=46"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.markercluster.js"></script>
+<script src="condo-geo.js?v=43"></script>
+<script src="condo-map.js?v=43"></script>
 </body>
 </html>
