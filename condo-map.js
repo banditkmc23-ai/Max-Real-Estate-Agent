@@ -24,7 +24,7 @@
     priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, q: ''
   };
   var db = null, idx = null, loadError = '';
-  var map = null, markers = {}, ready = false, open = false, keep = false;
+  var map = null, cluster = null, markers = {}, ready = false, open = false, keep = false;
   var fitted = false, selectedKey = '', mode = 'map', scrollLock = 0, lastGroups = null;
 
   function $(id) { return document.getElementById(id); }
@@ -59,9 +59,15 @@
     rooms.forEach(function (u) { var n = priceOf(u); if (n > 0 && n < best) best = n; });
     return best;
   }
-  function pinLabel(rooms) {
+  function clipName(name, n) {
+    name = String(name || '').replace(/\s+/g, ' ').trim();
+    var chars = Array.from(name);
+    if (chars.length <= n) return name;
+    return chars.slice(0, n - 1).join('').replace(/\s+$/, '') + '…';
+  }
+  function pinPrice(rooms) {
     var n = minPrice(rooms);
-    return n === Infinity ? '—' : money(n);
+    return n === Infinity ? '' : money(n);
   }
   function availColor(rooms) {
     var order = ['AVAILABLE', 'RESERVED', 'PENDING', 'OCCUPIED'];
@@ -233,12 +239,20 @@
       '.cm-list .cm-card{flex:none;width:100%;scroll-snap-align:none;margin-bottom:10px;box-shadow:0 2px 10px rgba(28,25,23,.06)}',
       '.cm-sec{font-size:13px;font-weight:700;color:#9a3412;margin:6px 2px 8px}',
       '.cm-pin-wrap{background:none!important;border:0!important}',
-      '.cm-bubble{position:relative;display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px 0 7px;background:#fff;color:#1c1917;border-radius:8px;font:700 13px/1 Poppins,Noto Sans Thai,sans-serif;box-shadow:0 2px 8px rgba(28,25,23,.28);white-space:nowrap}',
-      '.cm-bubble:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}',
+      '.leaflet-marker-icon.cm-pin-wrap{overflow:visible!important}',
+      '.cm-bubble{position:relative;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box;padding:4px 8px 11px 6px;background:#fff;color:#1c1917;border-radius:10px;box-shadow:0 2px 8px rgba(28,25,23,.28);white-space:nowrap}',
+      '.cm-bubble:after{content:"";position:absolute;left:50%;bottom:0;margin-left:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}',
+      '.cm-pin-txt{display:flex;flex-direction:column;min-width:0;line-height:1.05}',
+      '.cm-pin-name{font:700 12px/1.15 Poppins,"Noto Sans Thai",sans-serif;max-width:18ch;overflow:hidden;text-overflow:ellipsis}',
+      '.cm-pin-price{font:600 10px/1.2 Poppins,sans-serif;color:#a8a29e;margin-top:1px}',
+      '.cm-bubble.compact{padding:3px 7px 9px 5px}',
+      '.cm-bubble.compact .cm-pin-price{display:none}',
+      '.cm-bubble.compact .cm-pin-name{font-size:11px;max-width:11ch}',
       '.cm-av{width:7px;height:7px;border-radius:99px;background:var(--c,#c2552d);flex:none}',
       '.cm-bubble.sel{background:#c2552d;color:#fff}',
       '.cm-bubble.sel:after{border-top-color:#c2552d}',
       '.cm-bubble.sel .cm-av{background:#fff}',
+      '.cm-bubble.sel .cm-pin-price{color:rgba(255,255,255,.82)}',
       '.cm-cluster{width:36px;height:36px;border-radius:50%;background:#fff;color:#1c1917;border:2px solid #c2552d;display:flex;align-items:center;justify-content:center;font:700 12px Poppins,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25)}',
       '.cm-dim{position:absolute;inset:0;background:rgba(28,25,23,.4);z-index:20}',
       '.cm-dim[hidden],.cm-fsheet[hidden]{display:none}',
@@ -508,7 +522,40 @@
   function panTo(key) {
     var m = markers[key];
     if (!m || !map) return;
-    map.panTo(m.getLatLng(), { animate: true });
+    var ll = m.getLatLng();
+    if (map.getZoom() < 14) map.setView(ll, 14, { animate: true });
+    else map.panTo(ll, { animate: true });
+  }
+  function drawPins() {
+    if (!map || !lastGroups || !cluster) return;
+    var named = map.getZoom() >= 14;
+    cluster.clearLayers();
+    Object.keys(markers).forEach(function (k) { if (map.hasLayer(markers[k])) map.removeLayer(markers[k]); });
+    markers = {};
+    lastGroups.placed.forEach(function (p) {
+      var full = named;
+      var name = clipName(p.name, full ? 18 : 11);
+      var price = pinPrice(p.rooms);
+      var w = Math.min(168, Math.max(full ? 88 : 62, Math.round(28 + name.length * (full ? 7 : 6.2))));
+      var h = full && price ? 46 : 32;
+      var icon = L.divIcon({
+        className: 'cm-pin-wrap',
+        html: '<div class="cm-bubble' + (full ? '' : ' compact') + (p.key === selectedKey ? ' sel' : '') + '" style="--c:' + availColor(p.rooms) + '"><i class="cm-av"></i><span class="cm-pin-txt"><span class="cm-pin-name">' + esc(name) + '</span>' + (full && price ? '<span class="cm-pin-price">' + esc(price) + '</span>' : '') + '</span></div>',
+        iconSize: [w, h],
+        iconAnchor: [Math.round(w / 2), h]
+      });
+      var marker = L.marker([p.dlat, p.dlng], { icon: icon, title: p.name, zIndexOffset: p.key === selectedKey ? 900 : 0 });
+      marker.on('click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        selectedKey = p.key;
+        drawPins();
+        focusCard(p.key, true);
+        panTo(p.key);
+      });
+      markers[p.key] = marker;
+      if (named) marker.addTo(map);
+      else cluster.addLayer(marker);
+    });
   }
   function recenter() {
     if (!map || !lastGroups || !lastGroups.placed.length) {
@@ -582,6 +629,22 @@
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
+    cluster = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 48,
+      disableClusteringAtZoom: 14,
+      spiderfyOnMaxZoom: false,
+      iconCreateFunction: function (c) {
+        return L.divIcon({
+          className: 'cm-pin-wrap',
+          html: '<div class="cm-cluster">' + c.getChildCount() + '</div>',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+      }
+    });
+    map.addLayer(cluster);
+    map.on('zoomend', function () { if (open && lastGroups) drawPins(); });
   }
 
   function cloudThumb(id) {
@@ -663,28 +726,7 @@
     }
 
     if (map) {
-      Object.keys(markers).forEach(function (k) { map.removeLayer(markers[k]); });
-      markers = {};
-      g.placed.forEach(function (p) {
-        var label = pinLabel(p.rooms);
-        var w = Math.min(148, Math.max(78, 26 + label.length * 8));
-        var icon = L.divIcon({
-          className: 'cm-pin-wrap',
-          html: '<div class="cm-bubble' + (p.key === selectedKey ? ' sel' : '') + '" style="--c:' + availColor(p.rooms) + '"><i class="cm-av"></i>' + esc(label) + '</div>',
-          iconSize: [w, 34],
-          iconAnchor: [Math.round(w / 2), 34]
-        });
-        var marker = L.marker([p.dlat, p.dlng], { icon: icon, title: p.name, zIndexOffset: p.key === selectedKey ? 800 : 0 });
-        marker.on('click', function (ev) {
-          L.DomEvent.stopPropagation(ev);
-          selectedKey = p.key;
-          paintSel();
-          focusCard(p.key, true);
-          panTo(p.key);
-        });
-        marker.addTo(map);
-        markers[p.key] = marker;
-      });
+      drawPins();
       if ((refit || !fitted) && g.placed.length) recenter();
       else setTimeout(function () { map.invalidateSize(); paintSel(); }, 30);
     }
