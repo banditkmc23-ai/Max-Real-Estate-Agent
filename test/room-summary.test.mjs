@@ -173,12 +173,12 @@ test('the client fetches the summary view, does not ack it, and the SQL stays se
   assert.doesNotMatch(sql, /grant [^;]*to service_role/i);
   assert.doesNotMatch(sql, /to anon/);
   const html = read('index.html');
-  assert.match(html, /const APP_VERSION = '9\.40'/);
+  assert.match(html, /const APP_VERSION = '9\.45'/);
   assert.match(html, /room-summary\.js\?v=1/);
   assert.match(html, /function cloudCover/);
   assert.match(html, /function useCloudCover/);
   const sw = read('sw.js');
-  assert.match(sw, /const VERSION = 'v75'/);
+  assert.match(sw, /const VERSION = 'v84'/);
   assert.match(sw, /room-summary\.js/);
   new Function(sync);
   new Function(read('room-summary.js'));

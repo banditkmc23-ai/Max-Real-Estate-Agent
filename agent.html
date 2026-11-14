@@ -8,8 +8,6 @@
 <title>ห้องว่างพร้อมเข้าอยู่ — MAX Agent</title>
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:'Poppins','Noto Sans Thai',-apple-system,sans-serif;background:#f6f2ee;color:#1c1917;-webkit-font-smoothing:antialiased}
 .w{max-width:1100px;margin:0 auto;padding-bottom:90px}
@@ -90,7 +88,8 @@
   function watchCounts(){if(!countsArmed||!D)return;document.querySelectorAll('a.xc').forEach(a=>{if(a.dataset.countWatch)return;const rid=ridOf(a);const room=(D.rooms||[]).find(r=>r.id===rid);if(!rid||(window.MAX_COVERS&&!MAX_COVERS.needsCountFetch(room)))return;a.dataset.countWatch='1';if(typeof IntersectionObserver!=='function'){enqueueCount(rid);return}if(!countIO)countIO=new IntersectionObserver(es=>{es.forEach(en=>{if(!en.isIntersecting)return;countIO.unobserve(en.target);enqueueCount(ridOf(en.target))})},{root:null,rootMargin:'200px'});countIO.observe(a)})}
   function armCountFallback(){if(countsArmed)return;const missing=(D.rooms||[]).some(r=>!window.MAX_COVERS||MAX_COVERS.needsCountFetch(r));if(!missing)return;countsArmed=true;watchCounts()}
   /* map */
-  function lib(){return window.L&&L.markerClusterGroup?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=()=>{const t=document.createElement('script');t.src='https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';t.onload=ok;t.onerror=no;document.head.appendChild(t)};s.onerror=no;document.head.appendChild(s)})}
+  function css(href){if(document.querySelector('link[href="'+href+'"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
+  function lib(){css('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');css('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css');return window.L&&L.markerClusterGroup?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=()=>{const t=document.createElement('script');t.src='https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';t.onload=ok;t.onerror=no;document.head.appendChild(t)};s.onerror=no;document.head.appendChild(s)})}
   const kk=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':Math.round(n/1000)+'k';
   async function showMap(){view='map';mapEl.style.display='block';mtop.style.display='block';document.body.style.overflow='hidden';fab.textContent=fabTxt();sheet.style.display='none';
     try{await lib()}catch(e){document.getElementById('mtx').textContent=t('โหลดแผนที่ไม่สำเร็จ','Could not load the map');return}

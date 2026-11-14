@@ -27,6 +27,38 @@
   var map = null, cluster = null, markers = {}, ready = false, open = false, keep = false;
   var fitted = false, selectedKey = '', mode = 'map', scrollLock = 0, lastGroups = null;
 
+  var leafletReady = null;
+  function loadCss(href) {
+    return new Promise(function (res) {
+      var links = document.querySelectorAll('link[rel="stylesheet"]');
+      for (var i = 0; i < links.length; i++) if (links[i].getAttribute('href') === href) return res();
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      l.onload = function () { res(); };
+      l.onerror = function () { res(); };
+      document.head.appendChild(l);
+    });
+  }
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { res(); };
+      s.onerror = function () { rej(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function ensureLeaflet() {
+    if (window.L && window.L.markerClusterGroup) return Promise.resolve();
+    if (leafletReady) return leafletReady;
+    leafletReady = loadCss('vendor/leaflet/leaflet.css')
+      .then(function () { return loadCss('vendor/leaflet/MarkerCluster.css'); })
+      .then(function () { return loadScript('vendor/leaflet/leaflet.js'); })
+      .then(function () { return loadScript('vendor/leaflet/leaflet.markercluster.js'); })
+      .catch(function (err) { leafletReady = null; throw err; });
+    return leafletReady;
+  }
   function $(id) { return document.getElementById(id); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -697,6 +729,14 @@
 
   function draw(refit) {
     if (!open) return;
+    if (!window.L || !window.L.markerClusterGroup) {
+      ensureLeaflet().then(function () { if (open) draw(refit); }).catch(function () {
+        loadError = 'โหลดแผนที่ไม่สำเร็จ';
+        var count = $('cmCount');
+        if (count) count.textContent = '(' + loadError + ')';
+      });
+      return;
+    }
     ensureMap();
     var g = groups();
     lastGroups = g;

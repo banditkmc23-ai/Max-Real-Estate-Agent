@@ -1,11 +1,11 @@
 // MAX Agent service worker: network-first (bypassing HTTP cache) for same-origin files, cache-first for pinned CDN assets.
-const VERSION = 'v83';
+const VERSION = 'v84';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
-const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-copy.js', 'photo-safety.js', 'photo-restore.js', 'unit-shape.js', 'tiktok-link.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js', 'catalog-covers.js', 'room-summary.js', 'catalog-hero.webp', 'vendor/qrcode.js', 'vendor/html2canvas.min.js', 'vendor/jspdf.umd.min.js', 'condo-geo.js', 'condo-map.js', 'condo-coords.json', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/leaflet.markercluster.js', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/images/marker-icon.png', 'vendor/leaflet/images/marker-icon-2x.png', 'vendor/leaflet/images/marker-shadow.png', 'vendor/leaflet/images/layers.png', 'vendor/leaflet/images/layers-2x.png'];
+// html2canvas, jsPDF, SheetJS and Leaflet are loaded on demand and cached on first use, not at install.
+const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-copy.js', 'photo-safety.js', 'photo-restore.js', 'unit-shape.js', 'tiktok-link.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js', 'catalog-covers.js', 'room-summary.js', 'catalog-hero.webp', 'vendor/qrcode.js', 'condo-geo.js', 'condo-map.js', 'condo-coords.json'];
 const CDN_URLS = [
-  'https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+  'https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js'
 ];
 
 self.addEventListener('install', e => {

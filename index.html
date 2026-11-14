@@ -32,9 +32,10 @@
   }, { passive: false });
 })();
 </script>
-<!-- iOS 26+: no apple-mobile-web-app-capable / status-bar-style and no manifest on iOS.
-     With that markup iOS uses a legacy home-screen layout path that leaves an unpaintable strip
-     (about one status-bar height) below the page. iOS 26 opens home-screen icons standalone without it. -->
+<!-- Home Screen standalone: keep the capable tags. status-bar-style is deprecated (theme-color covers it).
+     Manifest stays off on iOS — that combination used a legacy layout path and left an unpaintable strip. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-title" content="MAX Agent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -58,11 +59,9 @@
 <meta name="twitter:description" content="แดชบอร์ดสำหรับเอเจนต์อสังหาฯ จัดการห้อง ลูกค้า สัญญา และรายได้ในที่เดียว">
 <meta name="twitter:image" content="https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/icons/icon-512.png">
 <link rel="stylesheet" href="tailwind.min.css?v=42">
-<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>window.lucide = window.lucide || { createIcons: function () {} };</script>
+<script defer src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" onload="try{lucide.createIcons()}catch(e){}"></script>
 <style>
   * { -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Poppins', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif; background:#f4f2ef; color:#1c1917; -webkit-font-smoothing: antialiased; }
@@ -192,6 +191,17 @@
   .kpi-icon { width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow { position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; background:#f1eeea; display:flex; align-items:center; justify-content:center; }
   .kpi-arrow svg { width:14px; height:14px; color:#8a8078; }
+  .today-card { background:#fff; border:1px solid #efeae6; border-radius:28px; padding:16px 14px 8px; box-shadow:0 8px 24px -16px rgba(28,25,23,.28); }
+  .today-card .td-row { width:100%; display:flex; align-items:center; gap:12px; text-align:left; padding:10px 6px; border-radius:18px; }
+  .today-card .td-row + .td-row { border-top:1px solid #f4f0ec; }
+  .today-card .td-ic { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .today-pill { font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; }
+  .fx-sw { position:relative; width:46px; height:28px; flex:none; }
+  .fx-sw input { position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+  .fx-sw i { display:block; height:28px; border-radius:999px; background:#e7e5e4; transition:background .15s; }
+  .fx-sw i::after { content:''; position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.18); transition:transform .15s; }
+  .fx-sw input:checked + i { background:#c2552d; }
+  .fx-sw input:checked + i::after { transform:translateX(18px); }
   .banner-card { background: linear-gradient(135deg, #b85c38 0%, #83401f 100%); border-radius: 28px; padding: 26px; color: #fff; position: relative; overflow: hidden; cursor: pointer; transition: transform .18s, box-shadow .18s; box-shadow: 0 12px 28px -10px rgba(184,92,56,.4); }
   .banner-card:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -12px rgba(184,92,56,.5); }
   .banner-card:active { transform: translateY(0) scale(.99); }
@@ -492,7 +502,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.44</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.45</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -563,7 +573,8 @@
     <main class="flex-1 px-5 lg:px-6 hide-scrollbar">
 
       <div id="viewDashboard" class="pt-4 lg:pt-6">
-        <button onclick="openSheet('add')" class="banner-card w-full text-left mb-6">
+        <section id="todayCard" class="today-card mb-5" aria-label="วันนี้ต้องทำ"></section>
+        <button id="dashBanner" onclick="openSheet('add')" class="banner-card w-full text-left mb-6">
           <div class="banner-deco"></div>
           <div class="banner-deco2"></div>
           <div class="relative z-10">
@@ -1230,7 +1241,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.44</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.45</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2890,6 +2901,50 @@ function renderMonthly() {
     </button>`;
   }).join('');
 }
+function ymdToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function openTodayAppt(id) { if (window.FX && FX.focusAppt) FX.focusAppt(id); }
+function renderToday() {
+  const box = document.getElementById('todayCard'); if (!box) return;
+  const today = ymdToday();
+  const appts = (window.FX && FX.appts) ? FX.appts() : [];
+  const viewings = appts.filter(a => a && !a.done && (a.type || 'VIEW') === 'VIEW' && a.date && a.date >= today)
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  const follows = customers.filter(c => isNeedFollow(c)).sort((a, b) => (a.nextFollow || '9999') < (b.nextFollow || '9999') ? -1 : 1);
+  const leases = units.filter(u => { const d = daysLeft(u.end); return u.status === 'OCCUPIED' && d !== null && d >= 0 && d <= EXPIRY_DAYS; })
+    .sort((a, b) => daysLeft(a.end) - daysLeft(b.end));
+  const noPhoto = units.filter(u => (photoCount[u.id] || 0) === 0);
+  const rows = [];
+  const row = (icon, bg, fg, title, sub, meta, metaColor, onclick) => `<button type="button" class="td-row" onclick="${onclick}"><span class="td-ic" style="background:${bg};color:${fg}"><i data-lucide="${icon}" class="w-4 h-4"></i></span><span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-ink truncate">${title}</span><span class="block text-[11px] text-slate-400 truncate">${sub}</span></span><span class="text-xs font-bold shrink-0" style="color:${metaColor}">${meta}</span></button>`;
+  viewings.slice(0, 4).forEach(a => {
+    const c = customers.find(x => x.id === a.custId);
+    const u = units.find(x => x.id === a.unitId);
+    const who = c ? c.name : (a.custName || 'ไม่ระบุลูกค้า');
+    const spec = u ? [u.project || '', u.type || ''].filter(Boolean).join(' · ') : '';
+    const when = a.date === today ? (a.time || 'วันนี้') : (fmtDate(a.date) + (a.time ? ' ' + a.time : ''));
+    rows.push(row('calendar', '#fbeee8', '#c2552d', 'นัดดูห้อง · ' + esc(who), esc(spec || 'นัดดูห้อง'), esc(when), '#c2552d', `openTodayAppt('${a.id}')`));
+  });
+  if (viewings.length > 4) rows.push(row('calendar', '#fbeee8', '#c2552d', 'นัดดูห้องที่เหลือ', esc((viewings.length - 4) + ' นัดถัดไป'), 'ดูทั้งหมด', '#c2552d', "FX.show('appts')"));
+  follows.slice(0, 4).forEach(c => {
+    const late = c.nextFollow ? Math.round((new Date(new Date().toDateString()) - new Date(c.nextFollow + 'T00:00:00')) / 86400000) : null;
+    const meta = late > 0 ? ('เลย ' + late + ' วัน') : (late === 0 ? 'วันนี้' : 'ติดตาม');
+    const sub = c.interestProject || ((units.find(u => (c.linkedUnits || []).includes(u.id)) || {}).project) || c.phone || 'ลูกค้าที่ต้องติดตาม';
+    rows.push(row('message-circle', '#fde8ef', '#e11d48', 'ติดตาม · ' + esc(c.name || 'ลูกค้า'), esc(sub), esc(meta), late > 0 ? '#e11d48' : '#c2552d', `openCustDetail('${c.id}')`));
+  });
+  if (follows.length > 4) rows.push(row('message-circle', '#fde8ef', '#e11d48', 'ลูกค้าที่ต้องติดตามที่เหลือ', esc((follows.length - 4) + ' คน'), 'ดูทั้งหมด', '#e11d48', "gotoCustFilter('NEED_FOLLOW')"));
+  leases.slice(0, 4).forEach(u => {
+    const d = daysLeft(u.end);
+    const sub = [u.project || '', u.type || ''].filter(Boolean).join(' · ') || ('ห้อง ' + (u.room || ''));
+    rows.push(row('clock', '#fff4e5', '#d97706', 'สัญญาใกล้หมด', esc(sub), d === 0 ? 'วันนี้' : ('เหลือ ' + d + ' วัน'), '#c2552d', `openDetailView('${u.id}')`));
+  });
+  if (leases.length > 4) rows.push(row('clock', '#fff4e5', '#d97706', 'สัญญาใกล้หมดที่เหลือ', esc((leases.length - 4) + ' ห้อง'), 'ดูทั้งหมด', '#c2552d', "FX.show('expiring')"));
+  if (noPhoto.length) rows.push(row('image', '#f1f0ee', '#78716c', 'ห้องยังไม่มีรูป', esc(noPhoto.length + ' ห้องรออัปโหลด'), 'ดูทั้งหมด', '#78716c', "gotoFilter('NO_PHOTOS')"));
+  const n = rows.length;
+  box.innerHTML = `<div class="flex items-center justify-between gap-2 px-1 pb-1"><h3 class="text-base font-bold text-ink tracking-tight">วันนี้ต้องทำ</h3><div class="flex items-center gap-1.5 shrink-0"><span class="today-pill" style="background:#fbeee8;color:#c2552d">ข้อเสนอ</span>${n ? `<span class="today-pill text-white" style="background:#c2552d">${n} รายการ</span>` : ''}</div></div>` +
+    (n ? `<div class="mt-1">${rows.join('')}</div>` : `<div class="px-2 py-6 text-center"><p class="text-sm font-semibold text-ink">วันนี้โล่งแล้ว</p><p class="text-xs text-slate-400 mt-1">ไม่มีนัดดูห้อง ลูกค้าที่ต้องติดตาม สัญญาใกล้หมด หรือห้องที่ยังไม่มีรูป</p></div>`);
+}
 function computeStats() {
   const cnt = s => units.filter(u => u.status === s).length;
   const available = cnt('AVAILABLE'), occupied = cnt('OCCUPIED'), reserved = cnt('RESERVED'), pending = cnt('PENDING');
@@ -2925,6 +2980,7 @@ function renderDashboard() {
   setText('kpiCustWon', customers.filter(c => c.status === 'WON').length);
   setText('kpiCustTalking', customers.filter(c => c.status === 'TALKING').length);
 
+  renderToday();
   const greeting = document.getElementById('greetingText'); if (greeting) greeting.textContent = 'สวัสดี MAX 👋';
   const hd = document.getElementById('headerDate');
   if (hd) { const now = new Date(); hd.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
@@ -3652,10 +3708,23 @@ async function importData(file) {
 
 function excelCellToDate(v) { if (v == null || v === '') return ''; if (v instanceof Date) return v.toISOString().slice(0,10); const s = String(v).trim(); const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/); if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; return s; }
 const VALID_STATUS = ['AVAILABLE','OCCUPIED','RESERVED','PENDING'];
+let xlsxPromise = null;
+function ensureXlsx() {
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxPromise) xlsxPromise = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload = () => res();
+    sc.onerror = () => { xlsxPromise = null; rej(new Error('โหลด Excel ไม่สำเร็จ')); };
+    document.head.appendChild(sc);
+  });
+  return xlsxPromise;
+}
 async function importExcel(file) {
   if (!file) return;
   const prog = document.getElementById('bkProgress'); prog.classList.remove('hidden'); prog.textContent = 'อ่าน Excel...';
   try {
+    await ensureXlsx();
     if (typeof XLSX === 'undefined') throw new Error('โหลด Excel ไม่สำเร็จ');
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type:'array', cellDates:true });
@@ -4110,7 +4179,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.44';
+const APP_VERSION = '9.45';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4212,14 +4281,12 @@ function sfPreview() {
 <script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=48"></script>
 <script src="tiktok-link.js?v=1"></script>
-<script src="features.js?v=46"></script>
+<script src="features.js?v=47"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
 <script src="sync.js?v=49"></script>
 <script src="photo-restore.js?v=46"></script>
-<script src="vendor/leaflet/leaflet.js"></script>
-<script src="vendor/leaflet/leaflet.markercluster.js"></script>
 <script src="condo-geo.js?v=43"></script>
-<script src="condo-map.js?v=47"></script>
+<script src="condo-map.js?v=48"></script>
 </body>
 </html>
