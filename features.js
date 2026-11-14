@@ -86,7 +86,13 @@ function injectTools() {
   if (!TOOLS.length) return;
   const dash = $('viewDashboard'); if (!dash) return;
   let box = $('fxTools');
-  if (!box) { dash.insertAdjacentHTML('afterbegin', '<div id="fxTools" class="mb-5"></div>'); box = $('fxTools'); }
+  if (!box) {
+    const html = '<div id="fxTools" class="mb-5"></div>';
+    const anchor = $('dashBanner') || $('todayCard');
+    if (anchor) anchor.insertAdjacentHTML('afterend', html);
+    else dash.insertAdjacentHTML('afterbegin', html);
+    box = $('fxTools');
+  }
   box.innerHTML = `<div class="flex items-center justify-between mb-3"><h3 class="text-base font-bold text-ink tracking-tight">เครื่องมือ</h3></div><div class="grid grid-cols-3 lg:grid-cols-6 gap-2">${TOOLS.map(t => `<button onclick="${t.action}" class="bg-white border border-slate-700 rounded-2xl p-3 flex flex-col items-center gap-1.5 text-center hover:border-brick-500 active:scale-[0.97] transition-all shadow-sm relative"><span class="w-9 h-9 rounded-xl bg-brick-500/10 flex items-center justify-center"><i data-lucide="${t.icon}" class="w-4 h-4 text-brick-600"></i></span><span class="text-[11px] font-semibold text-ink leading-tight">${t.label}</span>${t.badge && t.badge() ? `<span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">${t.badge()}</span>` : ''}</button>`).join('')}</div>`;
   // desktop sidebar links
   const side = document.querySelector('button.nav-link[onclick="openBackup()"]');
@@ -440,6 +446,50 @@ async function buildLink(u, opts) {
 function shareText(u, link) {
   return `${u.project || ''}${u.type ? ' · ' + u.type : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.station ? '\n🚇 ' + u.station + (Number(u.stationDist) ? ' ' + Number(u.stationDist).toLocaleString('th-TH') + ' ม.' : '') : ''}\nค่าเช่า ${B(u.rent)}/เดือน\nดูรายละเอียดและรูป: ${link}`;
 }
+function clientMessage(u, link) {
+  const room = [u.project || '', u.type || '', u.size ? u.size + ' ตร.ม.' : ''].filter(Boolean).join(' ');
+  const price = Number(u.rent) ? ' ราคา ' + B(u.rent) + '/เดือน' : (Number(u.salePrice) ? ' ราคาขาย ' + B(u.salePrice) : '');
+  return `สวัสดีค่ะ${room ? ' ห้อง ' + room : ''}${price} ค่ะ\nดูรูปและรายละเอียด: ${link}`;
+}
+function currentShareMessage() {
+  const el = $('fxShareMsg');
+  let text = el ? String(el.value || '').trim() : '';
+  const link = shareState.link || '';
+  if (!text) {
+    const u = units_().find(x => x.id === shareState.id);
+    text = u ? clientMessage(u, link) : link;
+  }
+  if (link && text.indexOf(link) < 0) text = text ? (text + '\n' + link) : link;
+  return text;
+}
+function prettyLink(link) {
+  return String(link || '').replace(/^https?:\/\//, '');
+}
+async function copyShareText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) {}
+  try { if (typeof fallbackCopy === 'function') { fallbackCopy(text); return true; } } catch (e) {}
+  return false;
+}
+async function paintSharePreview(u) {
+  const img = $('fxShareCover'); if (!img || !u) return;
+  try {
+    if (typeof getUnitPhotos === 'function') {
+      const ps = await getUnitPhotos(u.id);
+      if (ps && ps.length && typeof coverSrc === 'function') {
+        const src = coverSrc(ps[0]);
+        if (src) { img.src = src; img.classList.remove('hidden'); return; }
+      }
+    }
+  } catch (e) {}
+  try {
+    if (typeof cloudCover === 'function') {
+      const c = cloudCover(u.id);
+      if (c && c.thumb) { img.src = c.thumb; img.classList.remove('hidden'); }
+    }
+  } catch (e) {}
+}
 async function renderShare() {
   const u = units_().find(x => x.id === shareState.id); if (!u) return;
   const el = $('fxShareBody'); if (!el) return;
@@ -452,10 +502,15 @@ async function renderShare() {
     return;
   }
   finally { shareBusy--; }
-  el.querySelector('#fxShareLink').textContent = shareState.link;
-  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์ถาวรของห้องนี้ · แก้ข้อมูลแล้วแชร์อีกครั้ง ลิงก์เดิมจะอัปเดตให้') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  const pretty = prettyLink(shareState.link);
+  el.querySelector('#fxShareLink').textContent = pretty;
+  el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์สั้นถาวร · เทียบกับลิงก์ GitHub Pages ที่ยาวกว่า') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  const host = el.querySelector('#fxShareHost');
+  if (host) { try { host.textContent = new URL(shareState.link).host; } catch (e) { host.textContent = ''; } }
+  const msg = $('fxShareMsg');
+  if (msg && !shareState.msgEdited) msg.value = clientMessage(u, shareState.link);
 }
-const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-2 text-xs text-slate-500 cursor-pointer"><span>${label}</span><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)" class="inp-check"></label>`;
+const tog = (key, label) => `<label class="flex items-center justify-between gap-3 py-3 text-sm font-medium text-ink cursor-pointer"><span>${label}</span><span class="fx-sw"><input type="checkbox" ${shareState[key] ? 'checked' : ''} onchange="FX.shareOpt('${key}', this.checked)"><i></i></span></label>`;
 FX.buildRoomLink = buildLink;
 // Background auto-update: a room that already has a link is refreshed a few seconds after an in-session edit.
 // v9.28: cloudLink's sig does not match on a freshly pulled browser, so this used to re-init the page,
@@ -540,30 +595,76 @@ FX.shareOpt = (k, v) => { shareState[k] = v; try { const o = JSON.parse(localSto
 FX.openShare = function (id) {
   const u = units_().find(x => x.id === id); if (!u) return;
   let so = {}; try { so = JSON.parse(localStorage.getItem('max_share_opts') || '{}'); } catch (e) {}
-  shareState = { hideRoom: false, showPhone: true, photo: true, ...so, id, link: '' };
-  FX.open(FX.sheetHead('แชร์ห้องให้ลูกค้า', 'ลูกค้าเปิดดูรูป ราคา และทักไลน์ได้ทันที ไม่ต้องติดตั้งแอป') + `<div id="fxShareBody">
-    <div class="flex gap-3 p-3 bg-slate-950 rounded-2xl mb-4"><div class="w-14 h-14 rounded-xl bg-brick-500/10 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-6 h-6 text-brick-500"></i></div><div class="min-w-0"><p class="text-sm font-semibold truncate">${E(u.project || '-')}${u.room ? ' · ' + E(u.room) : ''}</p><p class="text-xs text-brick-600 font-bold">${B(u.rent)}/เดือน</p><p class="text-[11px] text-slate-400">${E(u.type || '')}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.floor ? ' · ชั้น ' + E(u.floor) : ''}</p></div></div>
-    <p class="text-[11px] text-slate-500 mb-1">ลิงก์สำหรับลูกค้า</p>
-    <div class="bg-white border border-slate-700 rounded-2xl p-3"><p id="fxShareLink" class="text-[11px] text-slate-400 break-all max-h-16 overflow-hidden"></p></div>
-    <p id="fxShareLen" class="text-[10px] text-slate-400 mt-1"></p>
-    <div class="mt-2 divide-y divide-slate-800">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div>
-    <button onclick="FX.shareNew()" class="mt-2 text-[11px] text-brick-600 font-semibold flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i>สร้างลิงก์ใหม่</button>
-    <p class="text-[10px] text-slate-400 mt-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
-    <div class="grid grid-cols-3 gap-2 mt-4">
-      <button onclick="FX.shareDo('line')" class="py-2.5 rounded-full text-white text-xs font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>LINE</button>
-      <button onclick="FX.shareDo('copy')" class="py-2.5 rounded-full bg-brick-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5"><i data-lucide="copy" class="w-4 h-4"></i>คัดลอก</button>
-      <button onclick="FX.shareDo('open')" class="py-2.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i>ดูตัวอย่าง</button>
+  shareState = { hideRoom: false, showPhone: true, photo: true, ...so, id, link: '', msgEdited: false };
+  const price = Number(u.rent) ? `${B(u.rent)}/เดือน` : (Number(u.salePrice) ? `ขาย ${B(u.salePrice)}` : '');
+  const spec = [u.type || '', u.size ? u.size + ' ตร.ม.' : ''].filter(Boolean).join(' · ');
+  FX.open(`<div class="flex items-start justify-between gap-3 mb-1"><div class="flex items-center gap-2 min-w-0"><h2 class="text-lg font-bold text-ink">ส่งให้ลูกค้า</h2><span class="today-pill shrink-0" style="background:#fbeee8;color:#c2552d">ข้อเสนอ</span></div><button onclick="FX.close()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0" aria-label="ปิด"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button></div>
+  <p class="text-xs text-slate-400 mb-3">ดูตัวอย่างการ์ด ลิงก์สั้น และส่งรูปพร้อมข้อความในที่เดียว</p>
+  <div id="fxShareBody">
+    <div class="flex gap-3 p-2.5 bg-white border border-slate-200 rounded-2xl mb-3 shadow-sm"><div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative"><img id="fxShareCover" alt="" class="hidden absolute inset-0 w-full h-full object-cover"><i data-lucide="home" class="w-6 h-6 text-brick-500 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"></i></div><div class="min-w-0 py-0.5"><p id="fxShareHost" class="text-[10px] text-slate-400">max-agent</p><p class="text-sm font-bold text-ink truncate">${E(u.project || '-')}</p><p class="text-sm font-bold" style="color:#c2552d">${price}</p><p class="text-[11px] text-slate-400">${E(spec)}</p></div></div>
+    <div class="bg-white border border-slate-200 rounded-2xl px-3 py-2.5 mb-1"><p id="fxShareLink" class="text-sm font-semibold text-ink break-all">กำลังสร้างลิงก์...</p></div>
+    <p id="fxShareLen" class="text-[10px] text-slate-400 mb-1 px-1"></p>
+    <div class="mt-1">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div>
+    <textarea id="fxShareMsg" rows="4" class="inp mt-2" style="font-size:16px" oninput="FX.shareMsgEdit()"></textarea>
+    <div class="flex gap-2 mt-3">
+      <button onclick="FX.shareDo('line')" class="flex-1 py-3 rounded-full text-white text-sm font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>ส่งใน LINE</button>
+      <button onpointerdown="FX.primeShareFiles()" onclick="FX.sharePack()" class="flex-1 py-3 rounded-full text-white text-sm font-semibold flex items-center justify-center gap-1.5" style="background:#c2552d"><i data-lucide="image" class="w-4 h-4"></i>ส่งรูปพร้อมลิงก์</button>
     </div>
-    ${navigator.share ? `<button onclick="FX.shareDo('native')" class="w-full mt-2 py-2.5 rounded-full bg-white border border-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5"><i data-lucide="share-2" class="w-4 h-4"></i>แชร์ช่องทางอื่น</button>` : ''}
+    <button onclick="FX.shareDo('copyText')" class="w-full mt-2 py-2 text-xs font-semibold text-slate-500 flex items-center justify-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกลิงก์และข้อความ</button>
+    <div class="flex items-center justify-between mt-1 px-1">
+      <button onclick="FX.shareNew()" class="text-[11px] text-brick-600 font-semibold">สร้างลิงก์ใหม่</button>
+      <button onclick="FX.shareDo('open')" class="text-[11px] text-slate-500 font-semibold">ดูตัวอย่าง</button>
+    </div>
+    <p class="text-[10px] text-slate-400 mt-1 px-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
   </div>`);
   renderShare();
+  paintSharePreview(u).catch(() => {});
+  try { if (typeof prepareRoomShareFiles === 'function') prepareRoomShareFiles(id); } catch (e) {}
+};
+FX.shareMsgEdit = function () { shareState.msgEdited = true; };
+FX.primeShareFiles = function () { try { if (shareState.id && typeof prepareRoomShareFiles === 'function') prepareRoomShareFiles(shareState.id); } catch (e) {} };
+FX.sharePack = async function () {
+  const u = units_().find(x => x.id === shareState.id); if (!u || !shareState.link) return T('กำลังสร้างลิงก์...');
+  const text = currentShareMessage();
+  const title = u.project || 'ห้องให้เช่า';
+  let files = [];
+  if (shareState.photo) {
+    try { files = (typeof preparedShareFiles === 'function' && preparedShareFiles(u.id)) || []; } catch (e) { files = []; }
+    if (!files.length && typeof prepareRoomShareFiles === 'function') {
+      try { await prepareRoomShareFiles(u.id); } catch (e) {}
+      try { files = (typeof preparedShareFiles === 'function' && preparedShareFiles(u.id)) || []; } catch (e) { files = []; }
+    }
+    if (!files.length && typeof getUnitPhotos === 'function' && typeof filesForPhotos === 'function') {
+      try { files = await filesForPhotos(await getUnitPhotos(u.id), u); } catch (e) { files = []; }
+    }
+  }
+  const fallback = async () => {
+    if (files.length && typeof downloadAllPhotos === 'function') downloadAllPhotos(files);
+    const ok = await copyShareText(text);
+    T(files.length ? (ok ? 'ดาวน์โหลดรูปแยกไฟล์แล้ว และคัดลอกข้อความ' : 'ดาวน์โหลดรูปแยกไฟล์แล้ว') : (ok ? 'คัดลอกข้อความแล้ว' : 'คัดลอกไม่สำเร็จ'));
+  };
+  if (files.length && navigator.share) {
+    let can = false;
+    try { can = !!(navigator.canShare && navigator.canShare({ files: files })); } catch (e) { can = false; }
+    if (can) {
+      try { await navigator.share({ files: files, text: text, title: title }); T('ส่งแล้ว'); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    return fallback();
+  }
+  if (!files.length && navigator.share) {
+    try { await navigator.share({ text: text, title: title }); T('ส่งแล้ว'); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  return fallback();
 };
 FX.shareDo = async function (how) {
   const u = units_().find(x => x.id === shareState.id); if (!u || !shareState.link) return T('กำลังสร้างลิงก์...');
-  const text = shareText(u, shareState.link);
+  const text = currentShareMessage();
   if (how === 'copy') return FX.copy(shareState.link);
+  if (how === 'copyText') { const ok = await copyShareText(text); return T(ok ? 'คัดลอกลิงก์และข้อความแล้ว' : 'คัดลอกไม่สำเร็จ'); }
   if (how === 'open') return window.open(shareState.link, '_blank');
-  if (how === 'native') { try { await navigator.share({ title: u.project || 'ห้องให้เช่า', text: shareText(u, '').replace(/\nดูรายละเอียดและรูป: $/, ''), url: shareState.link }); } catch (e) {} return; }
+  if (how === 'native') { try { await navigator.share({ title: u.project || 'ห้องให้เช่า', text: text, url: shareState.link }); } catch (e) {} return; }
   if (how === 'line') {
     if (('https://line.me/R/share?text=' + encodeURIComponent(text)).length > 7500) {
       const short = await buildLink(u, { ...shareState, photo: false });
@@ -650,6 +751,11 @@ FX.registerView('appts', { title: 'นัดดูห้อง', render() {
   </div></div>`;
 } });
 FX.selDay = d => { selDay = d; calMonth = d.slice(0, 7); FX.refresh(); };
+FX.focusAppt = function (id) {
+  const a = appts.find(x => x.id === id);
+  if (a && a.date) { selDay = a.date; calMonth = a.date.slice(0, 7); }
+  FX.show('appts');
+};
 FX.calNav = n => { calMonth = addMonths(calMonth, n); selDay = calMonth + '-01'; FX.refresh(); };
 FX.toggleAppt = id => { const a = appts.find(x => x.id === id); if (!a) return; a.done = !a.done; save(); FX.refresh(); FX.injectTools(); };
 FX.apptLine = id => {
@@ -909,8 +1015,9 @@ FX.registerView('revenue', { title: 'รายงานรายได้', rend
 } });
 FX.revSel = ym => { selYm = ym; FX.refresh(); };
 FX.revNav = n => { endYm = addMonths(endYm, n); if (endYm > addMonths(ymOf(new Date()), 12)) endYm = addMonths(ymOf(new Date()), 12); selYm = null; FX.refresh(); };
-FX.revExcel = function () {
-  if (typeof XLSX === 'undefined') return T('กำลังโหลดตัวสร้าง Excel ลองอีกครั้ง');
+FX.revExcel = async function () {
+  try { if (typeof ensureXlsx === 'function') await ensureXlsx(); } catch (e) { return T('โหลด Excel ไม่สำเร็จ'); }
+  if (typeof XLSX === 'undefined') return T('โหลด Excel ไม่สำเร็จ');
   const data = series(endYm), us = units_();
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['เดือน', 'รายได้ (บาท)', 'ห้องมีผู้เช่า', 'ห้องทั้งหมด', 'อัตราเข้าพัก %'], ...data.map(d => [thMonth(d.ym), d.rev, d.occ, d.total, d.pct])]), 'รายเดือน');
