@@ -423,3 +423,34 @@ test('the manual share button still publishes that room and does not fan out', a
   const after = h.shareSnap();
   for (let i = 0; i < 390; i++) if (i !== 2) assert.equal(after[i], before[i]);
 });
+
+test('client share text is condo, type, size, rent, station line, and the link', () => {
+  const h = boot();
+  const msg = h.sandbox.FX.clientMessage;
+  const baht = n => '฿' + Number(n).toLocaleString('th-TH');
+  const link = id => 'https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/r/' + id + '/';
+  assert.equal(
+    msg({ project: 'Aspire Sukhumvit 48', type: '1 Bed', size: 38.5, rent: 15000, station: 'พระโขนง' }, link('2kXKvz')),
+    'Aspire Sukhumvit 48 - 1 Bed 38.5 ตร.ม. ' + baht(15000) + '/เดือน ใกล้ BTS พระโขนง , ' + link('2kXKvz')
+  );
+  assert.equal(
+    msg({ project: 'The Base Sukhumvit 77', type: '1 Bed', size: 35, rent: 15000, station: 'BTS อ่อนนุช' }, link('fRcKnr')),
+    'The Base Sukhumvit 77 - 1 Bed 35 ตร.ม. ' + baht(15000) + '/เดือน ใกล้ BTS อ่อนนุช , ' + link('fRcKnr')
+  );
+  assert.equal(
+    msg({ project: 'Ashton Asoke–Rama 9 (แอชตัน อโศก–พระราม 9)', type: '1 Bed', size: 42, rent: 46000, station: 'MRT พระราม' }, link('9Cuu9d')),
+    'Ashton Asoke–Rama 9 (แอชตัน อโศก–พระราม 9) - 1 Bed 42 ตร.ม. ' + baht(46000) + '/เดือน ใกล้ MRT พระราม , ' + link('9Cuu9d')
+  );
+  assert.equal(
+    msg({ project: 'Life Sukhumvit 48', type: '1 Bed', size: 30, rent: 16000, station: '' }, link('E9hHFj')),
+    'Life Sukhumvit 48 - 1 Bed 30 ตร.ม. ' + baht(16000) + '/เดือน ' + link('E9hHFj')
+  );
+  const plum = msg({ project: 'Plum Condo Ram 60 Interchange', type: '1 Bed', size: 23, rent: 6900, station: 'ลำสาลี' }, link('AjP56p'));
+  assert.equal(plum, 'Plum Condo Ram 60 Interchange - 1 Bed 23 ตร.ม. ' + baht(6900) + '/เดือน ใกล้ ลำสาลี , ' + link('AjP56p'));
+  assert.equal(plum.includes('ราคา'), false);
+  assert.equal(plum.includes('ดูรูป'), false);
+  assert.equal(msg({ project: 'Only Name' }, ''), 'Only Name');
+  assert.equal(msg({ project: 'X', size: 40, rent: 10000 }, 'https://x/r/a/'), 'X - 40 ตร.ม. ' + baht(10000) + '/เดือน https://x/r/a/');
+  assert.match(featureSrc, /function shareText\(u, link\) \{ return clientMessage\(u, link\); \}/);
+  assert.match(featureSrc, /FX\.lineShare\(clientMessage\(u, short\)\)/);
+});
