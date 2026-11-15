@@ -445,12 +445,17 @@ async function buildLink(u, opts) {
 }
 // Bare station names from geo.js ST. A stored "BTS …" / "MRT …" / "ARL …" prefix is kept as written.
 const STATION_LINE = { 'อ่อนนุช':'BTS','พระโขนง':'BTS','เอกมัย':'BTS','ทองหล่อ':'BTS','พร้อมพงษ์':'BTS','อโศก':'BTS','นานา':'BTS','เพลินจิต':'BTS','ชิดลม':'BTS','บางจาก':'BTS','ปุณณวิถี':'BTS','อุดมสุข':'BTS','บางนา':'BTS','แบริ่ง':'BTS','อารีย์':'BTS','สะพานควาย':'BTS','อนุสาวรีย์ชัยฯ':'BTS','พญาไท':'BTS','สยาม':'BTS','ศาลาแดง':'BTS','ช่องนนทรี':'BTS','สุขุมวิท':'MRT','เพชรบุรี':'MRT','พระราม 9':'MRT','ศูนย์สิริกิติ์':'MRT','ศูนย์วัฒนธรรม':'MRT','ห้วยขวาง':'MRT','สุทธิสาร':'MRT','รัชดาภิเษก':'MRT','ลุมพินี':'MRT','คลองเตย':'MRT','สามย่าน':'MRT','รามคำแหง':'ARL','มักกะสัน':'ARL' };
-function stationPhrase(station) {
+function distanceLabel(dist) {
+  const n = Number(dist);
+  if (!n || n < 0) return '';
+  return n.toLocaleString('th-TH') + ' ม.';
+}
+function stationPhrase(station, dist) {
   const raw = String(station || '').trim().replace(/^ใกล้\s+/, '');
   if (!raw) return '';
-  if (/^(BTS|MRT|ARL|Airport Link)\b/i.test(raw)) return 'ใกล้ ' + raw;
-  const line = STATION_LINE[raw];
-  return 'ใกล้ ' + (line ? line + ' ' : '') + raw;
+  const near = /^(BTS|MRT|ARL|Airport Link)\b/i.test(raw) ? 'ใกล้ ' + raw : 'ใกล้ ' + ((STATION_LINE[raw] ? STATION_LINE[raw] + ' ' : '') + raw);
+  const d = distanceLabel(dist);
+  return d ? near + ' (' + d + ')' : near;
 }
 function clientMessage(u, link) {
   u = u || {};
@@ -461,12 +466,12 @@ function clientMessage(u, link) {
   const spec = [type, size].filter(Boolean).join(' ');
   const head = project && spec ? project + ' - ' + spec : (project || spec);
   const price = Number(u.rent) ? B(u.rent) + '/เดือน' : '';
-  const near = stationPhrase(u.station);
+  const near = stationPhrase(u.station, u.stationDist);
   const body = [head, price, near].filter(Boolean).join(' ');
   const url = String(link || '').trim();
   if (!url) return body;
-  if (!body) return url;
-  return near ? body + ' , ' + url : body + ' ' + url;
+  if (!body) return 'ดูรายละเอียดเพิ่มเติม ' + url;
+  return body + ' , ดูรายละเอียดเพิ่มเติม ' + url;
 }
 function shareText(u, link) { return clientMessage(u, link); }
 FX.clientMessage = clientMessage;
