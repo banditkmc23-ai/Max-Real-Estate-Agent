@@ -443,14 +443,38 @@ async function buildLink(u, opts) {
   }
   return link;
 }
-function shareText(u, link) {
-  return `${u.project || ''}${u.type ? ' · ' + u.type : ''}${u.size ? ' · ' + u.size + ' ตร.ม.' : ''}${u.station ? '\n🚇 ' + u.station + (Number(u.stationDist) ? ' ' + Number(u.stationDist).toLocaleString('th-TH') + ' ม.' : '') : ''}\nค่าเช่า ${B(u.rent)}/เดือน\nดูรายละเอียดและรูป: ${link}`;
+// Bare station names from geo.js ST. A stored "BTS …" / "MRT …" / "ARL …" prefix is kept as written.
+const STATION_LINE = { 'อ่อนนุช':'BTS','พระโขนง':'BTS','เอกมัย':'BTS','ทองหล่อ':'BTS','พร้อมพงษ์':'BTS','อโศก':'BTS','นานา':'BTS','เพลินจิต':'BTS','ชิดลม':'BTS','บางจาก':'BTS','ปุณณวิถี':'BTS','อุดมสุข':'BTS','บางนา':'BTS','แบริ่ง':'BTS','อารีย์':'BTS','สะพานควาย':'BTS','อนุสาวรีย์ชัยฯ':'BTS','พญาไท':'BTS','สยาม':'BTS','ศาลาแดง':'BTS','ช่องนนทรี':'BTS','สุขุมวิท':'MRT','เพชรบุรี':'MRT','พระราม 9':'MRT','ศูนย์สิริกิติ์':'MRT','ศูนย์วัฒนธรรม':'MRT','ห้วยขวาง':'MRT','สุทธิสาร':'MRT','รัชดาภิเษก':'MRT','ลุมพินี':'MRT','คลองเตย':'MRT','สามย่าน':'MRT','รามคำแหง':'ARL','มักกะสัน':'ARL' };
+function distanceLabel(dist) {
+  const n = Number(dist);
+  if (!n || n < 0) return '';
+  return n.toLocaleString('th-TH') + ' ม.';
+}
+function stationPhrase(station, dist) {
+  const raw = String(station || '').trim().replace(/^ใกล้\s+/, '');
+  if (!raw) return '';
+  const near = /^(BTS|MRT|ARL|Airport Link)\b/i.test(raw) ? 'ใกล้ ' + raw : 'ใกล้ ' + ((STATION_LINE[raw] ? STATION_LINE[raw] + ' ' : '') + raw);
+  const d = distanceLabel(dist);
+  return d ? near + ' (' + d + ')' : near;
 }
 function clientMessage(u, link) {
-  const room = [u.project || '', u.type || '', u.size ? u.size + ' ตร.ม.' : ''].filter(Boolean).join(' ');
-  const price = Number(u.rent) ? ' ราคา ' + B(u.rent) + '/เดือน' : (Number(u.salePrice) ? ' ราคาขาย ' + B(u.salePrice) : '');
-  return `สวัสดีค่ะ${room ? ' ห้อง ' + room : ''}${price} ค่ะ\nดูรูปและรายละเอียด: ${link}`;
+  u = u || {};
+  const project = String(u.project || '').trim();
+  const type = String(u.type || '').trim();
+  const sizeRaw = u.size == null ? '' : String(u.size).trim();
+  const size = sizeRaw && Number(sizeRaw) !== 0 ? sizeRaw + ' ตร.ม.' : '';
+  const spec = [type, size].filter(Boolean).join(' ');
+  const head = project && spec ? project + ' - ' + spec : (project || spec);
+  const price = Number(u.rent) ? B(u.rent) + '/เดือน' : '';
+  const near = stationPhrase(u.station, u.stationDist);
+  const body = [head, price, near].filter(Boolean).join(' ');
+  const url = String(link || '').trim();
+  if (!url) return body;
+  if (!body) return 'ดูรายละเอียดเพิ่มเติม ' + url;
+  return body + ' , ดูรายละเอียดเพิ่มเติม ' + url;
 }
+function shareText(u, link) { return clientMessage(u, link); }
+FX.clientMessage = clientMessage;
 function currentShareMessage() {
   const el = $('fxShareMsg');
   let text = el ? String(el.value || '').trim() : '';
@@ -669,7 +693,7 @@ FX.shareDo = async function (how) {
     if (('https://line.me/R/share?text=' + encodeURIComponent(text)).length > 7500) {
       const short = await buildLink(u, { ...shareState, photo: false });
       T('ลิงก์ยาวเกินไปสำหรับ LINE จึงส่งแบบไม่มีรูป');
-      return FX.lineShare(shareText(u, short));
+      return FX.lineShare(clientMessage(u, short));
     }
     return FX.lineShare(text);
   }

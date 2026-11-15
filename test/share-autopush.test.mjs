@@ -423,3 +423,29 @@ test('the manual share button still publishes that room and does not fan out', a
   const after = h.shareSnap();
   for (let i = 0; i < 390; i++) if (i !== 2) assert.equal(after[i], before[i]);
 });
+
+test('client share text names the station, stored metres, and the details link', () => {
+  const h = boot();
+  const msg = h.sandbox.FX.clientMessage;
+  const baht = n => '฿' + Number(n).toLocaleString('th-TH');
+  const link = id => 'https://banditkmc23-ai.github.io/Max-Real-Estate-Agent/r/' + id + '/';
+  const tail = url => ' , ดูรายละเอียดเพิ่มเติม ' + url;
+  assert.equal(
+    msg({ project: 'Aspire Sukhumvit 48', type: '1 Bed', size: 38.5, rent: 15000, station: 'พระโขนง', stationDist: 600 }, link('2kXKvz')),
+    'Aspire Sukhumvit 48 - 1 Bed 38.5 ตร.ม. ' + baht(15000) + '/เดือน ใกล้ BTS พระโขนง (600 ม.)' + tail(link('2kXKvz'))
+  );
+  assert.equal(
+    msg({ project: 'The Base Sukhumvit 77', type: '1 Bed', size: 35, rent: 15000, station: 'BTS อ่อนนุช', stationDist: 0 }, link('fRcKnr')),
+    'The Base Sukhumvit 77 - 1 Bed 35 ตร.ม. ' + baht(15000) + '/เดือน ใกล้ BTS อ่อนนุช' + tail(link('fRcKnr'))
+  );
+  assert.equal(
+    msg({ project: 'Life Sukhumvit 48', type: '1 Bed', size: 30, rent: 16000, station: '', stationDist: '' }, link('E9hHFj')),
+    'Life Sukhumvit 48 - 1 Bed 30 ตร.ม. ' + baht(16000) + '/เดือน' + tail(link('E9hHFj'))
+  );
+  const mrt = msg({ project: 'Ashton Asoke–Rama 9 (แอชตัน อโศก–พระราม 9)', type: '1 Bed', size: 42, rent: 46000, station: 'MRT พระราม', stationDist: '' }, link('9Cuu9d'));
+  assert.equal(mrt.includes('( '), false);
+  assert.equal(mrt.includes('ใกล้ MRT พระราม , ดูรายละเอียดเพิ่มเติม'), true);
+  assert.equal(msg({ project: 'Only Name' }, ''), 'Only Name');
+  assert.match(featureSrc, /function shareText\(u, link\) \{ return clientMessage\(u, link\); \}/);
+  assert.match(featureSrc, /FX\.lineShare\(clientMessage\(u, short\)\)/);
+});
