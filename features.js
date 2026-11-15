@@ -49,6 +49,7 @@ FX.sheetHead = sheetHead;
 /* ---------- extra views (tools) ---------- */
 const VIEWS = {};
 let fxView = null;
+FX.viewName = () => fxView;
 function ensureViewBox() {
   if ($('viewFx')) return;
   const ref = $('viewCustomers');
@@ -64,7 +65,8 @@ FX.show = function (name) {
   try { if (detailUnitId) closeDetailView(); } catch (e) {}
   try { if (detailCustId) closeCustDetail(); } catch (e) {}
   FX.refresh();
-  const mw = document.querySelector('.main-wrapper'); if (mw) mw.scrollTo({ top: 0 }); window.scrollTo({ top: 0 });
+  const mw = document.querySelector('.main-wrapper'); if (mw && !window.__viewRestoring) mw.scrollTo({ top: 0 }); if (!window.__viewRestoring) window.scrollTo({ top: 0 });
+  try { if (window.saveViewStateNow) saveViewStateNow(); } catch (e) {}
 };
 FX.refresh = function () {
   if (!fxView || !VIEWS[fxView] || !$('viewFx') || $('viewFx').classList.contains('hidden')) return;

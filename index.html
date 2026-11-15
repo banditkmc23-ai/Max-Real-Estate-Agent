@@ -502,7 +502,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.46</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.47</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1241,7 +1241,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.46</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.47</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1317,6 +1317,7 @@
 
 <div id="toast" class="toast"></div>
 <script src="unit-shape.js?v=48"></script>
+<script src="view-state.js?v=1"></script>
 <script>
 // ============= DATA LAYER =============
 const KEY = 'staylow_units_v1';
@@ -1826,18 +1827,22 @@ function clearAdvancedFilter() {
 }
 
 // ============= SWITCH VIEW =============
-function switchView(v) {
+function switchView(v, opts) {
   currentView = v;
   try { localStorage.setItem(NAV_KEY, v); } catch (e) {}
   document.getElementById('viewDashboard').classList.toggle('hidden', v !== 'dashboard');
   document.getElementById('viewRooms').classList.toggle('hidden', v !== 'rooms');
   document.getElementById('viewCustomers').classList.toggle('hidden', v !== 'customers');
   document.querySelectorAll('.nav-link[data-nav], .bottom-nav-item[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === v));
-  if (detailUnitId && v !== 'rooms' && v !== 'dashboard') closeDetailView();
-  if (detailCustId && v !== 'customers') closeCustDetail();
+  if (detailUnitId && v !== 'rooms' && v !== 'dashboard') closeDetailView({ skipHistory: !!(opts && opts.silent) || window.__viewRestoring });
+  if (detailCustId && v !== 'customers') closeCustDetail({ skipHistory: !!(opts && opts.silent) || window.__viewRestoring });
   if (v === 'customers') renderCustomers();
   render();
-  document.querySelector('.main-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
+  if (!(opts && opts.keepScroll)) {
+    const mw = document.querySelector('.main-wrapper');
+    if (mw) mw.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (!(opts && opts.silent)) rememberView();
 }
 
 // v40: opening ห้องพัก defaults to ⭐ น่าสนใจ
@@ -1906,6 +1911,7 @@ function toggleFilter(f) {
     if (activeFilters.size === 0) activeFilters.add('all');
   }
   render();
+  rememberView();
 }
 
 // ============= CUSTOMER FILTERS =============
@@ -1924,6 +1930,7 @@ function toggleCustFilter(f) {
     if (activeCustFilters.size === 0) activeCustFilters.add('all');
   }
   renderCustomers();
+  rememberView();
 }
 
 // ============= SEARCH =============
@@ -1946,6 +1953,7 @@ function onSearchInput(value) {
   searchDebounce = setTimeout(() => {
     if (currentView === 'customers') renderCustomers();
     else { renderSearchSuggest(value); render(); }
+    rememberView();
   }, 100);
 }
 function clearSearch() {
@@ -2230,7 +2238,7 @@ function saveSettings() {
 }
 
 // ============= ROOM DETAIL =============
-function openDetailView(unitId) {
+function openDetailView(unitId, opts) {
   const u = units.find(x => x.id === unitId); if (!u) return;
   detailUnitId = unitId;
   document.getElementById('dvProject').textContent = u.project || '';
@@ -2241,21 +2249,26 @@ function openDetailView(unitId) {
   document.body.style.overflow = 'hidden';
   renderDetailView();
   prepareRoomShareFiles(unitId);
-  dvc.scrollTop = 0;
+  if (!(opts && opts.keepScroll)) dvc.scrollTop = 0;
   showLoadingBar('detailLoadingBar', 500);
   setTimeout(() => loadDetailCover(unitId), 50);
+  if (opts && opts.skipHistory || window.__viewRestoring) return;
+  pushOverlayHistory();
 }
-function closeDetailView() {
+function closeDetailView(opts) {
   if (window.keepFieldRestore) keepFieldRestore();
+  const was = detailUnitId;
   detailUnitId = null;
   const dv = document.getElementById('detailView'), dvc = document.getElementById('detailViewContent');
   dv.classList.remove('show'); dvc.classList.remove('show');
   setTimeout(() => { dv.classList.add('hidden'); dvc.classList.add('hidden'); }, 300);
   document.body.style.overflow = '';
+  if ((opts && opts.skipHistory) || window.__viewRestoring) return;
+  if (was && !popOverlayHistory()) saveViewStateNow();
 }
 function dvDelete() { if (detailUnitId) { document.getElementById('f_id').value = detailUnitId; deleteUnit(); } }
 let dvTimer = null, dvIdx = 0, dvPause = 0;
-function dvSetTab(k) { window.dvTab = k; document.querySelectorAll('#detailContent [data-dvtab]').forEach(e => e.style.display = e.dataset.dvtab === k ? '' : 'none'); document.querySelectorAll('#detailContent .dv-tabs button').forEach((b, i) => b.classList.toggle('on', ['desc','travel','owner'][i] === k)); }
+function dvSetTab(k) { window.dvTab = k; document.querySelectorAll('#detailContent [data-dvtab]').forEach(e => e.style.display = e.dataset.dvtab === k ? '' : 'none'); document.querySelectorAll('#detailContent .dv-tabs button').forEach((b, i) => b.classList.toggle('on', ['desc','travel','owner'][i] === k)); rememberView(); }
 function dvGo(i, user) {
   const tr = document.getElementById('dvTrack'); if (!tr) return;
   const n = tr.children.length; if (!n) return; dvIdx = (i + n) % n;
@@ -3426,7 +3439,7 @@ function renderKanban(list) {
 }
 
 // ============== CUSTOMER DETAIL ==============
-function openCustDetail(id) {
+function openCustDetail(id, opts) {
   const c = getCustomerById(id); if (!c) return;
   detailCustId = id;
   renderCustDetail();
@@ -3434,17 +3447,22 @@ function openCustDetail(id) {
   const sheetEl = document.getElementById('custDetail');
   sheetEl.classList.add('open');
   void sheetEl.offsetHeight;
-  sheetEl.scrollTop = 0;
+  if (!(opts && opts.keepScroll)) sheetEl.scrollTop = 0;
   document.body.style.overflow = 'hidden';
   document.body.classList.add('sheet-open');
   lucide.createIcons();
+  if (opts && opts.skipHistory || window.__viewRestoring) return;
+  pushOverlayHistory();
 }
-function closeCustDetail() {
+function closeCustDetail(opts) {
+  const was = detailCustId;
   detailCustId = null;
   document.body.classList.remove('sheet-open');
   document.getElementById('custDetailOverlay').classList.add('hidden');
   document.getElementById('custDetail').classList.remove('open');
   document.body.style.overflow = '';
+  if ((opts && opts.skipHistory) || window.__viewRestoring) return;
+  if (was && !popOverlayHistory()) saveViewStateNow();
 }
 function renderCustDetail() {
   const c = getCustomerById(detailCustId); if (!c) { closeCustDetail(); return; }
@@ -4116,6 +4134,159 @@ function checkBackupReminder() {
 let toastTimer;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500); }
 
+// ============== RESUME THE SAME SCREEN ==============
+let historyLock = false;
+let viewReady = false;
+function captureViewState() {
+  const main = document.querySelector('.main-wrapper');
+  const dvc = document.getElementById('detailViewContent');
+  const cust = document.getElementById('custDetail');
+  let map = null, fx = null;
+  try { map = window.CondoMap && CondoMap.snapshot ? CondoMap.snapshot() : null; } catch (e) {}
+  try { fx = window.FX && FX.viewName ? FX.viewName() : null; } catch (e) {}
+  const searchEl = document.getElementById('search');
+  return {
+    view: currentView,
+    fx: fx,
+    detailUnitId: detailUnitId,
+    detailCustId: detailCustId,
+    dvTab: window.dvTab || 'desc',
+    filters: [...activeFilters],
+    custFilters: [...activeCustFilters],
+    search: searchEl ? searchEl.value : '',
+    selectedProject: selectedProject,
+    priceMin: priceMin,
+    priceMax: priceMax,
+    advFilter: advFilter,
+    roomSort: roomSort,
+    viewMode: viewMode,
+    custViewMode: custViewMode,
+    mainScroll: main ? main.scrollTop : 0,
+    detailScroll: dvc ? dvc.scrollTop : 0,
+    custScroll: cust ? cust.scrollTop : 0,
+    windowScroll: window.scrollY || document.documentElement.scrollTop || 0,
+    map: map
+  };
+}
+function saveViewStateNow() {
+  if (!viewReady || window.__viewRestoring || historyLock || !window.MAX_VIEW) return;
+  try { MAX_VIEW.save(localStorage, captureViewState()); } catch (e) {}
+}
+function rememberView() {
+  if (window.__viewRestoring || historyLock || !window.MAX_VIEW) return;
+  saveViewStateNow();
+  if (!history.state || !history.state.slv || !history.state.view) return;
+  const cur = captureViewState();
+  if ((history.state.view.detailUnitId || null) === (cur.detailUnitId || null)) history.replaceState({ slv: 1, view: cur }, '');
+}
+function pushOverlayHistory() {
+  if (window.__viewRestoring || historyLock || !window.MAX_VIEW || !history.pushState) return;
+  const cur = captureViewState();
+  if (!MAX_VIEW.overlayOf(cur)) { rememberView(); return; }
+  if (!history.state || !history.state.slv) {
+    MAX_VIEW.historyPlan(cur).steps.forEach(step => {
+      if (step.op === 'replace') history.replaceState({ slv: 1, view: step.view }, '');
+      else history.pushState({ slv: 1, view: step.view }, '');
+    });
+  } else if (MAX_VIEW.overlayOf(history.state.view) === MAX_VIEW.overlayOf(cur)) {
+    history.replaceState({ slv: 1, view: cur }, '');
+  } else history.pushState({ slv: 1, view: cur }, '');
+  saveViewStateNow();
+}
+function popOverlayHistory() {
+  if (window.__viewRestoring || historyLock || !history.state || !history.state.slv) return false;
+  if (!window.MAX_VIEW || !MAX_VIEW.overlayOf(history.state.view)) return false;
+  historyLock = true;
+  history.back();
+  return true;
+}
+function applyScroll(s) {
+  if (!s) return;
+  const go = () => {
+    const main = document.querySelector('.main-wrapper');
+    if (main) main.scrollTop = s.mainScroll || 0;
+    const dvc = document.getElementById('detailViewContent');
+    if (dvc) dvc.scrollTop = s.detailScroll || 0;
+    const cust = document.getElementById('custDetail');
+    if (cust) cust.scrollTop = s.custScroll || 0;
+    if (s.windowScroll) window.scrollTo(0, s.windowScroll);
+    if (s.map && window.CondoMap && CondoMap.restoreScroll) CondoMap.restoreScroll(s.map);
+  };
+  requestAnimationFrame(() => requestAnimationFrame(go));
+  setTimeout(go, 80);
+}
+function applyFull(s) {
+  if (!s) return;
+  if (Array.isArray(s.filters) && s.filters.length) activeFilters = new Set(s.filters);
+  if (Array.isArray(s.custFilters) && s.custFilters.length) activeCustFilters = new Set(s.custFilters);
+  if (s.advFilter && typeof s.advFilter === 'object') advFilter = s.advFilter;
+  if (s.roomSort && SORT_LABELS[s.roomSort]) roomSort = s.roomSort;
+  if (s.viewMode) viewMode = s.viewMode;
+  if (s.custViewMode) custViewMode = s.custViewMode;
+  selectedProject = s.selectedProject || null;
+  priceMin = s.priceMin == null || s.priceMin === '' ? null : Number(s.priceMin);
+  priceMax = s.priceMax == null || s.priceMax === '' ? null : Number(s.priceMax);
+  syncSearch(s.search || '');
+  const hasText = !!(s.search && String(s.search).trim());
+  ['searchClear', 'searchDesktopClear'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !hasText); });
+  if (detailUnitId && detailUnitId !== s.detailUnitId) closeDetailView({ skipHistory: true });
+  if (detailCustId && detailCustId !== s.detailCustId) closeCustDetail({ skipHistory: true });
+  switchView(s.view || 'dashboard', { keepScroll: true, silent: true });
+  if (s.fx && window.FX && FX.show) FX.show(s.fx);
+  if (s.map && s.map.open && window.CondoMap && CondoMap.restore) CondoMap.restore(s.map);
+  if (s.detailCustId && customers.some(c => c.id === s.detailCustId)) openCustDetail(s.detailCustId, { keepScroll: true, skipHistory: true });
+  if (s.detailUnitId && units.some(u => u.id === s.detailUnitId)) {
+    window.dvTab = s.dvTab || 'desc';
+    openDetailView(s.detailUnitId, { keepScroll: true, skipHistory: true });
+  }
+}
+function restoreViewState() {
+  if (!window.MAX_VIEW) { viewReady = true; return; }
+  let raw = null;
+  try { raw = localStorage.getItem(MAX_VIEW.KEY); } catch (e) {}
+  const parsed = MAX_VIEW.read(raw);
+  if (parsed && parsed.expired) {
+    try { localStorage.removeItem(MAX_VIEW.KEY); } catch (e) {}
+    switchView('dashboard', { silent: true });
+    viewReady = true;
+    return;
+  }
+  const saved = parsed;
+  if (!saved) { viewReady = true; return; }
+  window.__viewRestoring = true;
+  historyLock = true;
+  try { applyFull(saved); }
+  finally { window.__viewRestoring = false; historyLock = false; }
+  if (!window.__viewHistoryReady && history.replaceState) {
+    window.__viewHistoryReady = true;
+    MAX_VIEW.historyPlan(saved).steps.forEach(step => {
+      if (step.op === 'replace') history.replaceState({ slv: 1, view: step.view }, '');
+      else history.pushState({ slv: 1, view: step.view }, '');
+    });
+  }
+  applyScroll(saved);
+  viewReady = true;
+}
+window.addEventListener('popstate', e => {
+  const v = e.state && e.state.slv ? e.state.view : null;
+  historyLock = true;
+  if (!v) { historyLock = false; return; }
+  window.__viewRestoring = true;
+  try { applyFull(v); }
+  finally { window.__viewRestoring = false; historyLock = false; }
+  applyScroll(v);
+  saveViewStateNow();
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveViewStateNow(); });
+window.addEventListener('pagehide', saveViewStateNow);
+let viewScrollTimer = null;
+function queueViewSave() { clearTimeout(viewScrollTimer); viewScrollTimer = setTimeout(saveViewStateNow, 400); }
+document.querySelector('.main-wrapper') && document.querySelector('.main-wrapper').addEventListener('scroll', queueViewSave, { passive: true });
+const detailScroller = document.getElementById('detailViewContent');
+if (detailScroller) detailScroller.addEventListener('scroll', queueViewSave, { passive: true });
+const custScroller = document.getElementById('custDetail');
+if (custScroller) custScroller.addEventListener('scroll', queueViewSave, { passive: true });
+
 // ============== BOOT ==============
 openDB().then(async () => {
   await refreshCounts();
@@ -4123,14 +4294,16 @@ openDB().then(async () => {
   loadAvatar();
   render();
   renderCustomers();
-  switchView(currentView);
+  switchView(currentView, { keepScroll: true, silent: true });
+  restoreViewState();
   setTimeout(() => checkExpiredContracts(), 800);
 }).catch(() => {
   loadHeroImage();
   loadAvatar();
   render();
   renderCustomers();
-  switchView(currentView);
+  switchView(currentView, { keepScroll: true, silent: true });
+  restoreViewState();
   setTimeout(() => checkExpiredContracts(), 800);
 });
 
@@ -4179,7 +4352,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.46';
+const APP_VERSION = '9.47';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4287,6 +4460,7 @@ function sfPreview() {
 <script src="sync.js?v=49"></script>
 <script src="photo-restore.js?v=46"></script>
 <script src="condo-geo.js?v=43"></script>
-<script src="condo-map.js?v=48"></script>
+<script src="condo-map.js?v=49"></script>
+<script>restoreViewState();</script>
 </body>
 </html>
