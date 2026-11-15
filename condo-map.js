@@ -497,6 +497,7 @@
     $('cmFilter').hidden = false;
   }
   function closeFilter(revert) {
+    if (!$('cmDim') || !$('cmFilter')) return;
     if (revert) paintDraft();
     $('cmDim').hidden = true;
     $('cmFilter').hidden = true;
@@ -508,6 +509,7 @@
     var btn = $('cmListBtn');
     if (btn) btn.classList.toggle('on', mode === 'list');
     if (mode === 'map' && map) setTimeout(function () { map.invalidateSize(); }, 40);
+    if (open) { try { if (window.rememberView) rememberView(); } catch (e) {} }
   }
 
   function onCardClick(e) {
@@ -638,6 +640,7 @@
     document.querySelectorAll('.nav-link[data-nav], .bottom-nav-item[data-nav]').forEach(function (n) { n.classList.remove('active'); });
     place();
     boot().then(function () { draw(true); });
+    try { if (window.pushOverlayHistory) pushOverlayHistory(); } catch (e) {}
   }
   function hide() {
     open = false;
@@ -647,7 +650,9 @@
     closeFilter(true);
   }
   function close() {
+    var was = open;
     hide();
+    if (was && window.popOverlayHistory && popOverlayHistory()) return;
     try { switchView('dashboard'); } catch (e) {}
   }
 
@@ -829,6 +834,40 @@
       selectedKey = '';
       mode = 'map';
       enter();
+    },
+    snapshot: function () {
+      if (!open) return null;
+      var list = $('cmList'), rail = $('cmRail');
+      return {
+        open: true, mode: mode, selectedKey: selectedKey, q: state.q || '', fav: !!state.fav,
+        deal: state.deal || 'all', priceMin: state.priceMin, priceMax: state.priceMax,
+        sizeMin: state.sizeMin, sizeMax: state.sizeMax,
+        statuses: Object.assign({}, state.statuses), beds: Object.assign({}, state.beds),
+        listScroll: list ? list.scrollTop : 0, railScroll: rail ? rail.scrollTop : 0
+      };
+    },
+    restoreScroll: function (snap) {
+      if (!snap) return;
+      var list = $('cmList'), rail = $('cmRail');
+      if (list) list.scrollTop = snap.listScroll || 0;
+      if (rail) rail.scrollTop = snap.railScroll || 0;
+    },
+    restore: function (snap) {
+      if (!snap || !snap.open) { if (open) hide(); return; }
+      state.q = snap.q || '';
+      state.fav = !!snap.fav;
+      state.deal = snap.deal || 'all';
+      state.priceMin = snap.priceMin == null ? null : snap.priceMin;
+      state.priceMax = snap.priceMax == null ? null : snap.priceMax;
+      state.sizeMin = snap.sizeMin == null ? null : snap.sizeMin;
+      state.sizeMax = snap.sizeMax == null ? null : snap.sizeMax;
+      state.statuses = snap.statuses && typeof snap.statuses === 'object' ? snap.statuses : {};
+      state.beds = snap.beds && typeof snap.beds === 'object' ? snap.beds : {};
+      selectedKey = snap.selectedKey || '';
+      mode = snap.mode === 'list' ? 'list' : 'map';
+      fitted = false;
+      show();
+      setTimeout(function () { api.restoreScroll(snap); }, 80);
     },
     close: close,
     onLeave: function () { if (!keep) hide(); },
