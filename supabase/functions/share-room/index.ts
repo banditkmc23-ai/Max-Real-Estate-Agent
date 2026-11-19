@@ -98,21 +98,46 @@ function asImgs(v: unknown) {
   if (typeof v === "string") { try { v = JSON.parse(v); } catch { return []; } }
   return Array.isArray(v) ? v : [];
 }
+// Page under PostgREST's default max-rows (1000) so a catalog larger than that is not silently cut off.
+const IN_CHUNK = 500;
+async function mapIdChunks(ids, fn) {
+  const list = Array.isArray(ids) ? ids : [];
+  const out = [];
+  for (let i = 0; i < list.length; i += IN_CHUNK) out.push(await fn(list.slice(i, i + IN_CHUNK)));
+  return out;
+}
+function catalogRooms(input) {
+  const ROOMRE = /^[A-Za-z0-9]{6}$/;
+  const list = Array.isArray(input) ? input : [];
+  return list.filter((r) => r && ROOMRE.test(String(r.id))).map((r) => ({
+    id: String(r.id), p: str(r.p, 120), b: str(r.b, 80), t: str(r.t, 40), sz: num(r.sz), bt: str(r.bt, 10), f: str(r.f, 20), vw: str(r.vw, 40), rent: num(r.rent), sale: num(r.sale) || 0,
+    cover: typeof r.cover === "string" && r.cover.startsWith(PUB) && r.cover.length < 300 ? r.cover : ""
+  }));
+}
+function dropMissing(rooms, ids) {
+  const ok = ids instanceof Set ? ids : new Set(ids || []);
+  const out = rooms.slice();
+  for (let i = out.length - 1; i >= 0; i--) if (!ok.has(out[i].id)) out.splice(i, 1);
+  return out;
+}
 // Photo counts for cards. Reads image arrays only; the public body stays the stored catalog plus n.
 async function withCounts(data: any) {
   const rooms = Array.isArray(data && data.rooms) ? data.rooms : [];
   const ids = rooms.map((r: any) => String(r && r.id || "")).filter((id: string) => /^[A-Za-z0-9]{6}$/.test(id));
   let counts: Map<string, number> | null = null;
   if (ids.length) {
-    const q1 = await sb.from("shared_rooms").select("id, imgs:data->imgs").in("id", ids);
-    let rows = q1.error ? null : q1.data;
-    if (!rows) {
-      const q2 = await sb.from("shared_rooms").select("id, data").in("id", ids);
-      rows = q2.error ? null : (q2.data || []).map((row: any) => ({ id: row.id, imgs: row.data && row.data.imgs }));
-    }
-    if (rows) {
+    const chunks = await mapIdChunks(ids, async (part) => {
+      const q1 = await sb.from("shared_rooms").select("id, imgs:data->imgs").in("id", part);
+      let rows = q1.error ? null : q1.data;
+      if (!rows) {
+        const q2 = await sb.from("shared_rooms").select("id, data").in("id", part);
+        rows = q2.error ? null : (q2.data || []).map((row: any) => ({ id: row.id, imgs: row.data && row.data.imgs }));
+      }
+      return rows;
+    });
+    if (chunks.every((rows) => rows)) {
       counts = new Map();
-      for (const row of rows as any[]) counts.set(String(row.id), asImgs(row.imgs).length);
+      for (const rows of chunks) for (const row of rows as any[]) counts.set(String(row.id), asImgs(row.imgs).length);
     }
   }
   if (!counts || (ids.length > 0 && counts.size === 0)) return data;
@@ -213,11 +238,20 @@ Deno.serve(async req => {
     const ROOMRE = /^[A-Za-z0-9]{6}$/;
     const a = body.agent && typeof body.agent === "object" ? body.agent : {};
     const av = typeof a.av === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(a.av) && a.av.length < 40000 ? a.av : "";
-    const rooms = (Array.isArray(body.rooms) ? body.rooms : []).slice(0, 200).filter((r: any) => r && ROOMRE.test(String(r.id))).map((r: any) => ({
-      id: String(r.id), p: str(r.p, 120), b: str(r.b, 80), t: str(r.t, 40), sz: num(r.sz), bt: str(r.bt, 10), f: str(r.f, 20), vw: str(r.vw, 40), rent: num(r.rent), sale: num(r.sale) || 0,
-      cover: typeof r.cover === "string" && r.cover.startsWith(PUB) && r.cover.length < 300 ? r.cover : "" }));
-    // only list rooms that really exist as shared rooms
-    if (rooms.length) { const { data: ex } = await sb.from("shared_rooms").select("id").in("id", rooms.map((r: any) => r.id)); const ok = new Set((ex || []).map((x: any) => x.id)); for (let i = rooms.length - 1; i >= 0; i--) if (!ok.has(rooms[i].id)) rooms.splice(i, 1); }
+    let rooms = catalogRooms(body.rooms);
+    // only list rooms that really exist as shared rooms; page the lookup so the 1000-row cap cannot drop the rest
+    if (rooms.length) {
+      let failed = false;
+      const found = [];
+      await mapIdChunks(rooms.map((r) => r.id), async (part) => {
+        const { data: ex, error } = await sb.from("shared_rooms").select("id").in("id", part);
+        if (error) { failed = true; return []; }
+        for (const x of ex || []) found.push(x.id);
+        return ex || [];
+      });
+      if (failed) return J(req, { error: "save failed" }, 500);
+      rooms = dropMissing(rooms, found);
+    }
     const data = { v: 1, agent: { n: str(a.n, 60), l: str(a.l, 60), ph: str(a.ph, 30), bio: str(a.bio, 160), av }, rooms };
     const sec = body.secret; if (typeof sec !== "string" || sec.length < 16 || sec.length > 128) return J(req, { error: "secret required" }, 400);
     let id = String(body.id || ""); const rev = Date.now().toString(36);
