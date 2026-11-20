@@ -97,6 +97,6 @@ test('the form, the share page, and the allowlist wire tt without opening the ca
   assert.equal(catalog.includes('tiktok'), false);
   assert.equal(catalog.includes('.tt'), false);
   assert.match(read('sw.js'), /tiktok-link\.js/);
-  assert.match(read('sw.js'), /const VERSION = 'v87'/);
-  assert.match(html, /const APP_VERSION = '9\.48'/);
+  assert.match(read('sw.js'), /const VERSION = 'v88'/);
+  assert.match(html, /const APP_VERSION = '9\.49'/);
 });
