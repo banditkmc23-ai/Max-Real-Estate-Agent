@@ -282,6 +282,7 @@ async function offloadUploaded(sorted, sent, urls) {
       if (!cur || !cur.full) continue;
       const rec = { ...cur, url }; delete rec.full; if (!rec.thumb) rec.thumb = cur.full;
       await new Promise((res, rej) => { const t = db.transaction('photos', 'readwrite'); t.objectStore('photos').put(rec); t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+      try { if (window.SYNC && SYNC.notePhotoEdited) SYNC.notePhotoEdited(p.id); } catch (e) {}
     } catch (e) { console.warn('keep local photo', p.id, e); }
   }
 }

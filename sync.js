@@ -2,7 +2,8 @@
    Offline-first for rooms and settings. Photo deletions are explicit only:
    a photo missing from IndexedDB is never pushed as deleted:true.
    A photo restore is an explicit live write (deleted:false) of the same id.
-   Nothing runs until the user signs in. */
+   Photo pushes are ids written in this session only. An empty url never
+   replaces a public room-photos url. Nothing runs until the user signs in. */
 (function () {
 'use strict';
 if (!window.supabase || !window.FX || !FX.sb) return;
@@ -69,8 +70,9 @@ let st = J(SK, null) || fresh(null);
 ['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail', 'summary'].forEach(k => { st[k] = st[k] || {}; });
 const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
 let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null, photoRestoreHold = false;
-let sessionPulled = false, loginPull = false, photoWriteAt = 0, draining = false;
+let sessionPulled = false, loginPull = false, draining = false;
 const sessionEdits = {};
+const sessionPhotoIds = Object.create(null);
 let photoQ = { order: [], done: 0, total: 0, seen: {}, failed: {} };
 const photoRows = {};
 
@@ -89,6 +91,18 @@ function markDirty(k, del, explicit) {
   const prev = (st.dirty[k] && st.dirty[k].rev) || 0;
   const rev = (explicit || st.init) ? Math.max(now(), prev + 1) : 1;
   st.dirty[k] = { rev, ...(del ? { del: true } : {}), ...(explicit ? { explicit: true } : {}) };
+}
+/* One photo id the user created or edited. Does not unlock every other row. */
+function notePhotoEdited(id) {
+  if (id == null || id === '') return;
+  const sid = String(id);
+  const k = 'photo|' + sid;
+  const t = now();
+  sessionPhotoIds[sid] = t;
+  sessionEdits[k] = t;
+  if (!(st.dirty[k] && (st.dirty[k].restore || (st.dirty[k].del && st.dirty[k].explicit)))) markDirty(k);
+  saveSt();
+  schedule(2500);
 }
 /* Called only from the photo-delete UI (and delete-room, with bulk:true). */
 function notePhotoDeleted(ids, opts) {
@@ -167,15 +181,24 @@ async function scanPhotos() {
   const all = await idb(pstore('readonly').getAll());
   const localIds = [];
   for (const p of all) {
-    const k = 'photo|' + p.id, h = hash(JSON.stringify(pmeta(p)));
-    localIds.push(String(p.id));
+    const id = String(p.id);
+    const k = 'photo|' + id, h = hash(JSON.stringify(pmeta(p)));
+    localIds.push(id);
+    if (publicPhotoUrl(p.url)) rememberPub(id, p.url);
     // An explicit restore stays a live write. Do not replace it with a plain edit or a tombstone.
     if (st.dirty[k] && st.dirty[k].restore) continue;
-    // A live local row is an edit only when this session wrote the photo DB.
-    // A stale blob (different hash, no write) must not be pushed back up.
+    // Only an id created or edited this session. A different hash alone is stale local data.
+    const edited = !!(sessionEdits[k] || sessionPhotoIds[id]);
+    if (!edited) continue;
     if (st.h[k] !== h && !(st.dirty[k] && st.dirty[k].del && st.dirty[k].explicit)) {
-      if (photoWriteAt) { st.h[k] = h; sessionEdits[k] = photoWriteAt; markDirty(k); }
+      st.h[k] = h; sessionEdits[k] = sessionEdits[k] || sessionPhotoIds[id] || now(); markDirty(k);
     }
+  }
+  for (const k of Object.keys(st.dirty)) {
+    if (!k.startsWith('photo|')) continue;
+    const d = st.dirty[k];
+    if (!d || d.del || d.restore || d.explicit) continue;
+    if (!sessionEdits[k] && !sessionPhotoIds[k.slice(6)]) delete st.dirty[k];
   }
   const S = photoSafety();
   if (!S) { stripInferredPhotoDeletes(); return; }
@@ -309,7 +332,12 @@ async function push() {
           try { await sb.storage.from(BUCKET).remove([path(id), path(id, 1)]); } catch (e) {}
           delete st.up[id]; row = { kind: 'photo', id, rev: d.rev, deleted: true };
         }
-        else { const m = await uploadPhoto(id); if (!m) { delete st.dirty[k]; continue; } row = { kind: 'photo', id, rev: d.rev, data: m }; }
+        else {
+          const m = await uploadPhoto(id); if (!m) { delete st.dirty[k]; continue; }
+          const safe = await guardedPhotoMeta(id, m);
+          if (!safe) { console.warn('sync: kept cloud photo url, local url empty', id); continue; }
+          row = { kind: 'photo', id, rev: d.rev, data: safe };
+        }
         await sendDocs([{ k, row }]);
       } catch (e) { console.warn('photo sync', id, e); }
       done++; if (total > 3) setStatus('busy', `อัปโหลดรูป ${done}/${total}`);
@@ -465,47 +493,128 @@ function publicPhotoUrl(url) {
   if (S && S.isPublicRoomPhoto(url)) return url;
   return (typeof url === 'string' && url.includes('/storage/v1/object/public/room-photos/')) ? url : '';
 }
+function rememberPub(id, url) {
+  const p = publicPhotoUrl(url);
+  if (!p || id == null || id === '') return;
+  st.pubUrl = st.pubUrl || {};
+  st.pubUrl[String(id)] = p;
+}
+function roomPhotoBase() {
+  const root = (FX.sb && FX.sb.url) || '';
+  return String(root).replace(/\/$/, '') + '/storage/v1/object/public/room-photos';
+}
+function shareContext(unitId) {
+  const units = J('staylow_units_v1', []);
+  const u = (Array.isArray(units) ? units : []).find(x => x && String(x.id) === String(unitId));
+  const share = u && u.share;
+  const known = [];
+  if (share && typeof share.cover === 'string') known.push(share.cover);
+  if (share && Array.isArray(share.imgs)) known.push(...share.imgs);
+  return { shareId: share && share.id ? String(share.id) : '', knownUrls: known };
+}
+async function publicObjectExists(url) {
+  try {
+    const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    if (head.ok) return true;
+    if (head.status !== 405 && head.status !== 501) return false;
+    const got = await fetch(url, { method: 'GET', cache: 'no-store' });
+    return !!got.ok;
+  } catch (e) { return false; }
+}
+async function findPublicRoomPhoto(photoId, unitId, extraUrls) {
+  const direct = [];
+  (extraUrls || []).forEach(u => { const p = publicPhotoUrl(u); if (p) direct.push(p); });
+  const remembered = publicPhotoUrl((st.pubUrl || {})[photoId]);
+  if (remembered) return remembered;
+  if (direct.length) return direct[0];
+  const S = photoSafety();
+  if (!S || !S.publicRoomPhotoCandidates) return '';
+  const ctx = shareContext(unitId);
+  const cands = S.publicRoomPhotoCandidates({ photoId, base: roomPhotoBase(), shareId: ctx.shareId, knownUrls: ctx.knownUrls });
+  for (const url of cands) {
+    if (await publicObjectExists(url)) { rememberPub(photoId, url); return url; }
+  }
+  return '';
+}
+/* Read-only. null = could not check, so the caller must not write a blank url. */
+async function lookupExistingPublic(id, unitId) {
+  const remembered = publicPhotoUrl((st.pubUrl || {})[id]);
+  if (remembered) return remembered;
+  const queued = photoRows[id] && photoRows[id].data && publicPhotoUrl(photoRows[id].data.url);
+  if (queued) return queued;
+  const probed = await findPublicRoomPhoto(id, unitId, []);
+  if (probed) return probed;
+  try {
+    const { data, error } = await sb.from('user_docs').select('data').eq('kind', 'photo').eq('id', id).maybeSingle();
+    if (error) return null;
+    const url = data && data.data && publicPhotoUrl(data.data.url);
+    if (url) { rememberPub(id, url); return url; }
+    return '';
+  } catch (e) { return null; }
+}
+async function guardedPhotoMeta(id, m) {
+  const local = typeof m.url === 'string' ? m.url.trim() : '';
+  const existing = local ? local : await lookupExistingPublic(id, m.unitId);
+  const S = photoSafety();
+  const resolved = S && S.resolvePhotoUrl ? S.resolvePhotoUrl({ incomingUrl: local, existingUrl: existing }) : { url: local, blocked: false };
+  if (resolved.blocked) return null;
+  const out = { ...m, url: resolved.url || '' };
+  if (publicPhotoUrl(out.url)) rememberPub(id, out.url);
+  return out;
+}
 async function applyPhotos(rows) {
   let n = 0, i = 0; const total = rows.length, work = rows.slice();
   async function one(r) {
     const k = 'photo|' + r.id;
+    let repair = false;
     try {
       if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; if (st.explicitDel) delete st.explicitDel[r.id]; try { window.photoGone && photoGone([r.id]); } catch (e) {} }
       else {
         const m = r.data || {}, cur = await idb(pstore('readonly').get(r.id));
-        const pub = publicPhotoUrl(m.url);
+        let pub = publicPhotoUrl(m.url) || publicPhotoUrl(cur && cur.url) || publicPhotoUrl((st.pubUrl || {})[r.id]);
         let rec;
         const sameFile = cur && pmeta(cur).fsz === m.fsz && pmeta(cur).tsz === m.tsz;
         const keepFallback = cur && cur.privMiss && pub && cur.url === pub && !cur.thumb && !cur.full;
         if (sameFile || keepFallback) rec = { ...cur, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(pub ? { url: pub } : {}) };
         else {
-          let thumb = null, privErr = null;
+          let thumb = null, privErr = null, found = pub;
           const needPriv = !!(m.tsz || m.fsz);
-          if (needPriv) {
+          if (needPriv && !found) {
             if (m.tsz) { try { thumb = await download(path(r.id, 1)); } catch (e) { privErr = e; } }
             if (!thumb && m.fsz) { try { thumb = await download(path(r.id)); privErr = null; } catch (e) { privErr = e; } }
+            const missingNow = !thumb && privErr && photoSafety() && photoSafety().isStorageMissing && photoSafety().isStorageMissing(privErr);
+            if (missingNow) found = await findPublicRoomPhoto(r.id, m.unitId, [m.url, cur && cur.url]);
           }
           const S = photoSafety();
+          const meta = found ? { ...m, url: found } : m;
           const decision = S && S.recordAfterPrivateFetch
-            ? S.recordAfterPrivateFetch({ meta: m, thumbOk: !!thumb, privateFailed: !!privErr || (needPriv && !thumb) })
-            : (thumb || pub ? { ok: true, fallback: !thumb && !!pub, url: pub } : { ok: false });
+            ? S.recordAfterPrivateFetch({ meta, thumbOk: !!thumb, privateFailed: !!privErr || (needPriv && !thumb && !found) })
+            : (thumb || found ? { ok: true, fallback: !thumb && !!found, url: found } : { ok: false });
           if (!decision.ok) throw privErr || new Error('photo file missing');
           if (decision.fallback) console.warn('photo pull: private file missing, using public room-photos url', r.id);
           rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, ...(decision.url ? { url: decision.url } : {}), ...(thumb ? { thumb } : {}), cloud: true, fsz: m.fsz || 0 };
           if (decision.fallback) rec.privMiss = true;
         }
-        if (!m.url) delete rec.url;
+        const resolved = (photoSafety() && photoSafety().resolvePhotoUrl)
+          ? photoSafety().resolvePhotoUrl({ incomingUrl: rec.url || m.url || '', existingUrl: (cur && cur.url) || '' })
+          : { url: rec.url || '' };
+        if (resolved.url) rec.url = resolved.url;
+        else delete rec.url;
+        if (publicPhotoUrl(rec.url)) rememberPub(r.id, rec.url);
+        if (publicPhotoUrl(rec.url) && !publicPhotoUrl(m.url)) repair = true;
         await idb(pstore('readwrite').put(rec));
         st.h[k] = hash(JSON.stringify(pmeta(rec))); st.up[r.id] = (m.fsz || 0) + '/' + (m.tsz || 0);
         if (st.explicitDel) delete st.explicitDel[r.id];
       }
       delete st.retry[k]; st.r[k] = r.rev; delete st.dirty[k]; n++;
+      if (repair) notePhotoEdited(r.id);
       if (st.photoTry) delete st.photoTry[r.id];
       if (st.photoFail) delete st.photoFail[r.id];
     } catch (e) {
       const S = photoSafety();
       const missing = !!(S && S.isStorageMissing && S.isStorageMissing(e));
-      const pub = publicPhotoUrl((r.data || {}).url);
+      let pub = publicPhotoUrl((r.data || {}).url);
+      if (missing && !pub) pub = await findPublicRoomPhoto(r.id, (r.data || {}).unitId, [(r.data || {}).url]);
       const prevN = ((st.photoTry || {})[r.id] || {}).n || 0;
       const plan = S && S.photoAttemptPlan ? S.photoAttemptPlan({ missing, failed: !missing, hasPublicUrl: !!pub, attempts: prevN, now: now() }) : { action: 'failed', attempts: 3, tombstone: false };
       if (plan.action === 'fallback' && pub) {
@@ -513,7 +622,9 @@ async function applyPhotos(rows) {
         const rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, url: pub, cloud: true, fsz: m.fsz || 0, privMiss: true };
         await idb(pstore('readwrite').put(rec));
         st.h[k] = hash(JSON.stringify(pmeta(rec))); st.r[k] = r.rev; delete st.dirty[k]; delete st.retry[k];
+        rememberPub(r.id, pub);
         if (st.photoTry) delete st.photoTry[r.id];
+        if (!publicPhotoUrl((r.data || {}).url)) notePhotoEdited(r.id);
         console.warn('photo pull: private 400/404, using public url', r.id);
       } else if (plan.action === 'retry') {
         st.photoTry[r.id] = { n: plan.attempts, nextAt: plan.nextAt || 0 };
@@ -559,17 +670,62 @@ function chipNow(busy, held) {
 }
 // fetch full-size images of cloud photos in the background (and on demand)
 async function fullBlob(p) {
-  if (!user || !p || !p.cloud || !p.fsz) return null;
+  if (!user || !p || !p.cloud || !p.fsz || p.privMiss || p.url) return null;
+  if ((st.photoFail || {})[p.id] || (st.photoTry || {})[p.id]) return null;
   const b = await download(path(p.id));
   try { const cur = await idb(pstore('readonly').get(p.id)); if (cur && !cur.full) { cur.full = b; await idb(pstore('readwrite').put(cur)); } } catch (e) {}
   return b;
 }
+async function markPrivateMissing(id, status) {
+  st.photoFail = st.photoFail || {};
+  st.photoTry = st.photoTry || {};
+  st.photoFail[id] = { at: now(), status: status || 400 };
+  st.photoTry[id] = { n: (photoSafety() && photoSafety().PHOTO_TRY_MAX) || 3, nextAt: 0 };
+  saveSt();
+}
+async function adoptPublicPhoto(id, url) {
+  const pub = publicPhotoUrl(url);
+  if (!pub) return false;
+  rememberPub(id, pub);
+  try {
+    const cur = await idb(pstore('readonly').get(id));
+    if (cur) {
+      const resolved = photoSafety() && photoSafety().resolvePhotoUrl
+        ? photoSafety().resolvePhotoUrl({ incomingUrl: pub, existingUrl: cur.url || '' })
+        : { url: pub };
+      if (resolved.url) cur.url = resolved.url;
+      cur.privMiss = true;
+      await idb(pstore('readwrite').put(cur));
+      st.h['photo|' + id] = hash(JSON.stringify(pmeta(cur)));
+    }
+  } catch (e) {}
+  if (st.photoTry) delete st.photoTry[id];
+  if (st.photoFail) delete st.photoFail[id];
+  notePhotoEdited(id);
+  saveSt();
+  return true;
+}
 async function fillFulls() {
   if (!P() || !user) return;
   const all = await idb(pstore('readonly').getAll());
-  const need = all.filter(p => p.cloud && !p.full && !p.url && p.fsz);
+  const need = all.filter(p => p.cloud && !p.full && !p.url && p.fsz && !p.privMiss && !((st.photoFail || {})[p.id]) && !((st.photoTry || {})[p.id]));
   let i = 0, fail = 0; const work = need.slice();
-  await Promise.all([0, 1, 2, 3, 4, 5].map(async () => { while (work.length && user && navigator.onLine && fail < 5) { const p = work.shift(); try { await fullBlob(p); } catch (e) { fail++; } i++; if (need.length > 3 && i % 5 === 0) setStatus(status, `ดาวน์โหลดรูปเต็ม ${i}/${need.length}`); } }));
+  await Promise.all([0, 1, 2, 3, 4, 5].map(async () => {
+    while (work.length && user && navigator.onLine && fail < 5) {
+      const p = work.shift();
+      try { await fullBlob(p); }
+      catch (e) {
+        const missing = !!(photoSafety() && photoSafety().isStorageMissing && photoSafety().isStorageMissing(e));
+        if (missing) {
+          const pub = await findPublicRoomPhoto(p.id, p.unitId, [p.url]);
+          if (pub) await adoptPublicPhoto(p.id, pub);
+          else await markPrivateMissing(p.id, 400);
+        } else fail++;
+      }
+      i++;
+      if (need.length > 3 && i % 5 === 0) setStatus(status, `ดาวน์โหลดรูปเต็ม ${i}/${need.length}`);
+    }
+  }));
 }
 
 /* ---------- room list preview (summary only; full rows replace it) ---------- */
@@ -749,7 +905,20 @@ function schedule(ms) { if (!user) return; clearTimeout(timer); timer = setTimeo
 /* ---------- hooks ---------- */
 Storage.prototype.setItem = function (k, v) { if (this === LS && TRACKED.has(k)) { try { touchTracked(k, v); } catch (e) {} } const r = rawSet.call(this, k, v); if (this === LS && TRACKED.has(k)) schedule(1500); return r; };
 Storage.prototype.removeItem = function (k) { const r = rawRemove.call(this, k); if (this === LS && TRACKED.has(k)) schedule(1500); return r; };
-if (typeof W.tx === 'function') { const _tx = W.tx; W.tx = function (mode) { if (mode === 'readwrite') { photoWriteAt = now(); schedule(2500); } return _tx.apply(this, arguments); }; }
+if (typeof W.tx === 'function') {
+  const _tx = W.tx;
+  W.tx = function (mode) {
+    const store = _tx.apply(this, arguments);
+    if (mode !== 'readwrite' || !store) return store;
+    schedule(2500);
+    if (store.__noted) return store;
+    const put = store.put.bind(store), add = store.add.bind(store);
+    store.put = function (v, key) { try { notePhotoEdited(v && v.id != null ? v.id : key); } catch (e) {} return put(v, key); };
+    store.add = function (v, key) { try { notePhotoEdited(v && v.id != null ? v.id : key); } catch (e) {} return add(v, key); };
+    store.__noted = true;
+    return store;
+  };
+}
 addEventListener('online', () => schedule(500));
 addEventListener('offline', () => setStatus(user ? 'offline' : 'off'));
 const wake = () => { if (document.visibilityState !== 'hidden') schedule(400); };
@@ -883,7 +1052,7 @@ function open(v) { view = v || (user ? '' : 'login'); FX.open(FX.sheetHead('บ�
 W.SYNC = {
   open, view: v => { view = v; render(); }, now: () => sync(), full: () => { resetPhotoQueue(); sync({ full: true }); }, chip: () => { open(); if (user) schedule(400); },
   confirmUnits() { st.bulkUnitPushAt = now(); st.unitHold = 0; saveSt(); sync(); },
-  fullBlob, notePhotoDeleted, uploadBlob, restorePhoto,
+  fullBlob, notePhotoDeleted, notePhotoEdited, uploadBlob, restorePhoto,
   holdRestores: v => { photoRestoreHold = !!v; },
   rememberUpload(id, sig) { st.up[id] = sig; saveSt(); },
   forgetUpload(id) { delete st.up[id]; saveSt(); },
