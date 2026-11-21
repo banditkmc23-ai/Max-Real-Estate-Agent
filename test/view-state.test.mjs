@@ -55,8 +55,8 @@ test('back from a restored room returns to the same list, and a plain list does 
 test('the agent page saves on hide and restores after local render, without touching share pages or other storage', () => {
   const html = read('index.html');
   const sw = read('sw.js');
-  assert.match(html, /const APP_VERSION = '9\.48'/);
-  assert.match(sw, /const VERSION = 'v87'/);
+  assert.match(html, /const APP_VERSION = '9\.50'/);
+  assert.match(sw, /const VERSION = 'v89'/);
   assert.match(sw, /view-state\.js/);
   assert.match(html, /view-state\.js/);
   assert.match(html, /pagehide/);

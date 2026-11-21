@@ -195,6 +195,124 @@
     return /\b(400|404)\b/.test(msg) || /object not found|not found|bad request/i.test(msg);
   }
 
+  /* Empty or missing must not replace a public room-photos URL.
+     existingUrl null means the other copy could not be read: do not send a blank. */
+  function resolvePhotoUrl(opts) {
+    opts = opts || {};
+    var incoming = typeof (opts.incomingUrl != null ? opts.incomingUrl : opts.localUrl) === 'string'
+      ? (opts.incomingUrl != null ? opts.incomingUrl : opts.localUrl).trim()
+      : '';
+    var existing = opts.existingUrl !== undefined ? opts.existingUrl : opts.otherUrl;
+    var existingPub = isPublicRoomPhoto(existing) ? String(existing).trim() : '';
+    if (!incoming) {
+      if (existing === null) return { url: '', blocked: true, kept: true };
+      if (existingPub) return { url: existingPub, blocked: false, kept: true };
+      return { url: '', blocked: false, kept: false };
+    }
+    return { url: incoming, blocked: false, kept: false };
+  }
+
+  /* Only ids written in this session are photo pushes. A hash that merely
+     differs from the cloud is a stale device, not an edit. */
+  function photosToPush(opts) {
+    opts = opts || {};
+    var session = {};
+    (opts.sessionIds || []).forEach(function (id) { if (id != null && id !== '') session[String(id)] = true; });
+    var dirty = {};
+    var dirtyIn = opts.dirty || {};
+    Object.keys(dirtyIn).forEach(function (k) { dirty[k] = dirtyIn[k]; });
+    var stored = opts.storedHashes || {};
+    var push = [];
+    var skipped = [];
+    var seen = {};
+    (opts.photos || []).forEach(function (p) {
+      if (!p || p.id == null) return;
+      var id = String(p.id);
+      var k = 'photo|' + id;
+      seen[k] = true;
+      var d = dirty[k];
+      if (d && (d.del || d.restore || d.explicit)) { push.push(k); return; }
+      var changed = stored[k] !== p.hash;
+      if (session[id] && (changed || d)) { push.push(k); return; }
+      if (d) { skipped.push(k); delete dirty[k]; return; }
+      if (changed) skipped.push(k);
+    });
+    Object.keys(dirty).forEach(function (k) {
+      if (k.indexOf('photo|') !== 0 || seen[k]) return;
+      var d = dirty[k];
+      if (d && (d.del || d.restore || d.explicit)) { push.push(k); return; }
+      if (session[k.slice(6)]) { push.push(k); return; }
+      skipped.push(k);
+      delete dirty[k];
+    });
+    return { push: push, skipped: skipped, dirty: dirty };
+  }
+
+  function photoFileKey(id) {
+    return String(id == null ? '' : id).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 60);
+  }
+
+  /* Public object for a shared room: <shareId>/p-<photoKey>.jpg */
+  function publicRoomPhotoCandidates(opts) {
+    opts = opts || {};
+    var key = photoFileKey(opts.photoId);
+    if (!key) return [];
+    var file = 'p-' + key + '.jpg';
+    var base = String(opts.base || '').replace(/\/+$/, '');
+    var out = [];
+    var seen = {};
+    function add(url) {
+      if (!url || seen[url]) return;
+      if (url.indexOf(PUB_MARK) === -1) return;
+      if (url.slice(-file.length) !== file) return;
+      seen[url] = true;
+      out.push(url);
+    }
+    var ids = [];
+    if (opts.shareId) ids.push(opts.shareId);
+    (opts.shareIds || []).forEach(function (id) { ids.push(id); });
+    ids.forEach(function (id) {
+      id = String(id || '');
+      if (!/^[A-Za-z0-9]{6}$/.test(id) || !base) return;
+      add(base + '/' + id + '/' + file);
+    });
+    (opts.knownUrls || []).forEach(function (u) {
+      if (typeof u !== 'string' || u.indexOf(PUB_MARK) === -1) return;
+      var slash = u.lastIndexOf('/');
+      if (slash < 0) return;
+      add(u.slice(0, slash) + '/' + file);
+    });
+    return out;
+  }
+
+  /* 400/404 plus a public URL or public room-photos object: use it once. Do not retry. */
+  function privateMissPlan(opts) {
+    opts = opts || {};
+    var pub = isPublicRoomPhoto(opts.publicUrl) ? opts.publicUrl : '';
+    var obj = isPublicRoomPhoto(opts.publicObjectUrl) ? opts.publicObjectUrl : '';
+    var url = pub || obj;
+    if (opts.stopped || opts.privMiss) return { action: 'skip', retry: false, stop: true, url: url, tombstone: false };
+    var missing = opts.missing !== false && (opts.status === 400 || opts.status === 404 || opts.missing === true);
+    var hasPublic = !!(url || opts.publicObject);
+    var plan = photoAttemptPlan({
+      missing: missing,
+      failed: !!opts.failed && !missing,
+      hasPublicUrl: hasPublic,
+      attempts: opts.attempts || 0,
+      now: opts.now || 0
+    });
+    if (plan.action === 'fallback') return { action: 'use-public', retry: false, stop: true, url: url, tombstone: false, attempts: plan.attempts };
+    return {
+      action: plan.action,
+      retry: !!plan.retry,
+      stop: !plan.retry,
+      url: '',
+      tombstone: false,
+      attempts: plan.attempts,
+      nextAt: plan.nextAt || 0
+    };
+  }
+
   /* 400/404 with a public URL is a fallback, not a retry. Otherwise at most 3 tries, then failed. Never a tombstone. */
   function photoAttemptPlan(opts) {
     opts = opts || {};
@@ -280,6 +398,11 @@
     decideIncoming: decideIncoming,
     planUnitPushes: planUnitPushes,
     isStorageMissing: isStorageMissing,
+    resolvePhotoUrl: resolvePhotoUrl,
+    photosToPush: photosToPush,
+    photoFileKey: photoFileKey,
+    publicRoomPhotoCandidates: publicRoomPhotoCandidates,
+    privateMissPlan: privateMissPlan,
     photoAttemptPlan: photoAttemptPlan,
     enqueuePhotos: enqueuePhotos,
     notePhotoFinished: notePhotoFinished,
