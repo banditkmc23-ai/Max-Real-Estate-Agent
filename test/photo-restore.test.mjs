@@ -273,11 +273,11 @@ test('settings shows กู้รูป only in the sheet, version 9.50, and the
   assert.match(html, /กู้รูปที่หาย/);
   assert.match(html, /#c2552d/);
   assert.match(html, /lg:max-w-\[460px\]/);
-  assert.match(html, /const APP_VERSION = '9\.50'/);
+  assert.match(html, /const APP_VERSION = '9\.51'/);
   assert.match(html, /photo-restore\.js\?v=46/);
   assert.match(html, /PHOTO_RESTORE\.refresh\(\)/);
   const sw = read('sw.js');
-  assert.match(sw, /const VERSION = 'v89'/);
+  assert.match(sw, /const VERSION = 'v90'/);
   assert.match(sw, /photo-restore\.js/);
   assert.match(sw, /\/restore\//);
   const sync = read('sync.js');
