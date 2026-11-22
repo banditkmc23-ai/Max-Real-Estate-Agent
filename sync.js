@@ -7,6 +7,7 @@
 (function () {
 'use strict';
 if (!window.supabase || !window.FX || !FX.sb) return;
+if (window.MAX_DEMO) { console.info('MAX demo preview: cloud sync is off'); return; }
 const W = window, LS = localStorage;
 const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
 const rawGet = k => { try { return LS.getItem(k); } catch (e) { return null; } };
@@ -310,6 +311,7 @@ async function push() {
     } else if (unitKeys.length) st.unitHold = 0;
   }
   await sendDocs(docs);
+  await dropCloudDeleted(photoKeys);
   // photos: blobs first, then the doc (so a doc always points at uploaded files)
   let done = 0; const total = photoKeys.length;
   const work = photoKeys.slice();
@@ -344,6 +346,32 @@ async function push() {
     }
   }
   await Promise.all([worker(), worker(), worker(), worker()]);
+}
+/* v9.51: last-write-wins let a device that had not pulled a delete yet (reorder, set cover,
+   share refresh, url repair) push the photo back as live with a newer rev. Before a plain photo
+   write, read the cloud row; when it is a tombstone, apply the delete here and skip the push.
+   Only an explicit restore (d.restore) may revive a deleted id. Read-only query. */
+async function dropCloudDeleted(photoKeys) {
+  const live = photoKeys.filter(k => { const d = st.dirty[k]; return d && !d.del && !d.restore; });
+  if (!live.length) return;
+  for (let i = 0; i < live.length; i += 100) {
+    const chunk = live.slice(i, i + 100), ids = chunk.map(k => k.slice(6));
+    let data = null;
+    try { const res = await sb.from('user_docs').select('id,rev,deleted').eq('kind', 'photo').in('id', ids); if (res.error) throw res.error; data = res.data || []; }
+    catch (e) { console.warn('sync: could not check photo tombstones; holding these photo pushes', e); for (const k of chunk) { const ix = photoKeys.indexOf(k); if (ix >= 0) photoKeys.splice(ix, 1); } continue; }
+    const gone = data.filter(r => r.deleted);
+    for (const r of gone) {
+      const k = 'photo|' + r.id, d = st.dirty[k];
+      if (d && d.restore) continue;
+      const ix = photoKeys.indexOf(k); if (ix >= 0) photoKeys.splice(ix, 1);
+      delete st.dirty[k]; delete st.h[k]; delete sessionEdits[k]; delete sessionPhotoIds[r.id];
+      st.r[k] = Math.max(st.r[k] || 0, r.rev || 0);
+      try { await idb(pstore('readwrite').delete(r.id)); } catch (e) {}
+      try { W.photoGone && W.photoGone([r.id]); } catch (e) {}
+      console.warn('sync: photo was deleted on another device; not pushing it back', r.id);
+    }
+    if (gone.length) { saveSt(); try { await W.refreshCounts(); } catch (e) {} queueAppRefresh(); }
+  }
 }
 async function sendDocs(docs) {
   let batch = [], size = 0;
@@ -567,6 +595,15 @@ async function applyPhotos(rows) {
   async function one(r) {
     const k = 'photo|' + r.id;
     let repair = false;
+    // v9.51: rows wait in photoQ between pull and drain. A delete or reorder the user made in that
+    // window is newer than the queued row: keep it (and its pending push) instead of overwriting it.
+    const ld = st.dirty[k], rrev = r.rev || 0;
+    const localDel = !r.deleted && ((ld && ld.del && ld.explicit && ld.rev >= rrev) || (!ld && st.explicitDel && st.explicitDel[r.id] >= rrev));
+    const localEdit = !r.deleted && ld && !ld.del && (sessionEdits[k] || sessionPhotoIds[r.id] || ld.restore) && ld.rev >= rrev;
+    if (localDel || localEdit) {
+      if (photoSafety() && photoSafety().notePhotoFinished) photoQ = photoSafety().notePhotoFinished(photoQ, r.id, false);
+      return;
+    }
     try {
       if (r.deleted) { await idb(pstore('readwrite').delete(r.id)); delete st.h[k]; if (st.explicitDel) delete st.explicitDel[r.id]; try { window.photoGone && photoGone([r.id]); } catch (e) {} }
       else {
@@ -867,6 +904,7 @@ async function sync(opts = {}) {
   const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
   let held = false, gotChanges = 0;
   try {
+    try { if (typeof W.ensureDB === 'function') await W.ensureDB(); } catch (e) { console.warn('sync: IndexedDB not ready', e); }
     // A full pull runs only when the saved server_at cursor cannot be trusted
   // (new login, other account, never synced, or the last pull is stale).
   // Opening an updated app keeps the cursor and asks for rows newer than it.

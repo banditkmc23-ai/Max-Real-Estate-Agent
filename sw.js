@@ -1,5 +1,5 @@
 // MAX Agent service worker: network-first (bypassing HTTP cache) for same-origin files, cache-first for pinned CDN assets.
-const VERSION = 'v89';
+const VERSION = 'v90';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
 // html2canvas, jsPDF, SheetJS and Leaflet are loaded on demand and cached on first use, not at install.
