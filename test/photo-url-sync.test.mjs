@@ -164,6 +164,6 @@ test('a missing private file uses the public room-photos object once and does no
   assert.match(fill, /findPublicRoomPhoto/);
   assert.match(sync, /guardedPhotoMeta/);
   assert.match(sync, /resolvePhotoUrl/);
-  assert.match(read('sw.js'), /const VERSION = 'v90'/);
-  assert.match(read('index.html'), /const APP_VERSION = '9\.51'/);
+  assert.match(read('sw.js'), /const VERSION = 'v91'/);
+  assert.match(read('index.html'), /const APP_VERSION = '9\.52'/);
 });

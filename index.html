@@ -4549,7 +4549,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.51';
+const APP_VERSION = '9.52';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4651,7 +4651,8 @@ function sfPreview() {
 <script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=50"></script>
 <script src="tiktok-link.js?v=1"></script>
-<script src="features.js?v=50"></script>
+<script src="movecondo-link.js?v=1"></script>
+<script src="features.js?v=51"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
 <script src="sync.js?v=51"></script>

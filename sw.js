@@ -1,9 +1,9 @@
 // MAX Agent service worker: network-first (bypassing HTTP cache) for same-origin files, cache-first for pinned CDN assets.
-const VERSION = 'v90';
+const VERSION = 'v91';
 const SHELL = `max-shell-${VERSION}`;
 const STATIC = `max-static-${VERSION}`;
 // html2canvas, jsPDF, SheetJS and Leaflet are loaded on demand and cached on first use, not at install.
-const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-copy.js', 'photo-safety.js', 'photo-restore.js', 'unit-shape.js', 'tiktok-link.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js', 'catalog-covers.js', 'room-summary.js', 'catalog-hero.webp', 'vendor/qrcode.js', 'condo-geo.js', 'condo-map.js', 'condo-coords.json', 'view-state.js'];
+const SHELL_URLS = ['./', 'index.html', 'tailwind.min.css', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'room.html', 'photo-copy.js', 'photo-safety.js', 'photo-restore.js', 'unit-shape.js', 'tiktok-link.js', 'movecondo-link.js', 'features.js', 'sync.js', 'vendor/supabase.js', 'agent.html', 'geo.js', 'catalog-covers.js', 'room-summary.js', 'catalog-hero.webp', 'vendor/qrcode.js', 'condo-geo.js', 'condo-map.js', 'condo-coords.json', 'view-state.js'];
 const CDN_URLS = [
   'https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js'
 ];
