@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ตัวอย่าง · ลิงก์ MoveCondo ในหน้าส่งให้ลูกค้า</title>
+<link rel="stylesheet" href="../tailwind.min.css">
+<script>
+// Demo only: an in-memory localStorage so this page never reads or writes the real app's saved data.
+(function () {
+  const mem = new Map();
+  const store = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k), clear: () => mem.clear(), key: i => [...mem.keys()][i] ?? null, get length() { return mem.size; } };
+  try { Object.defineProperty(window, 'localStorage', { value: store, configurable: true }); } catch (e) {}
+})();
+</script>
+</head>
+<body class="bg-[#f6f1ec] text-ink">
+<div class="max-w-[460px] mx-auto p-4">
+  <div class="rounded-2xl p-3 mb-4 text-xs" style="background:#fbeee8;color:#7a3317">หน้าตัวอย่างเท่านั้น · ข้อมูลห้องจำลอง ไม่ได้ล็อกอิน ไม่ได้บันทึกอะไรลงระบบจริง · กดปุ่มเพื่อเปิดหน้า “ส่งให้ลูกค้า”</div>
+  <h1 class="text-lg font-bold mb-3">ห้องตัวอย่าง</h1>
+  <div id="demoList" class="space-y-3"></div>
+  <p id="demoState" class="text-[11px] text-slate-400 mt-4"></p>
+</div>
+<script>
+const MCB = 'https://banditkmc23-ai.github.io/movecondo/';
+var units = [
+  { id: 'demo-mc-308', project: 'Beatniq Sukhumvit 32', type: '1 Bed', size: '57.57', rent: 65000, station: 'ทองหล่อ', stationDist: 250, status: 'AVAILABLE', floor: '20', notes: '', share: { id: 'DEMO03', secret: 'demo' }, _mc: 'mc-308', _label: 'มีหน้า MoveCondo (MC-308)' },
+  { id: 'demo-rhythm-asoke', project: 'Rhythm Asoke', type: '1 Bed', size: '31.15', rent: 21000, station: 'พระราม 9', stationDist: 300, status: 'AVAILABLE', floor: '', notes: '', share: { id: 'DEMO01', secret: 'demo' }, _label: 'ยังไม่มีหน้า MoveCondo → ใช้ลิงก์ MAX' },
+  { id: 'demo-rented-mc-011', project: 'Mori Haus', type: '1 Bed', size: '35', rent: 18000, station: 'พระโขนง', stationDist: 600, status: 'AVAILABLE', floor: '5', notes: '', share: { id: 'DEMO02', secret: 'demo' }, _mc: 'mc-011', _label: 'หน้า MoveCondo ขึ้นว่ามีผู้เช่าแล้ว → ใช้ลิงก์ MAX' }
+];
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function baht(n) { return '฿' + Number(n || 0).toLocaleString('th-TH'); }
+function toast(m) { const t = document.getElementById('demoState'); t.textContent = 'แจ้งเตือน: ' + m; }
+function persist() {}
+function getPostConfig() { return { agentName: 'MAX', phone: '', lineId: '' }; }
+function coverSrc(p) { return p && p.thumb; }
+async function getUnitPhotos(id) { return []; }
+function cloudCover(id) { const u = units.find(x => x.id === id); return u && u._mc === 'mc-308' ? { thumb: MCB + 'images/rooms/mc-308/1-th.webp' } : null; }
+// The MAX fallback link reuses the room's saved link without uploading (same signature as features.js buildLink).
+let demoOpts = { hideRoom: false, showPhone: true, photo: true };
+function demoSig(u) {
+  const c = getPostConfig(), opts = demoOpts;
+  const o = { v: 1, p: u.project || '', b: u.building || '', r: opts.hideRoom ? '' : (u.room || ''), f: u.floor || '', rent: Number(u.rent) || 0, sale: u.salePrice || '', sz: Number(u.size) || 0, t: u.type || '', bt: u.bath || '', vw: u.view || '', sn: u.station || '', sd: Number(u.stationDist) || 0, st: u.status || '', d: (u.notes || '').slice(0, 900), hr: opts.hideRoom ? 1 : 0, a: { n: c.agentName || '', ph: opts.showPhone ? (c.phone || '') : '', l: c.lineId || '' } };
+  return JSON.stringify(o) + '|';
+}
+units.forEach(u => { if (u.share) Object.defineProperty(u.share, 'sig', { get: () => demoSig(u), enumerable: true }); });
+</script>
+<script src="../movecondo-link.js?v=1"></script>
+<script src="../features.js?v=51"></script>
+<script>
+(async function () {
+  // Inline the app's own styles (sheet, toggles, inputs) from index.html.
+  try { const html = await (await fetch('../index.html', { cache: 'no-cache' })).text(); (html.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).forEach(s => document.head.insertAdjacentHTML('beforeend', s)); } catch (e) {}
+  const _opt = FX.shareOpt; FX.shareOpt = (k, v) => { demoOpts[k] = v; return _opt(k, v); };
+  const _open = FX.openShare; FX.openShare = id => { demoOpts = { hideRoom: false, showPhone: true, photo: true }; return _open(id); };
+  // Real map + real MoveCondo rented list, plus keys for the demo room ids.
+  let map = {}, gone = [];
+  try { map = (await (await fetch('../movecondo-links.json', { cache: 'no-cache' })).json()).rooms || {}; } catch (e) {}
+  try { gone = ((await (await fetch(MCB + 'data/rented-rooms.json', { cache: 'no-cache' })).json()).rooms || []).filter(r => !r.restored).map(r => r.slug); } catch (e) {}
+  for (const u of units) if (u._mc) map[await MC_LINK.keyOf(u.id)] = u._mc;
+  MC_LINK._use(map, gone);
+  document.getElementById('demoState').textContent = `ตาราง MoveCondo: ${Object.keys(map).length} ห้อง · ห้องที่มีผู้เช่าแล้วบน MoveCondo: ${gone.length}`;
+  document.getElementById('demoList').innerHTML = units.map(u => `<div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200"><p class="text-sm font-bold">${esc(u.project)} <span class="font-normal text-slate-400">· ${esc(u.type)} ${esc(u.size)} ตร.ม.</span></p><p class="text-sm font-bold" style="color:#c2552d">${baht(u.rent)}/เดือน</p><p class="text-[11px] text-slate-500 mb-2">${esc(u._label)}</p><button onclick="FX.openShare('${u.id}')" class="w-full py-2 rounded-full text-white text-xs font-semibold" style="background:#06C755">ส่งให้ลูกค้า</button></div>`).join('');
+})();
+</script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" onload="try{lucide.createIcons()}catch(e){}"></script>
+</body>
+</html>

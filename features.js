@@ -517,11 +517,34 @@ async function paintSharePreview(u) {
     }
   } catch (e) {}
 }
+// v9.52: a room that has a MoveCondo page is shared with that page; other rooms keep the MAX /r/ link.
+const mcLink_ = () => (typeof MC_LINK !== 'undefined' ? MC_LINK : null);
+function paintShareMode(el, mc) {
+  const opts = el.querySelector('#fxShareMaxOpts'); if (opts) opts.classList.toggle('hidden', !!mc);
+  const nw = $('fxShareNewBtn'); if (nw) nw.style.visibility = mc ? 'hidden' : '';
+}
+async function renderMoveCondo(u, el) {
+  const found = mcLink_() ? await mcLink_().find(u) : null;
+  if (shareState.id !== u.id) return true;
+  shareState.mc = found;
+  if (!found || shareState.useMax) return false;
+  shareState.link = found.url;
+  el.querySelector('#fxShareLink').textContent = prettyLink(found.url);
+  el.querySelector('#fxShareLen').innerHTML = `ลิงก์ห้อง ${E(found.id)} บน MoveCondo · ไม่แสดงเบอร์เจ้าของ เลขห้อง และโน้ตภายใน <button onclick="FX.shareUseMax(true)" class="ml-1 font-semibold" style="color:#c2552d">ใช้ลิงก์ MAX แทน</button>`;
+  const host = el.querySelector('#fxShareHost'); if (host) host.textContent = prettyLink(mcLink_().BASE).replace(/\/$/, '');
+  paintShareMode(el, found);
+  const msg = $('fxShareMsg');
+  if (msg && !shareState.msgEdited) msg.value = clientMessage(u, shareState.link);
+  return true;
+}
+FX.shareUseMax = function (v) { shareState.useMax = !!v; shareState.msgEdited = false; renderShare(); };
 async function renderShare() {
   const u = units_().find(x => x.id === shareState.id); if (!u) return;
   const el = $('fxShareBody'); if (!el) return;
   el.querySelector('#fxShareLink').textContent = 'กำลังสร้างลิงก์...';
-  shareNote = ''; shareState.link = '';
+  shareNote = ''; shareState.link = ''; el.querySelector('#fxShareLen').textContent = '';
+  if (await renderMoveCondo(u, el)) return;
+  paintShareMode(el, null);
   try { shareBusy++; shareState.link = await buildLink(u, shareState); if (shareState.photo && u.share && shareState.link.includes('/r/')) { const op = { hideRoom: !!shareState.hideRoom, showPhone: !!shareState.showPhone, photo: true }; if (JSON.stringify(u.share.opts) !== JSON.stringify(op)) { u.share.opts = op; try { window.persist(); } catch (e) {} } } }
   catch (e) {
     el.querySelector('#fxShareLink').innerHTML = `<span class="text-rose-600 font-semibold">สร้างลิงก์สั้นไม่สำเร็จ: ${E(e.message)}</span><br><span class="text-[10px] text-slate-400">${E(e.detail || '')}</span>`;
@@ -532,6 +555,8 @@ async function renderShare() {
   const pretty = prettyLink(shareState.link);
   el.querySelector('#fxShareLink').textContent = pretty;
   el.querySelector('#fxShareLen').textContent = shareState.link.includes('/r/') ? (shareNote || 'ลิงก์สั้นถาวร · เทียบกับลิงก์ GitHub Pages ที่ยาวกว่า') : `ออฟไลน์/เชื่อมต่อไม่ได้ ใช้ลิงก์แบบยาวแทน (${shareState.link.length.toLocaleString()} ตัวอักษร)`;
+  if (shareState.mc) el.querySelector('#fxShareLen').insertAdjacentHTML('beforeend', ` · <button onclick="FX.shareUseMax(false)" class="font-semibold" style="color:#c2552d">กลับไปใช้ลิงก์ MoveCondo</button>`);
+  else el.querySelector('#fxShareLen').insertAdjacentHTML('afterbegin', '<span class="block text-amber-700">ห้องนี้ยังไม่มีหน้าใน MoveCondo จึงใช้ลิงก์ MAX แทน</span>');
   const host = el.querySelector('#fxShareHost');
   if (host) { try { host.textContent = new URL(shareState.link).host; } catch (e) { host.textContent = ''; } }
   const msg = $('fxShareMsg');
@@ -631,7 +656,7 @@ FX.openShare = function (id) {
     <div class="flex gap-3 p-2.5 bg-white border border-slate-200 rounded-2xl mb-3 shadow-sm"><div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative"><img id="fxShareCover" alt="" class="hidden absolute inset-0 w-full h-full object-cover"><i data-lucide="home" class="w-6 h-6 text-brick-500 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"></i></div><div class="min-w-0 py-0.5"><p id="fxShareHost" class="text-[10px] text-slate-400">max-agent</p><p class="text-sm font-bold text-ink truncate">${E(u.project || '-')}</p><p class="text-sm font-bold" style="color:#c2552d">${price}</p><p class="text-[11px] text-slate-400">${E(spec)}</p></div></div>
     <div class="bg-white border border-slate-200 rounded-2xl px-3 py-2.5 mb-1"><p id="fxShareLink" class="text-sm font-semibold text-ink break-all">กำลังสร้างลิงก์...</p></div>
     <p id="fxShareLen" class="text-[10px] text-slate-400 mb-1 px-1"></p>
-    <div class="mt-1">${tog('photo', 'แนบรูปห้อง')}${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div>
+    <div class="mt-1">${tog('photo', 'แนบรูปห้อง')}<div id="fxShareMaxOpts">${tog('showPhone', 'แสดงเบอร์โทรของฉัน')}${tog('hideRoom', 'ไม่แสดงเลขห้อง')}</div></div>
     <textarea id="fxShareMsg" rows="4" class="inp mt-2" style="font-size:16px" oninput="FX.shareMsgEdit()"></textarea>
     <div class="flex gap-2 mt-3">
       <button onclick="FX.shareDo('line')" class="flex-1 py-3 rounded-full text-white text-sm font-semibold flex items-center justify-center gap-1.5" style="background:#06C755"><i data-lucide="message-circle" class="w-4 h-4"></i>ส่งใน LINE</button>
@@ -639,7 +664,7 @@ FX.openShare = function (id) {
     </div>
     <button onclick="FX.shareDo('copyText')" class="w-full mt-2 py-2 text-xs font-semibold text-slate-500 flex items-center justify-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i>คัดลอกลิงก์และข้อความ</button>
     <div class="flex items-center justify-between mt-1 px-1">
-      <button onclick="FX.shareNew()" class="text-[11px] text-brick-600 font-semibold">สร้างลิงก์ใหม่</button>
+      <button id="fxShareNewBtn" onclick="FX.shareNew()" class="text-[11px] text-brick-600 font-semibold">สร้างลิงก์ใหม่</button>
       <button onclick="FX.shareDo('open')" class="text-[11px] text-slate-500 font-semibold">ดูตัวอย่าง</button>
     </div>
     <p class="text-[10px] text-slate-400 mt-1 px-1">ไม่รวมข้อมูลเจ้าของห้อง โน้ตภายใน และลิงก์ต้นทาง</p>
@@ -693,7 +718,7 @@ FX.shareDo = async function (how) {
   if (how === 'open') return window.open(shareState.link, '_blank');
   if (how === 'native') { try { await navigator.share({ title: u.project || 'ห้องให้เช่า', text: text, url: shareState.link }); } catch (e) {} return; }
   if (how === 'line') {
-    if (('https://line.me/R/share?text=' + encodeURIComponent(text)).length > 7500) {
+    if (!(mcLink_() && shareState.link.startsWith(mcLink_().BASE)) && ('https://line.me/R/share?text=' + encodeURIComponent(text)).length > 7500) {
       const short = await buildLink(u, { ...shareState, photo: false });
       T('ลิงก์ยาวเกินไปสำหรับ LINE จึงส่งแบบไม่มีรูป');
       return FX.lineShare(clientMessage(u, short));
