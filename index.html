@@ -145,6 +145,29 @@
   .pick-cell:active { transform: scale(.96); }
   .pick-cell.selected { outline: 3px solid #b85c38; outline-offset: -3px; }
   #galGrid .photo-cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y}
+  .file-offscreen{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+  /* v9.51 reorder mode: no scrolling gesture on the cells, so iOS never cancels the drag */
+  #galGrid.reorder-on .photo-cell{touch-action:none;outline:2px dashed rgba(194,85,45,.55);outline-offset:-2px;cursor:grab}
+  #galGrid .ro-btns{display:none}
+  #galGrid.reorder-on .ro-btns{display:flex;position:absolute;left:0;right:0;bottom:0;justify-content:space-between;padding:3px}
+  #galGrid .ro-btns button{width:28px;height:28px;border-radius:999px;background:rgba(255,255,255,.92);color:#c2552d;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25);touch-action:manipulation}
+  #galGrid .ro-btns button:disabled{opacity:.3}
+  #galReorderBtn.on{background:#c2552d;color:#fff;border-color:#c2552d}
+  /* v9.51 photo viewer (from room cards and the room detail carousel) */
+  #pv{position:fixed;inset:0;z-index:72;background:#000;display:none;flex-direction:column;-webkit-user-select:none;user-select:none}
+  #pv.open{display:flex}
+  #pv .pv-top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top));color:#e7e5e4;gap:10px}
+  #pv .pv-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+  #pv .pv-btn{width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);color:#fff;flex-shrink:0}
+  #pv .pv-track{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x;overscroll-behavior:contain}
+  #pv .pv-track::-webkit-scrollbar{display:none}
+  #pv.zoomed .pv-track{overflow:hidden;touch-action:none}
+  #pv .pv-sl{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #pv .pv-sl img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;-webkit-user-drag:none}
+  #pv .pv-bot{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom));color:#d6d3d1;font-size:12px}
+  #pv .pv-nav{display:none}
+  @media (hover:hover) and (pointer:fine){ #pv .pv-nav{display:flex} }
+  .g-img.pv-tap{cursor:zoom-in}
   html.reordering, html.reordering *{-webkit-user-select:none;user-select:none}
   html.reordering #gallery{overflow-y:hidden;touch-action:none}
   .pick-cell .order-badge { position:absolute; top:4px; left:4px; min-width:22px; height:22px; border-radius:11px; background:#b85c38; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; }
@@ -502,7 +525,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.50</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.54</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1102,8 +1125,8 @@
   <div class="sf-c"><div class="sf-ch">📷 รูป <span id="fPhotoCount" class="font-normal text-slate-400 text-[12px]">0 รูป</span><span class="ml-auto flex gap-3"><button type="button" class="sf-lnk" onclick="pickFormPhotos('album')">เลือกรูป</button><button type="button" class="sf-lnk" onclick="pickFormPhotos('camera')">ถ่ายรูป</button></span></div>
     <div class="p-3"><div id="fPhotoGrid" class="grid grid-cols-4 gap-1.5"></div>
       <button type="button" onclick="pickFormPhotos('album')" class="sf-tile mt-1.5"><b>+</b>เพิ่มรูป</button>
-      <input type="file" id="formFileAlbum" accept="image/*" multiple class="hidden" onchange="importFormPhotos(this.files)">
-      <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="hidden" onchange="importFormPhotos(this.files)">
+      <input type="file" id="formFileAlbum" accept="image/*" multiple class="file-offscreen" onchange="importFormPhotos(this.files)">
+      <input type="file" id="formFileCamera" accept="image/*" capture="environment" class="file-offscreen" onchange="importFormPhotos(this.files)">
       <p id="formPhotoProgress" class="text-[11px] text-brick-600 mt-2 hidden"></p>
       <p class="text-[11px] text-slate-400 mt-1.5">💡 รูปอัปโหลดทันที ไม่ต้องกดบันทึกก่อน</p></div></div>
 
@@ -1241,7 +1264,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.50</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.54</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -1253,10 +1276,10 @@
     <button onclick="pickPhotos('camera')" class="bg-slate-100 active:scale-95 text-slate-600 border border-slate-200 text-xs py-2.5 rounded-full flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-brick-600"></i>ถ่ายรูป</button>
   </div>
   <label class="flex items-center justify-between text-xs text-slate-600 mb-3 px-1"><span class="flex items-center gap-2"><i data-lucide="stamp" class="w-4 h-4 text-brick-600"></i>ใส่ลายน้ำโลโก้ MAX</span><input type="checkbox" id="wmToggle" onchange="setWm(this.checked)" class="w-5 h-5 accent-[#b85c38]"></label>
-  <input type="file" id="fileAlbum" accept="image/*" multiple class="hidden" onchange="importPhotos(this.files)">
-  <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden" onchange="importPhotos(this.files)">
+  <input type="file" id="fileAlbum" accept="image/*" multiple class="file-offscreen" onchange="importPhotos(this.files)">
+  <input type="file" id="fileCamera" accept="image/*" capture="environment" class="file-offscreen" onchange="importPhotos(this.files)">
   <p id="galProgress" class="text-xs text-brick-600 mb-2 hidden"></p>
-  <p class="text-[11px] text-slate-500 mb-2">กดค้างที่รูปแล้วลากเพื่อจัดลำดับ · รูปแรกเป็นหน้าปก</p>
+  <div class="flex items-center justify-between gap-2 mb-2"><p id="galHint" class="text-[11px] text-slate-500">แตะรูปเพื่อดู · รูปแรกเป็นหน้าปก</p><button id="galReorderBtn" onclick="setGalReorder(!galReorder)" class="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-slate-600 flex items-center gap-1"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i><span>จัดลำดับ</span></button></div>
   <div id="galGrid" class="grid grid-cols-3 gap-1.5"></div>
   <div id="galEmpty" class="hidden text-center text-sm text-slate-400 py-10 border border-dashed border-slate-300 rounded-2xl">ยังไม่มีรูปห้องนี้</div>
   <div id="galActions" class="hidden grid grid-cols-2 gap-2 mt-4">
@@ -1315,6 +1338,11 @@
   </div>
 </div>
 
+<div id="pv" role="dialog" aria-label="ดูรูปห้อง">
+  <div class="pv-top"><span id="pvTitle" class="pv-title"></span><button id="pvManage" class="pv-btn" aria-label="จัดการรูป" onclick="pvManage()"><i data-lucide="images" class="w-4 h-4"></i></button><button class="pv-btn" aria-label="ปิด" onclick="closePhotoViewer()"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+  <div id="pvTrack" class="pv-track"></div>
+  <div class="pv-bot"><button class="pv-btn pv-nav" aria-label="ก่อนหน้า" onclick="pvStep(-1)"><i data-lucide="chevron-left" class="w-5 h-5"></i></button><span id="pvCount" class="flex-1 text-center"></span><button class="pv-btn pv-nav" aria-label="ถัดไป" onclick="pvStep(1)"><i data-lucide="chevron-right" class="w-5 h-5"></i></button></div>
+</div>
 <div id="toast" class="toast"></div>
 <script src="unit-shape.js?v=48"></script>
 <script src="view-state.js?v=1"></script>
@@ -1814,6 +1842,7 @@ function applyAdvancedFilter() {
     const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !hasFilter);
   });
   closeAdvancedFilter(); render();
+  rememberView();
   toast(hasFilter ? 'ใช้ตัวกรองแล้ว' : 'ไม่ได้เลือกเงื่อนไข');
 }
 function clearAdvancedFilter() {
@@ -1824,6 +1853,7 @@ function clearAdvancedFilter() {
     const el = document.getElementById(id); if (el) el.classList.add('hidden');
   });
   render(); advDraftChanged();
+  rememberView();
 }
 
 // ============= SWITCH VIEW =============
@@ -1876,7 +1906,7 @@ function clearAllFilters() {
   try { syncSearch(''); } catch (e) {}
   ['searchClear','searchDesktopClear'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
   try { hideSearchSuggest(); } catch (e) {}
-  clearPriceRange(); toast('ล้างตัวกรองทั้งหมดแล้ว');
+  clearPriceRange(); rememberView(); toast('ล้างตัวกรองทั้งหมดแล้ว');
 }
 function toggleFav(id, ev) { if (ev) ev.stopPropagation(); const u = units.find(x => x.id === id); if (!u) return; u.fav = !u.fav; persist(); render(); try { if (detailUnitId === id) renderDetailView(); } catch (e) {} toast(u.fav ? '⭐ เพิ่มในห้องน่าสนใจแล้ว' : 'เอาออกจากห้องน่าสนใจแล้ว'); }
 const favBtn = (u, cls = '') => `<button onclick="toggleFav('${u.id}', event)" class="fav-btn ${u.fav ? 'on' : ''} ${cls}" aria-label="น่าสนใจ"><i data-lucide="star" class="w-4 h-4"></i></button>`;
@@ -2291,7 +2321,7 @@ async function loadDetailCover(unitId) {
     if (!ps.length) {
       const c = cloudCover(unitId);
       if (c && c.thumb) {
-        tr.innerHTML = `<div class="dv-sl"><img alt=""></div>`;
+        tr.innerHTML = `<div class="dv-sl" onclick="openPhotoViewer('${unitId}', 0)"><img alt=""></div>`;
         const im = tr.querySelector('img');
         im.onerror = function () { im.onerror = null; if (c.full && c.full !== c.thumb) im.src = c.full; };
         im.src = c.thumb;
@@ -2304,7 +2334,7 @@ async function loadDetailCover(unitId) {
       return;
     }
     ps.sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0));
-    tr.innerHTML = ps.map((p, i) => `<div class="dv-sl" onclick="openGallery('${unitId}')"><img data-i="${i}" alt="" ${i > 1 ? 'loading="lazy"' : ''}></div>`).join('');
+    tr.innerHTML = ps.map((p, i) => `<div class="dv-sl" onclick="openPhotoViewer('${unitId}', ${i})"><img data-i="${i}" alt="" ${i > 1 ? 'loading="lazy"' : ''}></div>`).join('');
     const imgs = tr.querySelectorAll('img');
     ps.forEach((p, i) => { const src = coverSrc(p); if (src) imgs[i].src = src; if (i < 2 && typeof fullBlobOf === "function") fullBlobOf(p).then(b => { if (b && b !== p.thumb) imgs[i].src = URL.createObjectURL(b); }).catch(() => {}); });
     document.getElementById('dvDots').innerHTML = ps.length > 1 ? ps.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
@@ -2596,17 +2626,14 @@ let currentFormUnitId = null;
 function pickFormPhotos(src) {
   const id = document.getElementById('f_id').value; if (!id) { toast('ไม่พบ ID ห้อง'); return; }
   currentFormUnitId = id;
-  document.getElementById(src === 'camera' ? 'formFileCamera' : 'formFileAlbum').click();
+  const el = document.getElementById(src === 'camera' ? 'formFileCamera' : 'formFileAlbum'); try { el.value = ''; } catch (e) {} el.click(); ensureDB().catch(() => {});
 }
 async function importFormPhotos(files) {
   if (!files || !files.length || !currentFormUnitId) return;
-  if (!db) return toast('เบราว์เซอร์ไม่รองรับ');
+  if (!window.indexedDB) return toast('เบราว์เซอร์ไม่รองรับ');
   const prog = document.getElementById('formPhotoProgress'); prog.classList.remove('hidden');
-  let ok = 0, failed = 0; const base = Date.now();
-  for (let i = 0; i < files.length; i++) {
-    prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
-    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:currentFormUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
-  }
+  const r = await savePhotoFiles(files, currentFormUnitId, (i, n) => { prog.textContent = `กำลังบันทึก ${i+1}/${n}...`; });
+  const ok = r.ok, failed = r.failed;
   noteRoomPhotosChanged(currentFormUnitId);
   prog.classList.add('hidden');
   document.getElementById('formFileAlbum').value = ''; document.getElementById('formFileCamera').value = '';
@@ -3194,7 +3221,7 @@ function cardRowHTML(x) {
   const sz = Number(x.size) ? ` · ${esc(x.size)} ตร.ม.` : '';
   return `<div class="unit-card g-card" onclick="openDetailView('${x.id}')">
     <div class="g-img">
-      ${showImg ? `<img id="mini-${x.id}" alt="">` : `<i data-lucide="image" class="w-7 h-7 text-slate-300"></i>`}
+      ${showImg ? `<img id="mini-${x.id}" alt="" onclick="event.stopPropagation(); openPhotoViewer('${x.id}', 0)">` : `<i data-lucide="image" class="w-7 h-7 text-slate-300"></i>`}
       <span class="g-badge ${m.cls} border">${m.short ? m.short : m.label}</span>
       <span class="g-fav" onclick="event.stopPropagation()">${favBtn(x)}</span>
       ${pic ? `<span class="g-cnt">${pic} รูป</span>` : ''}
@@ -3223,7 +3250,7 @@ function listRowHTML(x) {
   return `<div class="unit-row bg-white border border-slate-700 rounded-2xl overflow-hidden" onclick="openDetailView('${x.id}')">
     <div class="flex items-center gap-3 p-3">
       <div class="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 relative">
-        ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
+        ${pic ? `<img id="mini-${x.id}" class="w-full h-full object-cover" alt="" onclick="event.stopPropagation(); openPhotoViewer('${x.id}', 0)">` : `<i data-lucide="image" class="w-5 h-5"></i>`}
       </div>
       <div class="flex-1 text-left min-w-0">
         <div class="flex items-center gap-1.5 flex-wrap"><p class="text-xs font-semibold text-ink truncate">${esc(x.project)}${x.building ? ' · ' + esc(x.building) : ''} · ${esc(x.room)}</p>${hasNote ? `<i data-lucide="sticky-note" class="w-2.5 h-2.5 text-amber-500 shrink-0"></i>` : ''}${linkedCount ? `<span class="link-badge"><i data-lucide="users" class="w-2.5 h-2.5"></i>${linkedCount}</span>` : ''}</div>
@@ -3779,11 +3806,42 @@ function openDB() {
   return new Promise((res, rej) => {
     const r = indexedDB.open('staylow_photos', 1);
     r.onupgradeneeded = e => { const s = e.target.result.createObjectStore('photos', { keyPath:'id' }); s.createIndex('unit','unitId'); };
-    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onsuccess = e => { db = e.target.result; dbWatch(db); res(db); };
     r.onerror = () => rej(r.error);
   });
 }
-function tx(mode) { return db.transaction('photos', mode).objectStore('photos'); }
+/* v9.51: iOS Home Screen apps lose the IndexedDB connection after the app is suspended
+   ("Connection to Indexed Database server lost" / InvalidStateError). Every photo call then fails
+   until a reload: the gallery does not open, new photos are not saved and sync stops before push.
+   ensureDB() probes the handle and reopens it. */
+let dbOpening = null;
+function dbWatch(d) {
+  try { d.onversionchange = () => { try { d.close(); } catch (e) {} if (db === d) db = null; }; } catch (e) {}
+  try { d.onclose = () => { if (db === d) db = null; }; } catch (e) {}
+}
+function dbProbe(d) {
+  return new Promise(res => {
+    let done = false; const fin = ok => { if (!done) { done = true; res(ok); } };
+    const t = setTimeout(() => fin(false), 2000);
+    try { const r = d.transaction('photos', 'readonly').objectStore('photos').count(); r.onsuccess = () => { clearTimeout(t); fin(true); }; r.onerror = () => { clearTimeout(t); fin(false); }; }
+    catch (e) { clearTimeout(t); fin(false); }
+  });
+}
+async function ensureDB() {
+  if (db && await dbProbe(db)) return db;
+  if (dbOpening) return dbOpening;
+  const old = db, wasBroken = !!old; db = null; try { old && old.close(); } catch (e) {}
+  dbOpening = openDB().then(d => { if (wasBroken) { console.warn('IndexedDB reconnected'); refreshCounts().then(() => { try { miniPhotoCache.clear(); render(); } catch (e) {} }).catch(() => {}); } return d; }).finally(() => { dbOpening = null; });
+  return dbOpening;
+}
+window.ensureDB = ensureDB;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ensureDB().catch(() => {}); });
+addEventListener('pageshow', () => { ensureDB().catch(() => {}); });
+function tx(mode) {
+  if (!db) { ensureDB().catch(() => {}); throw new Error('กำลังเชื่อมต่อคลังรูป ลองอีกครั้ง'); }
+  try { return db.transaction('photos', mode).objectStore('photos'); }
+  catch (e) { db = null; ensureDB().catch(() => {}); throw e; }
+}
 function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 // Photos already uploaded to the cloud keep only a small local thumb; the full image lives at p.url.
 const remoteBlobCache = new Map();
@@ -3839,7 +3897,8 @@ async function processPhoto(file) {
   const tr = Math.min(1, 400 / Math.max(fullC.width, fullC.height));
   thumbC.width = Math.round(fullC.width * tr); thumbC.height = Math.round(fullC.height * tr);
   thumbC.getContext('2d').drawImage(fullC, 0, 0, thumbC.width, thumbC.height);
-  return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)];
+  try { return [await toJpeg(fullC, 0.82), await toJpeg(thumbC, 0.7)]; }
+  finally { fullC.width = fullC.height = 0; thumbC.width = thumbC.height = 0; }   // iOS has a small total canvas memory budget
 }
 async function makeCollage(selectedPhotos) {
   const u = units.find(x => x.id === galleryUnitId); if (!u || !selectedPhotos.length) return;
@@ -3898,40 +3957,58 @@ function coverSrc(p) {
 function thumbUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.thumbUrl) e.thumbUrl = coverSrc(p); return e.thumbUrl; }
 function fullUrlOf(p) { let e = photoUrlCache.get(p.id); if (!e) { e = {}; photoUrlCache.set(p.id, e); } if (!e.fullUrl) e.fullUrl = p.full ? URL.createObjectURL(p.full) : ((window.MAX_PHOTO_SAFETY && MAX_PHOTO_SAFETY.previewSrc(p)) || p.url || (p.thumb ? URL.createObjectURL(p.thumb) : '')); return e.fullUrl; }
 function clearPhotoUrlCache() { photoUrlCache.forEach(e => { if (e.thumbUrl && String(e.thumbUrl).startsWith('blob:')) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && String(e.fullUrl).startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); }); photoUrlCache.clear(); }
-function pickPhotos(src) { document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum').click(); }
-async function importPhotos(files) {
-  if (!files || !files.length || !galleryUnitId) return;
-  const prog = document.getElementById('galProgress'); prog.classList.remove('hidden');
-  let ok = 0, failed = 0; const base = Date.now();
+function pickPhotos(src) { const el = document.getElementById(src === 'camera' ? 'fileCamera' : 'fileAlbum'); try { el.value = ''; } catch (e) {} el.click(); ensureDB().catch(() => {}); }
+/* v9.51: one save with a retry after reconnecting IndexedDB (iOS drops it after an app switch). */
+async function savePhotoFiles(files, unitId, onStep) {
+  files = Array.from(files || []);
+  let ok = 0, failed = 0, lastErr = ''; const base = Date.now();
+  try { await ensureDB(); } catch (e) {}
   for (let i = 0; i < files.length; i++) {
-    prog.textContent = `กำลังบันทึก ${i+1}/${files.length}...`;
-    try { const [full, thumb] = await processPhoto(files[i]); await req(tx('readwrite').put({ id:'p'+base+'_'+i, unitId:galleryUnitId, full, thumb, ts:base+i, order:base+i })); ok++; } catch (e) { failed++; }
+    if (onStep) onStep(i, files.length);
+    let rec = null;
+    try { const [full, thumb] = await processPhoto(files[i]); rec = { id: 'p' + base + '_' + i, unitId, full, thumb, ts: base + i, order: base + i }; }
+    catch (e) { failed++; lastErr = (e && e.message) || 'อ่านรูปไม่ได้'; continue; }
+    try { await req(tx('readwrite').put(rec)); ok++; }
+    catch (e) { try { await ensureDB(); await req(tx('readwrite').put(rec)); ok++; } catch (e2) { failed++; lastErr = 'บันทึกรูปไม่ได้'; console.warn('photo save', e2); } }
   }
-  noteRoomPhotosChanged(galleryUnitId);
+  return { ok, failed, total: files.length, lastErr };
+}
+async function importPhotos(files) {
+  const unitId = galleryUnitId;
+  if (!files || !files.length) return;
+  if (!unitId) { toast('เปิดหน้ารูปห้องใหม่แล้วลองอีกครั้ง'); return; }
+  const prog = document.getElementById('galProgress'); prog.classList.remove('hidden');
+  const r = await savePhotoFiles(files, unitId, (i, n) => { prog.textContent = `กำลังบันทึก ${i+1}/${n}...`; });
+  noteRoomPhotosChanged(unitId);
   prog.classList.add('hidden');
   document.getElementById('fileAlbum').value = ''; document.getElementById('fileCamera').value = '';
-  await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
-  toast(failed === 0 ? `เพิ่ม ${ok} รูป` : `บันทึก ${ok}/${files.length}`);
+  try { await refreshCounts(); if (galleryUnitId === unitId) await renderGallery(); } catch (e) {}
+  miniPhotoCache.delete(unitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
+  toast(r.failed === 0 ? `เพิ่ม ${r.ok} รูป` : `บันทึก ${r.ok}/${r.total}${r.lastErr ? ' · ' + r.lastErr : ''}`);
 }
 async function openGallery(unitId) {
-  if (!db) return toast('เบราว์เซอร์ไม่รองรับ');
+  if (!window.indexedDB) return toast('เบราว์เซอร์ไม่รองรับ');
   closeAllSheets('gallery');
-  clearPhotoUrlCache(); galleryUnitId = unitId;
+  clearPhotoUrlCache(); galleryUnitId = unitId; setGalReorder(false, true);
   const u = units.find(x => x.id === unitId);
-  document.getElementById('galTitle').textContent = `รูปห้อง ${u ? u.room + ' · ' + u.project : ''}`;
+  document.getElementById('galTitle').textContent = `รูปห้อง ${u ? (u.room || '-') + ' · ' + u.project : ''}`;
   document.getElementById('wmToggle').checked = wmOn;
-  await renderGallery();
+  // v9.51: open the sheet first. A failed IndexedDB read used to reject here, so the tap did nothing.
   document.getElementById('galOverlay').classList.remove('hidden');
   const sheetEl = document.getElementById('gallery');
   sheetEl.classList.add('open');
   void sheetEl.offsetHeight;
   document.body.style.overflow = 'hidden';
+  try { await ensureDB(); await renderGallery(); }
+  catch (e) { console.warn('gallery', e); galleryPhotos = []; document.getElementById('galGrid').innerHTML = ''; document.getElementById('galEmpty').classList.remove('hidden'); toast('โหลดรูปไม่สำเร็จ ลองปิดแล้วเปิดใหม่'); }
 }
-function closeGallery() { document.getElementById('galOverlay').classList.add('hidden'); document.getElementById('gallery').classList.remove('open'); clearPhotoUrlCache(); document.body.style.overflow = (detailUnitId ? 'hidden' : ''); }
+function closeGallery() { try { setGalReorder(false); } catch (e) {} document.getElementById('galOverlay').classList.add('hidden'); document.getElementById('gallery').classList.remove('open'); clearPhotoUrlCache(); document.body.style.overflow = (detailUnitId ? 'hidden' : ''); }
 async function renderGallery() {
   galleryPhotos = await getUnitPhotos(galleryUnitId);
   const grid = document.getElementById('galGrid');
-  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-xl overflow-hidden bg-slate-100" data-id="${p.id}" onclick="openLightboxById('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">ปก</span>' : ''}</div>`).join('');
+  const last = galleryPhotos.length - 1;
+  grid.innerHTML = galleryPhotos.map((p, i) => `<div class="photo-cell relative aspect-square rounded-xl overflow-hidden bg-slate-100" data-id="${p.id}" onclick="galCellTap('${p.id}')"><img src="${thumbUrlOf(p)}" class="w-full h-full object-cover pointer-events-none" draggable="false" alt="">${i === 0 ? '<span class="absolute top-1 left-1 bg-brick-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">ปก</span>' : ''}<div class="ro-btns"><button type="button" aria-label="เลื่อนไปก่อนหน้า" ${i === 0 ? 'disabled' : ''} onpointerdown="event.stopPropagation()" onclick="event.stopPropagation(); moveGalleryPhoto('${p.id}', -1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button type="button" aria-label="เลื่อนไปถัดไป" ${i === last ? 'disabled' : ''} onpointerdown="event.stopPropagation()" onclick="event.stopPropagation(); moveGalleryPhoto('${p.id}', 1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div></div>`).join('');
+  grid.classList.toggle('reorder-on', galReorder);
   document.getElementById('galEmpty').classList.toggle('hidden', galleryPhotos.length > 0);
   document.getElementById('galActions').classList.toggle('hidden', galleryPhotos.length === 0);
   lucide.createIcons();
@@ -3944,9 +4021,12 @@ async function renderGallery() {
   const cells = () => [...grid().querySelectorAll('.photo-cell')];
   function cancel() { if (st) { clearTimeout(st.timer); cancelAnimationFrame(st.raf); } st = null; }
   function down(e) {
+    if (e.target.closest && e.target.closest('.ro-btns')) return;
     const cell = e.target.closest && e.target.closest('#galGrid .photo-cell'); if (!cell || (e.pointerType === 'mouse' && e.button !== 0) || st) return;
-    st = { cell, id: cell.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ptr: e.pointerId, drag: false };
-    st.timer = setTimeout(() => lift(), LP);
+    st = { cell, id: cell.dataset.id, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ptr: e.pointerId, drag: false, quick: !!window.galReorder };
+    // reorder mode: touch-action:none on the cell, so lift almost at once and keep the pointer
+    if (st.quick) { try { cell.setPointerCapture && cell.setPointerCapture(e.pointerId); } catch (er) {} }
+    st.timer = setTimeout(() => lift(), st.quick ? 120 : LP);
   }
   function lift() {
     if (!st) return; st.drag = true;
@@ -3981,7 +4061,7 @@ async function renderGallery() {
   }
   function move(e) {
     if (!st || e.pointerId !== st.ptr) return; st.x = e.clientX; st.y = e.clientY;
-    if (!st.drag) { if (Math.hypot(st.x - st.x0, st.y - st.y0) > MOVE_TOL) cancel(); return; }
+    if (!st.drag) { if (Math.hypot(st.x - st.x0, st.y - st.y0) > MOVE_TOL) { if (st.quick) { clearTimeout(st.timer); lift(); } else { cancel(); return; } } else return; }
     e.preventDefault();
     st.ghost.style.left = (st.x - st.dx) + 'px'; st.ghost.style.top = (st.y - st.dy) + 'px'; pick();
   }
@@ -3996,24 +4076,39 @@ async function renderGallery() {
     await saveGalleryOrder(order);
   }
   window.saveGalleryOrder = async function (ids) {
-    const byId = new Map(galleryPhotos.map(p => [p.id, p])), base = Date.now(), store = tx('readwrite');
-    ids.forEach((id, i) => { const p = byId.get(id); if (!p) return; p.order = base + i; p.cover = i === 0; store.put(p); });
-    await new Promise(r => { store.transaction ? (store.transaction.oncomplete = r, store.transaction.onerror = r) : setTimeout(r, 50); });
+    const byId = new Map(galleryPhotos.map(p => [p.id, p])), base = Date.now();
+    const write = () => new Promise((res, rej) => { const store = tx('readwrite'); ids.forEach((id, i) => { const p = byId.get(id); if (!p) return; p.order = base + i; p.cover = i === 0; store.put(p); }); const t = store.transaction; t.oncomplete = res; t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+    try { await write(); } catch (e) { try { await ensureDB(); await write(); } catch (e2) { console.warn('reorder', e2); toast('จัดลำดับไม่สำเร็จ ลองอีกครั้ง'); await renderGallery().catch(() => {}); return; } }
     await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); noteRoomPhotosChanged(galleryUnitId); try { FX.scheduleShareUpdate(5000); } catch (e) {}
-    toast(ids[0] === galleryPhotos[0]?.id ? 'จัดลำดับรูปแล้ว' : 'จัดลำดับรูปแล้ว');
+    toast('จัดลำดับรูปแล้ว');
   };
   const init = () => {
     const g = grid(); if (!g) return;
     g.addEventListener('pointerdown', down);
     addEventListener('pointermove', move, { passive: false });
-    addEventListener('pointerup', up); addEventListener('pointercancel', e => { if (st && st.drag) up({ pointerId: st.ptr }); else cancel(); });
+    addEventListener('pointerup', up); addEventListener('pointercancel', e => { if (st && st.drag && e.pointerId === st.ptr) up({ pointerId: st.ptr }); else if (st && e.pointerId === st.ptr) cancel(); });
     // block page/sheet scroll while dragging (iOS needs touchmove preventDefault)
-    g.addEventListener('touchmove', e => { if (st && st.drag) e.preventDefault(); }, { passive: false });
+    g.addEventListener('touchmove', e => { if (st && (st.drag || st.quick)) e.preventDefault(); }, { passive: false });
     g.addEventListener('contextmenu', e => e.preventDefault());
     g.addEventListener('click', e => { if (window.__suppressGalClick && Date.now() - window.__suppressGalClick < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+var galReorder = false;
+function setGalReorder(on, silent) {
+  galReorder = !!on; window.galReorder = galReorder;
+  const g = document.getElementById('galGrid'), b = document.getElementById('galReorderBtn'), h = document.getElementById('galHint');
+  if (g) g.classList.toggle('reorder-on', galReorder);
+  if (b) { b.classList.toggle('on', galReorder); const sp = b.querySelector('span'); if (sp) sp.textContent = galReorder ? 'เสร็จ' : 'จัดลำดับ'; }
+  if (h) h.textContent = galReorder ? 'ลากรูป หรือกดลูกศร ◀ ▶ เพื่อย้าย · รูปแรกเป็นหน้าปก' : 'แตะรูปเพื่อดู · รูปแรกเป็นหน้าปก';
+}
+function galCellTap(id) { if (galReorder) return; openLightboxById(id); }
+async function moveGalleryPhoto(id, d) {
+  const ids = galleryPhotos.map(p => p.id), i = ids.indexOf(id), j = i + d;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  ids.splice(i, 1); ids.splice(j, 0, id);
+  await saveGalleryOrder(ids);
+}
 function openLightboxById(id) { const idx = galleryPhotos.findIndex(p => p.id === id); if (idx > -1) openLightbox(idx); }
 function openLightbox(i) { lbIndex = i; showLb(); const lb = document.getElementById('lightbox'); lb.classList.remove('hidden'); lb.classList.add('flex'); }
 function showLb() { try { lbResetZoom(); } catch (e) {} const p = galleryPhotos[lbIndex]; if (!p) return closeLightbox(); document.getElementById('lbImg').src = fullUrlOf(p); document.getElementById('lbCount').textContent = `${lbIndex + 1} / ${galleryPhotos.length}`; }
@@ -4030,9 +4125,91 @@ function stepPhoto(d) { lbIndex = (lbIndex + d + galleryPhotos.length) % gallery
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 function closeLightbox() { try { lbResetZoom(); } catch (e) {} const lb = document.getElementById('lightbox'); lb.classList.add('hidden'); lb.classList.remove('flex'); }
+
+// ============== PHOTO VIEWER (v9.51) ==============
+// Full-screen, read-only. Swipe between photos; pinch or double-tap zooms only the photo inside the viewer.
+let pvUnitId = null, pvIdx = 0, pvUrls = [];
+async function openPhotoViewer(unitId, start) {
+  const u = units.find(x => x.id === unitId); if (!u) return;
+  let srcs = [];
+  try {
+    await ensureDB();
+    const ps = await getUnitPhotos(unitId);
+    ps.sort((a, b) => (b.cover ? 1 : 0) - (a.cover ? 1 : 0));   // same order as the detail carousel
+    srcs = ps.map(p => ({ p, src: coverSrc(p) }));
+  } catch (e) { console.warn('viewer', e); }
+  if (!srcs.length) { const c = cloudCover(unitId); if (c && (c.full || c.thumb)) srcs = [{ p: null, src: c.full || c.thumb, alt: c.thumb }]; }
+  if (!srcs.length) return toast('ห้องนี้ยังไม่มีรูป');
+  pvClearUrls(); pvUnitId = unitId; pvIdx = Math.max(0, Math.min(srcs.length - 1, start || 0));
+  document.getElementById('pvTitle').textContent = `${u.project || ''}${u.room && u.room !== '-' ? ' · ' + u.room : ''}`;
+  const tr = document.getElementById('pvTrack');
+  tr.innerHTML = srcs.map((x, i) => `<div class="pv-sl"><img data-i="${i}" alt="" draggable="false" ${Math.abs(i - pvIdx) > 1 ? 'loading="lazy"' : ''}></div>`).join('');
+  const imgs = tr.querySelectorAll('img');
+  srcs.forEach((x, i) => {
+    if (x.src) { imgs[i].src = x.src; if (String(x.src).startsWith('blob:')) pvUrls.push(x.src); }
+    if (x.alt) imgs[i].onerror = function () { this.onerror = null; this.src = x.alt; };
+    // upgrade to the full-size image when there is one
+    if (x.p && typeof fullBlobOf === 'function') fullBlobOf(x.p).then(b => { if (b && b !== x.p.thumb && pvUnitId === unitId) { const url = URL.createObjectURL(b); pvUrls.push(url); imgs[i].src = url; } }).catch(() => {});
+  });
+  const pv = document.getElementById('pv'); pv.classList.add('open'); pv.classList.remove('zoomed');
+  document.getElementById('pvManage').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  try { lucide.createIcons(); } catch (e) {}
+  requestAnimationFrame(() => { tr.scrollLeft = pvIdx * tr.clientWidth; pvCount(); });
+  dvPause = Date.now() + 60000;
+}
+function pvClearUrls() { pvUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} }); pvUrls = []; }
+function pvCount() { const tr = document.getElementById('pvTrack'), n = tr.children.length; document.getElementById('pvCount').textContent = n ? `${pvIdx + 1} / ${n}` : ''; }
+function pvStep(d) { const tr = document.getElementById('pvTrack'), n = tr.children.length; if (!n) return; pvZoomReset(); pvIdx = (pvIdx + d + n) % n; tr.scrollTo({ left: pvIdx * tr.clientWidth, behavior: 'smooth' }); pvCount(); }
+function closePhotoViewer() {
+  const pv = document.getElementById('pv'); if (!pv.classList.contains('open')) return;
+  pvZoomReset(); pv.classList.remove('open'); document.getElementById('pvTrack').innerHTML = ''; pvClearUrls();
+  document.body.style.overflow = (detailUnitId || galleryUnitId && document.getElementById('gallery').classList.contains('open')) ? 'hidden' : '';
+  pvUnitId = null; dvPause = Date.now() + 4000;
+}
+function pvManage() { const id = pvUnitId; closePhotoViewer(); if (id) openGallery(id); }
+let pvZoomReset = () => {};
+(function () {
+  let sc = 1, x = 0, y = 0, d0 = 0, s0 = 1, p0 = null, lastTap = 0, img = null;
+  const pv = () => document.getElementById('pv'), track = () => document.getElementById('pvTrack');
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const cur = () => { const tr = track(); return tr && tr.children[pvIdx] ? tr.children[pvIdx].querySelector('img') : null; };
+  const ap = () => { if (img) img.style.transform = sc > 1 ? `translate(${x}px,${y}px) scale(${sc})` : ''; pv().classList.toggle('zoomed', sc > 1); };
+  pvZoomReset = () => { sc = 1; x = y = 0; if (img) img.style.transform = ''; img = null; const el = pv(); if (el) el.classList.remove('zoomed'); };
+  const init = () => {
+    const tr = track(); if (!tr) return;
+    tr.addEventListener('scroll', () => { clearTimeout(tr._t); tr._t = setTimeout(() => { const i = Math.round(tr.scrollLeft / (tr.clientWidth || 1)); if (i !== pvIdx) { pvZoomReset(); pvIdx = i; } pvCount(); }, 60); }, { passive: true });
+    tr.addEventListener('touchstart', e => {
+      img = cur(); if (!img) return;
+      if (e.touches.length === 2) { d0 = dist(e.touches); s0 = sc; e.preventDefault(); return; }
+      if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTap < 280) { e.preventDefault(); if (sc > 1) pvZoomReset(); else { img = cur(); sc = 2.5; ap(); } lastTap = 0; return; }
+        lastTap = now; p0 = { x: e.touches[0].clientX - x, y: e.touches[0].clientY - y };
+      }
+    }, { passive: false });
+    tr.addEventListener('touchmove', e => {
+      if (!img) return;
+      if (e.touches.length === 2) { e.preventDefault(); sc = Math.min(5, Math.max(1, s0 * dist(e.touches) / (d0 || 1))); if (sc === 1) x = y = 0; ap(); }
+      else if (e.touches.length === 1 && sc > 1 && p0) { e.preventDefault(); x = e.touches[0].clientX - p0.x; y = e.touches[0].clientY - p0.y; ap(); }
+    }, { passive: false });
+    tr.addEventListener('touchend', e => { if (e.touches.length === 0 && sc <= 1.02) pvZoomReset(); }, { passive: true });
+    // desktop: double-click zoom, wheel is ignored (no page zoom)
+    tr.addEventListener('dblclick', () => { img = cur(); if (!img) return; if (sc > 1) pvZoomReset(); else { sc = 2; ap(); } });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  document.addEventListener('keydown', e => {
+    const el = pv(); if (!el || !el.classList.contains('open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closePhotoViewer(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopImmediatePropagation(); pvStep(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); pvStep(1); }
+  }, true);
+})();
 async function deleteCurrentPhoto() {
   const p = galleryPhotos[lbIndex]; if (!p || !confirm('ลบรูปนี้?')) return;
-  await req(tx('readwrite').delete(p.id)); markPhotosUserDeleted([p.id], p.unitId || galleryUnitId, false); noteRoomPhotosChanged(p.unitId || galleryUnitId);
+  try { await req(tx('readwrite').delete(p.id)); }
+  catch (e) { try { await ensureDB(); await req(tx('readwrite').delete(p.id)); } catch (e2) { console.warn('delete photo', e2); return toast('ลบไม่สำเร็จ ลองอีกครั้ง'); } }
+  markPhotosUserDeleted([p.id], p.unitId || galleryUnitId, false); noteRoomPhotosChanged(p.unitId || galleryUnitId);
   const e = photoUrlCache.get(p.id); if (e) { if (e.thumbUrl && String(e.thumbUrl).startsWith('blob:')) URL.revokeObjectURL(e.thumbUrl); if (e.fullUrl && String(e.fullUrl).startsWith('blob:')) URL.revokeObjectURL(e.fullUrl); photoUrlCache.delete(p.id); }
   await refreshCounts(); await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); try { FX.scheduleShareUpdate(5000); } catch (e) {}
   if (!galleryPhotos.length) closeLightbox(); else { lbIndex = Math.min(lbIndex, galleryPhotos.length - 1); showLb(); }
@@ -4040,10 +4217,8 @@ async function deleteCurrentPhoto() {
 }
 async function setCover() {
   const p = galleryPhotos[lbIndex]; if (!p) return;
-  const s = tx('readwrite');
-  const minOrder = Math.min(...galleryPhotos.map(x => x.order ?? x.ts ?? 0));
-  p.order = minOrder - 1; s.put(p);
-  await renderGallery(); miniPhotoCache.delete(galleryUnitId); render(); noteRoomPhotosChanged(p.unitId || galleryUnitId); try { FX.scheduleShareUpdate(5000); } catch (e) {}
+  const ids = [p.id].concat(galleryPhotos.filter(x => x.id !== p.id).map(x => x.id));
+  await saveGalleryOrder(ids); lbIndex = 0; showLb();
   toast('ตั้งเป็นรูปหน้าปกแล้ว');
 }
 
@@ -4319,6 +4494,8 @@ checkBackupReminder();
   const EDGE = 30, DIST = 80;
   let st = null;
   function topTarget() {
+    const pvEl = document.getElementById('pv');
+    if (pvEl && pvEl.classList.contains('open')) return null;
     const open = [...document.querySelectorAll('.sheet.open')].map(el => ({ el, z: +getComputedStyle(el).zIndex || 0 })).sort((a, b) => b.z - a.z)[0];
     if (open) {
       const ov = open.el.previousElementSibling;
@@ -4352,7 +4529,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.50';
+const APP_VERSION = '9.54';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4454,10 +4631,11 @@ function sfPreview() {
 <script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=50"></script>
 <script src="tiktok-link.js?v=1"></script>
-<script src="features.js?v=50"></script>
+<script src="movecondo-link.js?v=54"></script>
+<script src="features.js?v=54"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
-<script src="sync.js?v=50"></script>
+<script src="sync.js?v=54"></script>
 <script src="photo-restore.js?v=46"></script>
 <script src="condo-geo.js?v=43"></script>
 <script src="condo-map.js?v=49"></script>
