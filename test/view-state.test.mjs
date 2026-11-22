@@ -55,8 +55,8 @@ test('back from a restored room returns to the same list, and a plain list does 
 test('the agent page saves on hide and restores after local render, without touching share pages or other storage', () => {
   const html = read('index.html');
   const sw = read('sw.js');
-  assert.match(html, /const APP_VERSION = '9\.52'/);
-  assert.match(sw, /const VERSION = 'v91'/);
+  assert.match(html, /const APP_VERSION = '9\.53'/);
+  assert.match(sw, /const VERSION = 'v92'/);
   assert.match(sw, /view-state\.js/);
   assert.match(html, /view-state\.js/);
   assert.match(html, /pagehide/);
@@ -74,4 +74,41 @@ test('the agent page saves on hide and restores after local render, without touc
   const syncAt = html.indexOf('sync.js');
   const restoreAt = html.lastIndexOf('restoreViewState()');
   assert.ok(syncAt > 0 && restoreAt > syncAt, 'final restore runs after sync.js is parsed and before its delayed sync');
+});
+
+test('clearing or applying the advanced filter is written into view state, which is not synced', () => {
+  const html = read('index.html');
+  const clearFn = html.slice(html.indexOf('function clearAdvancedFilter()'), html.indexOf('function switchView('));
+  assert.match(clearFn, /rememberView\(\)/);
+  const applyFn = html.slice(html.indexOf('function applyAdvancedFilter()'), html.indexOf('function clearAdvancedFilter()'));
+  assert.match(applyFn, /rememberView\(\)/);
+  const clearAll = html.slice(html.indexOf('function clearAllFilters()'), html.indexOf('function toggleFav('));
+  assert.match(clearAll, /rememberView\(\)/);
+
+  const sync = read('sync.js');
+  assert.equal(sync.includes('staylow_view_state_v1'), false);
+  assert.equal(read('photo-safety.js').includes('staylow_view_state_v1'), false);
+
+  // The list history entry under a room keeps advFilter. If clear does not
+  // replace that entry, going back reapplies the old types (e.g. 2 Bed).
+  const V = loadView();
+  const stale = {
+    view: 'rooms',
+    advFilter: { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: ['2 Bed'], baths: [], stations: [] },
+    detailUnitId: 'u2',
+    filters: ['all']
+  };
+  const under = V.listEntry(stale);
+  assert.deepEqual(under.advFilter.types, ['2 Bed']);
+  assert.equal(under.detailUnitId, null);
+  const cleared = {
+    view: 'rooms',
+    advFilter: { priceMin: null, priceMax: null, sizeMin: null, sizeMax: null, types: [], baths: [], stations: [] },
+    detailUnitId: null,
+    filters: ['all']
+  };
+  const store = memoryStorage();
+  V.save(store, cleared, 2_000);
+  const loaded = V.load(store, 2_000 + 60 * 1000);
+  assert.deepEqual(loaded.advFilter.types, []);
 });
