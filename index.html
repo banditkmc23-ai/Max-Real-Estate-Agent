@@ -32,28 +32,6 @@
   }, { passive: false });
 })();
 </script>
-<script>
-/* v9.51 preview: a copy served from raw.githack.com runs on local demo data with cloud sync off.
-   The live site (github.io) never matches this check. */
-(function () {
-  var demo = /(^|\.)githack\.com$/.test(location.hostname);
-  window.MAX_DEMO = demo;
-  if (!demo) return;
-  try {
-    if (!localStorage.getItem('max_demo_seeded_v1')) {
-      var now = Date.now();
-      var units = [
-        { id: 'demo_r1', project: 'Rhythm Sukhumvit 42', room: '-', floor: '21', type: '1 Bed', bath: '1', size: '45', rent: '25000', fav: true, status: 'AVAILABLE', station: 'Ekkamai', stationDist: '450', internalNote: 'ห้องตัวอย่างสำหรับทดสอบ', createdAt: new Date(now - 3600e3).toISOString() },
-        { id: 'demo_r2', project: 'The Line Sukhumvit 71', room: '-', floor: '12', type: 'Studio', bath: '1', size: '28', rent: '14500', fav: true, status: 'AVAILABLE', station: 'Phra Khanong', stationDist: '600', createdAt: new Date(now - 7200e3).toISOString() },
-        { id: 'demo_r3', project: 'Ceil by Sansiri', room: '-', floor: '8', type: '1 Bed', bath: '1', size: '35', rent: '18000', fav: true, status: 'AVAILABLE', station: 'Ekkamai', stationDist: '800', createdAt: new Date(now - 10800e3).toISOString() }
-      ];
-      localStorage.setItem('staylow_units_v1', JSON.stringify(units));
-      localStorage.setItem('staylow_nav_view', 'rooms');
-      localStorage.setItem('max_demo_seeded_v1', '1');
-    }
-  } catch (e) {}
-})();
-</script>
 <!-- Home Screen standalone: keep the capable tags. status-bar-style is deprecated (theme-color covers it).
      Manifest stays off on iOS — that combination used a legacy layout path and left an unpaintable strip. -->
 <meta name="mobile-web-app-capable" content="yes">
@@ -547,7 +525,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.53</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.54</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1286,7 +1264,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.53</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.54</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -4551,7 +4529,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.53';
+const APP_VERSION = '9.54';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4560,7 +4538,7 @@ setTimeout(checkUpdate, 1500);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkUpdate(); checkExpiredContracts(); } });
 </script>
 <script>
-if ('serviceWorker' in navigator && !window.MAX_DEMO) {
+if ('serviceWorker' in navigator) {
   let swReloaded = false;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !swReloaded) { swReloaded = true; location.reload(); } });
@@ -4653,15 +4631,14 @@ function sfPreview() {
 <script src="photo-copy.js?v=6"></script>
 <script src="photo-safety.js?v=50"></script>
 <script src="tiktok-link.js?v=1"></script>
-<script src="movecondo-link.js?v=1"></script>
-<script src="features.js?v=51"></script>
+<script src="movecondo-link.js?v=54"></script>
+<script src="features.js?v=54"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
-<script src="sync.js?v=51"></script>
+<script src="sync.js?v=54"></script>
 <script src="photo-restore.js?v=46"></script>
 <script src="condo-geo.js?v=43"></script>
 <script src="condo-map.js?v=49"></script>
-<script>if (window.MAX_DEMO) { var d = document.createElement('script'); d.src = 'demo-preview.js?v=1'; document.body.appendChild(d); }</script>
 <script>restoreViewState();</script>
 </body>
 </html>

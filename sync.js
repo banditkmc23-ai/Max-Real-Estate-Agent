@@ -7,7 +7,6 @@
 (function () {
 'use strict';
 if (!window.supabase || !window.FX || !FX.sb) return;
-if (window.MAX_DEMO) { console.info('MAX demo preview: cloud sync is off'); return; }
 const W = window, LS = localStorage;
 const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
 const rawGet = k => { try { return LS.getItem(k); } catch (e) { return null; } };
