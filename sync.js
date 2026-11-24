@@ -397,7 +397,7 @@ async function refetch(keys) {
 
 /* ---------- pull ---------- */
 const EDIT_SHEETS = ['sheet', 'custSheet', 'cfgSheet', 'custNoteSheet'];
-const uiBusy = () => EDIT_SHEETS.some(id => { const el = document.getElementById(id); return el && el.classList.contains('open'); });
+const uiBusy = () => EDIT_SHEETS.some(id => { const el = document.getElementById(id); return el && el.classList.contains('open'); }) || !!(typeof W.isInlineEditing === 'function' && W.isInlineEditing());
 function yieldThread() {
   return new Promise(resolve => {
     const go = () => resolve();
