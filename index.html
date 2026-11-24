@@ -525,7 +525,7 @@
       <button onclick="openSheet('add')" class="w-full bg-brick-500 hover:bg-brick-400 active:scale-95 text-white font-semibold text-sm py-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-brick-500/30">
         <i data-lucide="plus" class="w-4 h-4"></i>เพิ่มห้องใหม่
       </button>
-      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.54</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
+      <p class="text-[10px] text-slate-500 text-center mt-2"><span id="appVerLabel">v9.55</span> · <span id="totalUnitBadge">0</span> ห้อง · <span id="totalCustBadge">0</span> ลูกค้า</p>
     </div>
   </aside>
 
@@ -1264,7 +1264,7 @@
     <button onclick="saveSettings()" class="flex-1 bg-brick-500 text-white py-2.5 rounded-full text-sm font-semibold shadow-md shadow-brick-500/25">บันทึก</button>
   </div>
 
-  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.54</span></p>
+  <p class="text-[10px] text-slate-400 text-center mt-3">Staylow <span data-app-version>v9.55</span></p>
 </div>
 
 <div id="galOverlay" class="fixed inset-0 bg-black/30 z-[54] hidden" onclick="closeGallery()" ontouchstart="event.preventDefault(); closeGallery();" style="touch-action: manipulation;"></div>
@@ -2269,6 +2269,7 @@ function saveSettings() {
 
 // ============= ROOM DETAIL =============
 function openDetailView(unitId, opts) {
+  flushInlineEdit(true);
   const u = units.find(x => x.id === unitId); if (!u) return;
   detailUnitId = unitId;
   document.getElementById('dvProject').textContent = u.project || '';
@@ -2286,6 +2287,7 @@ function openDetailView(unitId, opts) {
   pushOverlayHistory();
 }
 function closeDetailView(opts) {
+  flushInlineEdit(true);
   if (window.keepFieldRestore) keepFieldRestore();
   const was = detailUnitId;
   detailUnitId = null;
@@ -2350,6 +2352,9 @@ async function loadDetailCover(unitId) {
   } catch (e) {}
 }
 function renderDetailView() {
+  // While a field on this page is being edited, a re-render (sync pull, list refresh) would
+  // destroy the editor and drop what was typed. Hold it until the edit ends.
+  if (inlineEditActive()) { inlineEd.pendingRender = true; return; }
   const u = units.find(x => x.id === detailUnitId); if (!u) { closeDetailView(); return; }
   const m = statusOf(u), d = daysLeft(u.end), ps = postedState(u);
   const pic = photoCount[u.id] || 0, hasPhotos = pic > 0;
@@ -2392,7 +2397,7 @@ function renderDetailView() {
     <div class="dv-tabs">${[['desc','รายละเอียด'],['travel','การเดินทาง'],['owner','เจ้าของ']].map(([k,l]) => `<button onclick="dvSetTab('${k}')" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
 
     <div ${T('desc')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-2"><p class="text-xs text-slate-400 font-semibold">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400">${(u.notes || '').length} ตัวอักษร</span></div>
+      <div class="flex items-center justify-between mb-2"><p class="text-xs text-slate-400 font-semibold">รายละเอียดห้อง</p><span class="text-[10px] text-slate-400" data-charcount="notes">${(u.notes || '').length} ตัวอักษร</span></div>
       <div class="notes-box text-ink whitespace-pre-line leading-relaxed inline-edit block" onclick="startInlineEdit(this, 'notes', 'textarea')">${esc(u.notes || 'แตะเพื่อใส่รายละเอียดห้อง')}</div>
     </div>
     <div ${T('desc')} class="bg-white border border-slate-700 rounded-2xl p-4 shadow-sm text-sm">
@@ -2436,7 +2441,7 @@ function renderDetailView() {
     </div>
 
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-      <div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-600"></i><p class="text-sm font-semibold text-amber-800">โน้ต (ภายใน)</p></div><span class="text-[10px] text-amber-600">${(u.internalNote || '').length} ตัวอักษร</span></div>
+      <div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-600"></i><p class="text-sm font-semibold text-amber-800">โน้ต (ภายใน)</p></div><span class="text-[10px] text-amber-600" data-charcount="internalNote">${(u.internalNote || '').length} ตัวอักษร</span></div>
       <div class="text-sm text-amber-900 whitespace-pre-line leading-relaxed inline-edit block min-h-[60px] bg-white/70 rounded-xl p-3" onclick="startInlineEdit(this, 'internalNote', 'textarea')">${esc(u.internalNote || 'แตะเพื่อใส่โน้ตภายใน')}</div>
     </div>
 
@@ -2466,11 +2471,25 @@ function renderDetailView() {
 function dvCycleStatus() { if (!detailUnitId) return; cycleStatus(detailUnitId); renderDetailView(); setTimeout(() => loadDetailCover(detailUnitId), 50); }
 
 // ============= INLINE EDIT =============
+/* One inline editor at a time. It stays open until the user leaves it (tap outside,
+   keyboard Done, back, opening another room). What is typed is written through the normal
+   persist() path (localStorage -> sync push) while typing, on app switch, and on leave. */
+var inlineEd = null;
+function inlineEditActive() {
+  if (!inlineEd) return false;
+  if (inlineEd.editor.isConnected) return true;
+  inlineEd = null; return false;
+}
+function flushInlineEdit(finish) { if (inlineEd) inlineEd.commit(!!finish); }
+window.isInlineEditing = inlineEditActive;
+window.flushInlineEdit = flushInlineEdit;
 function startInlineEdit(el, field, type = 'text') {
   if (el.querySelector('input, select, textarea')) return;
-  const u = units.find(x => x.id === detailUnitId);
-  if (!u) return;
-  const currentValue = u[field] ?? '';
+  if (inlineEd && inlineEd.el !== el) flushInlineEdit(true);
+  const unitId = detailUnitId;
+  const u0 = units.find(x => x.id === unitId);
+  if (!u0) return;
+  const currentValue = u0[field] ?? '';
   const originalHTML = el.innerHTML;
   el.classList.add('editing');
   el.dataset.originalHTML = originalHTML;
@@ -2484,23 +2503,57 @@ function startInlineEdit(el, field, type = 'text') {
     options.forEach(([val, label]) => { const opt = document.createElement('option'); opt.value = val; opt.textContent = label; if (String(currentValue) === String(val)) opt.selected = true; editor.appendChild(opt); });
   } else { editor = document.createElement('input'); editor.type = type; editor.value = currentValue; editor.className = 'inline-input'; if (type === 'number') { editor.inputMode = 'numeric'; editor.style.width = '120px'; } }
   if (field === 'station') { let dl = document.getElementById('dvStationList'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dvStationList'; document.body.appendChild(dl); } dl.innerHTML = [...new Set(units.map(x => (x.station || '').trim()).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join(''); editor.setAttribute('list', 'dvStationList'); editor.placeholder = 'เช่น BTS อ่อนนุช'; }
-  el.innerHTML = ''; el.appendChild(editor); try { editor.focus({ preventScroll: true }); } catch (e) { editor.focus(); } if (editor.select) editor.select();
-  let saved = false;
-  const save = () => {
-    if (saved) return; saved = true;
+  el.innerHTML = ''; el.appendChild(editor);
+  try { editor.focus({ preventScroll: true }); } catch (e) { editor.focus(); }
+  // A long caption must not be fully selected: the first key would wipe it. Put the caret at the end.
+  if (type === 'textarea') { try { const n = editor.value.length; editor.setSelectionRange(n, n); } catch (e) {} }
+  else if (editor.select) editor.select();
+  let done = false, changed = false, deb = 0;
+  const counter = () => { const box = el.closest('#detailViewContent > div'); const c = box && box.querySelector(`[data-charcount="${field}"]`); if (c) c.textContent = editor.value.length + ' ตัวอักษร'; };
+  // write the value through the normal save path; finish=true also leaves edit mode
+  const commit = (finish) => {
+    if (done) return;
+    clearTimeout(deb);
     let newValue = editor.value;
     if (type === 'number') newValue = newValue === '' ? '' : Number(newValue);
-    if (String(newValue) === String(currentValue)) { el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); return; }
-    u[field] = newValue;
-    if (field === 'end' && newValue) autoUpgradeToOccupied(u, true);
-    persist(); toast('✓ บันทึกแล้ว'); renderDetailView(); render();
-    setTimeout(() => { if (detailUnitId === u.id) loadDetailCover(u.id); }, 50);
+    // look the room up again: a sync reload replaces the units array
+    const u = units.find(x => x.id === unitId);
+    if (u && String(newValue) !== String(u[field] ?? '')) {
+      u[field] = newValue;
+      if (finish && field === 'end' && newValue) autoUpgradeToOccupied(u, true);
+      persist(); changed = true;
+    }
+    if (!finish) return;
+    done = true;
+    const pending = ed.pendingRender;
+    if (inlineEd === ed) inlineEd = null;
+    el.classList.remove('editing');
+    // the re-render below detaches the editor inside its blur, so focusout never reaches the
+    // keyboard-fit helper; give the room page its full height back here
+    if (window.keepFieldRestore) keepFieldRestore();
+    if (changed) toast('✓ บันทึกแล้ว');
+    if (!changed && !pending) { el.innerHTML = originalHTML; lucide.createIcons(); return; }
+    if (detailUnitId === unitId) renderDetailView();
+    render();
+    setTimeout(() => { if (detailUnitId === unitId) loadDetailCover(unitId); }, 50);
   };
-  const cancel = () => { if (saved) return; saved = true; el.classList.remove('editing'); el.innerHTML = originalHTML; lucide.createIcons(); };
-  editor.addEventListener('blur', save);
+  const cancel = () => {
+    if (done) return; done = true; clearTimeout(deb);
+    if (inlineEd === ed) inlineEd = null;
+    el.classList.remove('editing');
+    if (changed || ed.pendingRender) { const u = units.find(x => x.id === unitId); if (u && changed) { u[field] = currentValue; persist(); } renderDetailView(); render(); return; }
+    el.innerHTML = originalHTML; lucide.createIcons();
+  };
+  const ed = { el, field, unitId, editor, commit, pendingRender: false };
+  inlineEd = ed;
+  editor.addEventListener('blur', () => commit(true));
+  editor.addEventListener('input', () => { counter(); if (type === 'textarea' || type === 'text') { clearTimeout(deb); deb = setTimeout(() => commit(false), 1200); } });
   editor.addEventListener('keydown', e => { if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); editor.blur(); } if (e.key === 'Escape') { e.preventDefault(); cancel(); } });
   if (type === 'select') editor.addEventListener('change', () => editor.blur());
 }
+// switching apps or closing the PWA: save what is typed now, keep the editor open
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushInlineEdit(false); });
+window.addEventListener('pagehide', () => flushInlineEdit(false));
 /* The room detail, the edit sheet, and the filter sheet are position:fixed.
    On an iPhone the keyboard covers that pane and does not shrink it, so a
    focused field can sit under the keyboard with no room left to scroll.
@@ -4443,6 +4496,7 @@ function restoreViewState() {
   viewReady = true;
 }
 window.addEventListener('popstate', e => {
+  flushInlineEdit(true);
   const v = e.state && e.state.slv ? e.state.view : null;
   historyLock = true;
   if (!v) { historyLock = false; return; }
@@ -4529,7 +4583,7 @@ checkBackupReminder();
   document.addEventListener('touchend', end, { capture: true }); document.addEventListener('touchcancel', end, { capture: true });
 })();
 
-const APP_VERSION = '9.54';
+const APP_VERSION = '9.55';
 document.querySelectorAll('#appVerLabel,[data-app-version]').forEach(el => { el.textContent = el.id === 'appVerLabel' || el.hasAttribute('data-app-version') ? 'v' + APP_VERSION : el.textContent; });
 async function checkUpdate() {
   try { const r = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const m = (await r.text()).match(/const APP_VERSION = '([^']+)'/); if (m && m[1] !== APP_VERSION) { const el = document.getElementById('newVer'); if (el) el.textContent = 'v' + m[1]; const ub = document.getElementById('updateBar'); if (ub) ub.classList.remove('hidden'); } } catch (e) {}
@@ -4635,7 +4689,7 @@ function sfPreview() {
 <script src="features.js?v=54"></script>
 <script src="vendor/supabase.js"></script>
 <script src="room-summary.js?v=1"></script>
-<script src="sync.js?v=54"></script>
+<script src="sync.js?v=55"></script>
 <script src="photo-restore.js?v=46"></script>
 <script src="condo-geo.js?v=43"></script>
 <script src="condo-map.js?v=49"></script>
