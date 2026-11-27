@@ -45,12 +45,17 @@ function explode(a) {
   }
   return m;
 }
+const isQuota = e => STORE ? STORE.isQuota(e) : !!(e && (e.name === 'QuotaExceededError' || e.code === 22));
+function lsWrite(key, val) {
+  try { rawSet.call(LS, key, val); }
+  catch (e) { if (isQuota(e)) { e.maxQuota = true; e.maxKey = key; } throw e; }
+}
 function applyTo(a, changes) { // changes: [{id, data|null}]
-  if (a.type === 'kv') { for (const c of changes) { if (c.data == null) rawRemove.call(LS, a.key); else rawSet.call(LS, a.key, String(c.data)); } return; }
+  if (a.type === 'kv') { for (const c of changes) { if (c.data == null) rawRemove.call(LS, a.key); else lsWrite(a.key, String(c.data)); } return; }
   if (a.type === 'list') {
     const arr = J(a.key, []); const list = Array.isArray(arr) ? arr : [];
     for (const c of changes) { const i = list.findIndex(x => x && String(x.id) === c.id); if (c.data == null) { if (i >= 0) list.splice(i, 1); } else if (i >= 0) list[i] = c.data; else list.push(c.data); }
-    rawSet.call(LS, a.key, JSON.stringify(list)); return;
+    lsWrite(a.key, JSON.stringify(list)); return;
   }
   let o = J(a.key, {}); if (!o || typeof o !== 'object' || Array.isArray(o)) o = {};
   for (const c of changes) {
@@ -59,16 +64,51 @@ function applyTo(a, changes) { // changes: [{id, data|null}]
     if (c.data == null) { if (o[k1]) { delete o[k1][k2]; if (!Object.keys(o[k1]).length) delete o[k1]; } }
     else { o[k1] = o[k1] && typeof o[k1] === 'object' ? o[k1] : {}; o[k1][k2] = c.data; }
   }
-  rawSet.call(LS, a.key, JSON.stringify(o));
+  lsWrite(a.key, JSON.stringify(o));
 }
 const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + s.length; };
 
 /* ---------- state ---------- */
 const SK = 'max_sync_v1';
 const fresh = uid => ({ uid, cursor: '1970-01-01T00:00:00Z', h: {}, dirty: {}, r: {}, up: {}, retry: {}, explicitDel: {}, restoreMeta: {}, cloudHash: {}, photoTry: {}, photoFail: {}, summary: {}, init: false, last: 0 });
-let st = J(SK, null) || fresh(null);
-['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail', 'summary'].forEach(k => { st[k] = st[k] || {}; });
-const saveSt = () => { try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) {} };
+/* v9.56: the full state lives in IndexedDB through store.js (it outgrew Safari's localStorage).
+   The pending queue (dirty + explicit deletes + restore metadata) is small and is also mirrored
+   synchronously to localStorage under QK, so an app kill before the IndexedDB write lands, or an
+   IndexedDB problem, can never drop a pending push. On load the two are merged, higher rev wins;
+   re-sending an already-acked rev is a no-op on the server (rev must be newer to overwrite). */
+const QK = 'max_sync_q_v1';
+const STORE = W.MAX_STORE || null;
+const ST_MAPS = ['h', 'dirty', 'r', 'up', 'retry', 'explicitDel', 'restoreMeta', 'cloudHash', 'photoTry', 'photoFail', 'summary'];
+let st = fresh(null), stLoaded = false, localFull = null;
+function mergeQueue(into, q) {
+  if (!q || typeof q !== 'object' || (q.uid && into.uid && q.uid !== into.uid)) return 0;
+  let n = 0;
+  for (const [k, d] of Object.entries(q.dirty || {})) {
+    if (!d || typeof d !== 'object') continue;
+    const cur = into.dirty[k];
+    if (!cur || (Number(d.rev) || 0) > (Number(cur.rev) || 0)) { into.dirty[k] = d; n++; }
+  }
+  for (const [id, t] of Object.entries(q.explicitDel || {})) if (!(into.explicitDel[id] >= t)) into.explicitDel[id] = t;
+  for (const [id, m] of Object.entries(q.restoreMeta || {})) if (!into.restoreMeta[id]) into.restoreMeta[id] = m;
+  if (!into.uid && q.uid) into.uid = q.uid;
+  return n;
+}
+function loadSt() {
+  const pre = st;
+  st = J(SK, null) || fresh(null);
+  ST_MAPS.forEach(k => { st[k] = st[k] || {}; });
+  const restored = mergeQueue(st, J(QK, null));
+  if (restored) console.warn('sync: restored pending items from the queue mirror', restored);
+  mergeQueue(st, { uid: pre.uid, dirty: pre.dirty, explicitDel: pre.explicitDel, restoreMeta: pre.restoreMeta }); // marks made before load
+  stLoaded = true;
+}
+const saveSt = () => {
+  if (!stLoaded) return; // never write a placeholder over the stored state
+  try { rawSet.call(LS, QK, JSON.stringify({ uid: st.uid, dirty: st.dirty, explicitDel: st.explicitDel, restoreMeta: st.restoreMeta, at: Date.now() })); } catch (e) { console.warn('sync: queue mirror not saved', e); }
+  try { rawSet.call(LS, SK, JSON.stringify(st)); } catch (e) { console.warn('sync: state not saved', e); }
+};
+if (!STORE || STORE.isReady()) loadSt();
+const stReady = (STORE ? STORE.ready : Promise.resolve()).catch(() => {}).then(() => { if (!stLoaded) loadSt(); });
 let filling = false, user = null, status = 'off', detail = '', running = false, again = false, timer = null, photoRestoreHold = false;
 let sessionPulled = false, loginPull = false, draining = false;
 const sessionEdits = {};
@@ -392,7 +432,7 @@ async function sendDocs(docs) {
   await flush();
 }
 async function refetch(keys) {
-  for (const k of keys) { const [kind] = k.split('|', 1), id = k.slice(kind.length + 1); const { data } = await sb.from('user_docs').select('kind,id,data,rev,deleted,server_at').eq('kind', kind).eq('id', id).maybeSingle(); if (data) await applyRows([data], true); }
+  for (const k of keys) { const [kind] = k.split('|', 1), id = k.slice(kind.length + 1); const { data } = await sb.from('user_docs').select('kind,id,data,rev,deleted,server_at').eq('kind', kind).eq('id', id).maybeSingle(); if (data) { try { await applyRows([data], true); } catch (e) { if (!e || !e.maxQuota) throw e; localFull = e; console.warn('sync: cloud row not written locally, storage full', k, e); } } }
 }
 
 /* ---------- pull ---------- */
@@ -656,7 +696,8 @@ async function applyPhotos(rows) {
       if (plan.action === 'fallback' && pub) {
         const m = r.data || {};
         const rec = { id: r.id, unitId: m.unitId, ts: m.ts, order: m.order, cover: m.cover, url: pub, cloud: true, fsz: m.fsz || 0, privMiss: true };
-        await idb(pstore('readwrite').put(rec));
+        try { await idb(pstore('readwrite').put(rec)); }
+        catch (e2) { console.warn('photo pull: could not store fallback row', r.id, e2); st.photoTry[r.id] = { n: plan.attempts, nextAt: now() + 600000 }; return; }
         st.h[k] = hash(JSON.stringify(pmeta(rec))); st.r[k] = r.rev; delete st.dirty[k]; delete st.retry[k];
         rememberPub(r.id, pub);
         if (st.photoTry) delete st.photoTry[r.id];
@@ -902,7 +943,10 @@ async function sync(opts = {}) {
   if ((running || draining) && now() - runStart < 180000) { again = true; return; }
   const my = ++gen; running = true; runStart = now(); setStatus('busy', 'กำลังซิงก์...');
   let held = false, gotChanges = 0;
+  localFull = null;
   try {
+    await stReady;
+    if (STORE && STORE.isDegraded()) throw new Error('ฐานข้อมูลในเครื่องยังไม่พร้อม ปิดแล้วเปิดแอปใหม่');
     try { if (typeof W.ensureDB === 'function') await W.ensureDB(); } catch (e) { console.warn('sync: IndexedDB not ready', e); }
     // A full pull runs only when the saved server_at cursor cannot be trusted
   // (new login, other account, never synced, or the last pull is stale).
@@ -913,7 +957,12 @@ async function sync(opts = {}) {
     const fullFirst = !!(opts.full || wantFull || (S && S.needsFullPullBeforePush(st, { uid: user.id, login: loginPull, sessionPulled, now: now() })));
     if (fullFirst) {
       loginPull = false; wantFull = false;
-      if (!uiBusy() || !st.init) { gotChanges += await pull({ full: true }); sessionPulled = true; st.init = true; saveSt(); }
+      if (!uiBusy() || !st.init) {
+        // A full device storage must not stop pending items from going up. The server keeps the
+        // newer rev, so pushing after a partial pull cannot overwrite a newer cloud copy.
+        try { gotChanges += await pull({ full: true }); sessionPulled = true; st.init = true; saveSt(); }
+        catch (e) { if (!e || !e.maxQuota) throw e; localFull = e; console.warn('sync: full pull could not be written locally; pushing anyway', e); }
+      }
       else { held = true; again = true; }
     }
     if (held && fullFirst) {
@@ -923,11 +972,17 @@ async function sync(opts = {}) {
     }
     scanLS(); await scanPhotos(); saveSt();
     await push();
-    if (!fullFirst && !uiBusy()) { gotChanges += await pull({ full: false }); sessionPulled = true; }
+    if (!fullFirst && !uiBusy()) {
+      try { gotChanges += await pull({ full: false }); sessionPulled = true; }
+      catch (e) { if (!e || !e.maxQuota) throw e; localFull = e; console.warn('sync: pull could not be written locally', e); }
+    }
     else if (!fullFirst && uiBusy()) { held = true; again = true; }
     if (my !== gen) return;
     await drainPhotos();
     if (my !== gen) return;
+    st.lastPush = now();
+    fullAt = localFull ? now() : 0;
+    if (localFull) { saveSt(); setStatus('error', 'พื้นที่เก็บข้อมูลในเครื่องเต็ม: ส่งข้อมูลขึ้นคลาวด์แล้ว แต่ดึงข้อมูลลงเครื่องไม่ครบ'); return; }
     st.last = now(); saveSt();
     if (appRefreshTimer || gotChanges) queueAppRefresh(true);
     try { FX.injectTools && FX.injectTools(); } catch (e) {}
@@ -963,9 +1018,12 @@ document.addEventListener('visibilitychange', wake);
 addEventListener('focus', wake); addEventListener('pageshow', wake);
 // iOS Home Screen apps sometimes resume without any event: a touch after >30s idle also triggers a pull
 document.addEventListener('touchstart', () => { if (user && now() - (st.pulled || 0) > 30000) schedule(200); }, { passive: true });
-setInterval(() => { if (user && document.visibilityState !== 'hidden') sync(); }, 30000);
+// When device storage was full on the last run, the 30 s timer backs off to 10 min (edits still sync at once).
+let fullAt = 0;
+setInterval(() => { if (user && document.visibilityState !== 'hidden' && !(fullAt && now() - fullAt < 600000)) sync(); }, 30000);
 
-sb.auth.onAuthStateChange((ev, session) => {
+sb.auth.onAuthStateChange((ev, session) => { stReady.then(() => onAuth(ev, session)); });
+function onAuth(ev, session) {
   const u = session && session.user;
   if (u && (!user || user.id !== u.id)) {
     if (st.uid !== u.id) { st = fresh(u.id); saveSt(); }
@@ -975,7 +1033,7 @@ sb.auth.onAuthStateChange((ev, session) => {
   if (ev === 'PASSWORD_RECOVERY') setTimeout(() => open('setpw'), 300);
   try { window.PHOTO_RESTORE && PHOTO_RESTORE.syncOwner(u || null); } catch (e) {}
   render();
-});
+}
 
 /* ---------- UI ---------- */
 const LABEL = { off: ['off', 'ยังไม่ซิงก์'], offline: ['offline', 'ออฟไลน์'], busy: ['cloud', 'กำลังซิงก์'], ok: ['check', 'ซิงก์แล้ว'], pending: ['upload', 'รอซิงก์'], error: ['error', 'ซิงก์ไม่สำเร็จ'] };
